@@ -1,0 +1,4 @@
+node_modules/
+x_*.xlsx
+x_reg.json
+*.png

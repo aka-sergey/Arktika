@@ -1,0 +1,35 @@
+<div class="wrap">
+  <header class="top">
+    <div class="brand"><h1>АРКТИКА · завод воды</h1><span>Иваново · бизнес-игра на 26 месяцев: ноябрь 2026 — декабрь 2028</span></div>
+    <div class="bar">
+      <select id="scn" aria-label="Сценарий"></select>
+      <span class="namebox" id="savebox" hidden><input id="scnname" placeholder="Название сценария" maxlength="40"><button class="btn sm pri" data-act="saveok">Сохранить</button><button class="btn sm" data-act="savecancel">Отмена</button></span>
+      <button class="btn" data-act="save" id="b-save">Сохранить сценарий</button>
+      <button class="btn" data-act="delscn" id="b-del">Удалить</button>
+      <button class="btn" data-act="undo" id="b-undo">Отменить ход</button>
+      <button class="btn" data-act="reset">Начать с базы</button>
+      <button class="btn pri" data-act="xlsx" id="b-xlsx">Скачать Excel</button>
+    </div>
+  </header>
+  <section class="card score" id="score" aria-live="polite"></section>
+  <div class="missions" id="missions"></div>
+  <div class="alerts" id="alerts"></div>
+  <section class="card tl">
+    <div class="tl-head">
+      <h2>Лента времени</h2>
+      <div class="bar">
+        <div class="seg" role="group" aria-label="Масштаб">
+          <button data-act="zoom:m" id="z-m">Месяцы</button><button data-act="zoom:w" id="z-w">Недели</button><button data-act="zoom:d" id="z-d">Дни</button>
+        </div>
+        <button class="btn sm" data-act="play" id="b-play">▶ Проиграть</button>
+      </div>
+    </div>
+    <div class="legend" id="legend"></div>
+    <div class="tl-body"><div class="tl-labels" id="tl-labels"></div><div class="tl-scroll" id="tl-scroll"><div id="tl-svg"></div><div class="tip" id="tip" hidden></div></div></div>
+  </section>
+  <section class="card">
+    <div class="tabs" role="tablist" id="tabs"></div>
+    <div class="panel" id="panel"></div>
+  </section>
+</div>
+<div class="toast" id="toast" hidden></div>
