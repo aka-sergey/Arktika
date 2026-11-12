@@ -238,7 +238,7 @@
   }
 
   /* ---------- вкладки ---------- */
-  const TABS = [['charts', 'Графики'], ['people', 'Люди'], ['capex', 'Вложения'], ['units', 'Установки и линия'], ['sales', 'Продажи и цены'], ['bottle', 'Бутылка'], ['stock', 'Склад и паллеты'], ['costs', 'Расходы'], ['money', 'Налоги и инвестор'], ['levers', 'Рычаги'], ['scn', 'Сценарии'], ['journal', 'Журнал'], ['rules', 'Правила игры']];
+  const TABS = [['summary', 'Резюме'], ['charts', 'Графики'], ['people', 'Люди'], ['capex', 'Вложения'], ['units', 'Установки и линия'], ['sales', 'Продажи и цены'], ['bottle', 'Бутылка'], ['stock', 'Склад и паллеты'], ['costs', 'Расходы'], ['money', 'Налоги и инвестор'], ['levers', 'Рычаги'], ['scn', 'Сценарии'], ['journal', 'Журнал'], ['rules', 'Правила игры']];
   const CATS = ['Линии', 'Установки очистки', 'Ремонт', 'Оборудование', 'Пресс-формы', 'Техника и мебель', 'Разрешения и бренд', 'Прочее'];
   const BT = [['03', '0,3 л', 0.3, 96], ['05', '0,5 л', 0.5, 122], ['10', '1,0 л', 1, 152]];
   const monthSel = (id, bind, v) => `<select id="${id}" data-bind="${bind}" data-fmt="month">${MONTHS.map(mm => `<option value="${mm.i}"${mm.i === v ? ' selected' : ''}>${mm.label}</option>`).join('')}</select>`;
@@ -280,6 +280,66 @@
   ];
   const levVal = i => (st.lev && st.lev[i] != null) ? st.lev[i] : LEVERS[i].d;
   const levText = (i, s) => { const lv = LEVERS[i], v = levVal(i); return lv.abs ? lv.a(s) + ': ' + v + ' ' + lv.u : lv.a(s) + ' ' + (v > 0 ? '+' : '−') + trim(Math.abs(v), 2) + ' ' + lv.u; };
+  /* ---------- резюме: чем сценарий отличается от базы и что это даёт ---------- */
+  function pairUp(bl, sl) { const used = new Set(), out = []; bl.forEach(b => { let m = sl.find(x => x.id === b.id && !used.has(x)); if (!m) m = sl.find(x => x.name === b.name && !used.has(x)); if (m) used.add(m); out.push([b, m || null]); }); sl.forEach(x => { if (!used.has(x)) out.push([null, x]); }); return out; }
+  function diffScenario(s) {
+    const B = BASE_S, out = [], add = (g, text, fn) => out.push({ g, text, fn });
+    Meta.groups.forEach(gr => gr.items.forEach(it => { const k = it[0], mt = Meta.by[k]; if (B.p[k] === s.p[k]) return; const dv = x => k === 'payout_on' ? (x ? 'да' : 'нет') : mt.opts ? ((mt.opts.find(o => o[0] === x) || [0, x])[1]) : disp(x, mt.fmt); add(gr.title, `${mt.label}: ${dv(B.p[k])} → ${dv(s.p[k])}`, z => { z.p[k] = s.p[k]; }); }));
+    s.utypes.forEach(un => { const b = B.utypes.find(x => x.id === un.id); if (!b) return; [['l', 'литров в сутки', 'int'], ['price', 'цена одной', 'money'], ['start', 'штук на старте', 'int']].forEach(f => { if (b[f[0]] !== un[f[0]]) add('Установки', `${un.name}, ${f[1]}: ${disp(b[f[0]], f[2])} → ${disp(un[f[0]], f[2])}`, z => { z.utypes.find(x => x.id === un.id)[f[0]] = un[f[0]]; }); }); });
+    s.batches.forEach(bt => add('Установки', `Докупка: ${bt.qty} × ${tOf(s, bt.type).name}, запуск ${mLabel(bt.month)}`, z => { z.batches.push(clone(bt)); }));
+    const pk = pl => pl.slice().sort((a, b) => a.month - b.month).map(q => q.month + ':' + q.liters).join('|'), pt = pl => pl.slice().sort((a, b) => a.month - b.month).map(q => 'с ' + mLabel(q.month) + ' — ' + pcs(q.liters) + ' л').join(', ');
+    if (pk(B.plan) !== pk(s.plan)) add('Продажи и цены', `План продаж: ${pt(B.plan)} → ${pt(s.plan)}`, z => { z.plan = clone(s.plan); });
+    pairUp(B.staff, s.staff).forEach(pr => { const b = pr[0], x = pr[1];
+      if (b && !x) add('Люди', `Убран: ${b.name} (${rub(b.salary)} в месяц)`, z => { z.staff = z.staff.filter(e => e.id !== b.id); });
+      else if (!b && x) add('Люди', `Добавлен: ${x.name}, ${rub(x.salary)} в месяц, с ${mLabel(x.from)}`, z => { z.staff.push(clone(x)); });
+      else { const ch = []; if (b.salary !== x.salary) ch.push(`оклад ${rub(b.salary)} → ${rub(x.salary)}`); if (b.from !== x.from) ch.push(`выходит ${mLabel(b.from)} → ${mLabel(x.from)}`); if (b.to !== x.to) ch.push(`работает по ${mLabel(b.to)} → ${mLabel(x.to)}`); if (b.group !== x.group) ch.push('группа: ' + disp(x.group, 'group'));
+        if (ch.length) add('Люди', `${x.name}: ${ch.join('; ')}`, z => { Object.assign(z.staff.find(e => e.id === b.id), { salary: x.salary, from: x.from, to: x.to, group: x.group }); }); } });
+    const startB = B.utypes.reduce((a, t) => a + t.start * t.price, 0), amtB = c => c.auto ? startB * 0.5 : (+c.amount || 0);
+    const resOff = [], resOn = [];
+    pairUp(B.capex, s.capex).forEach(pr => { const b = pr[0], x = pr[1];
+      if (b && x && !!b.reserve !== !!x.reserve && (x.auto || (+b.amount || 0) === (+x.amount || 0)) && b.month === x.month) { (x.reserve ? resOn : resOff).push(b); return; }
+      if (b && !x) { if (amtB(b) > 0) add('Вложения', `Убрано: «${b.name}» (${rub(amtB(b))})`, z => { z.capex = z.capex.filter(e => e.id !== b.id); }); }
+      else if (!b && x) { if ((+x.amount || 0) > 0) add('Вложения', `Добавлено: «${x.name}», ${rub(x.amount)}, ${mLabel(x.month)}`, z => { z.capex.push(clone(x)); }); }
+      else { const ch = []; if (!x.auto && (+b.amount || 0) !== (+x.amount || 0)) ch.push(`${rub(b.amount)} → ${rub(x.amount)}`); if (b.month !== x.month) ch.push(`оплата ${mLabel(b.month)} → ${mLabel(x.month)}`); if (!!b.reserve !== !!x.reserve) ch.push(x.reserve ? 'с резервом' : 'без резерва');
+        if (ch.length) add('Вложения', `«${x.name}»: ${ch.join('; ')}`, z => { const e = z.capex.find(q => q.id === b.id); if (!x.auto) e.amount = x.amount; e.month = x.month; e.reserve = x.reserve; }); } });
+    [[resOff, false, 'снят с'], [resOn, true, 'добавлен к']].forEach(a => { if (!a[0].length) return; const ids = a[0].map(b => b.id), sum = a[0].reduce((q, b) => q + amtB(b), 0);
+      add('Вложения', `Резерв на непредвиденное ${a[2]} ${ids.length} ${ids.length === 1 ? 'строки' : 'строк'} вложений (на ${rub(sum)})`, z => { z.capex.forEach(e => { if (ids.includes(e.id)) e.reserve = a[1]; }); }); });
+    s.mats.forEach(mt => { const b = B.mats.find(x => x.key === mt.key); if (!b) return; const ch = []; if (b.moq !== mt.moq) ch.push(`партия ${pcs(b.moq)} → ${pcs(mt.moq)} ${mt.unit}`); if (b.lead !== mt.lead) ch.push(`заказ за ${b.lead} → ${mt.lead} мес.`); if (b.first !== mt.first) ch.push(`первый заказ ${mLabel(b.first)} → ${mLabel(mt.first)}`); if ((+b.ship || 0) !== (+mt.ship || 0)) ch.push(`транспорт ${rub(+b.ship || 0)} → ${rub(+mt.ship || 0)}`);
+      if (ch.length) add('Склад материалов', `${mt.name}: ${ch.join('; ')}`, z => { Object.assign(z.mats.find(x => x.key === mt.key), { moq: mt.moq, lead: mt.lead, first: mt.first, ship: mt.ship }); }); });
+    const b0 = BASE.k; out.forEach(d => { const z = clone(B); d.fn(z); const kk = S.sim(z).k; d.dInv = kk.invest - b0.invest; d.dCum = kk.cumEnd - b0.cumEnd; });
+    const groups = []; out.forEach(d => { let g = groups.find(x => x.name === d.g); if (!g) { g = { name: d.g, items: [] }; groups.push(g); } g.items.push(d); });
+    groups.forEach(g => { const z = clone(B); g.items.forEach(d => d.fn(z)); const kk = S.sim(z).k; g.dInv = kk.invest - b0.invest; g.dCum = kk.cumEnd - b0.cumEnd; g.items.sort((a, b) => Math.abs(b.dInv) + Math.abs(b.dCum) / 3 - Math.abs(a.dInv) - Math.abs(a.dCum) / 3); });
+    groups.sort((a, b) => Math.abs(b.dInv) + Math.abs(b.dCum) / 3 - Math.abs(a.dInv) - Math.abs(a.dCum) / 3);
+    return { all: out, groups };
+  }
+  const pbTxt = kk => kk.paybackM ? mLabel(kk.paybackM) : kk.paybackEst ? '≈ ' + mLabel(kk.paybackEst) : 'нет';
+  function summaryData() { const k = res.k, b = BASE.k, d = diffScenario(st.s);
+    const kpi = [['Вносит инвестор, ₽', b.invest, k.invest], ['Окупаемость', pbTxt(b), pbTxt(k)], ['Пиковая потребность в деньгах, ₽', b.peak, k.peak], ['Накопленный поток к декабрю 2028, ₽', b.cumEnd, k.cumEnd], ['Прибыль после налогов за 2027, ₽', b.profit27, k.profit27], ['Прибыль после налогов за 2028, ₽', b.profit28, k.profit28], ['Вложения в основные средства с резервом, ₽', b.capexTotal, k.capexTotal], ['Зарплаты с взносами за 26 месяцев, ₽', b.fotTotal, k.fotTotal], ['Минимум на счёте, ₽', b.minCash, k.minCash], ['Людей в штате, максимум', b.headMax, k.headMax]];
+    return { kpi, groups: d.groups, all: d.all, pbShift: (k.paybackEst && b.paybackEst) ? k.paybackEst - b.paybackEst : 0 }; }
+  function summaryPanel() {
+    const sd = summaryData(), k = res.k, b = BASE.k;
+    const dm = v => (v > 0 ? '+' : '−') + (Math.abs(v) >= 950000 ? nf1.format(Math.abs(v) / 1e6) + ' млн ₽' : nf0.format(Math.abs(v) / 1e3) + ' тыс. ₽');
+    const sg = (v, lessIsGood) => Math.abs(v) < 500 ? '<span class="delta">0</span>' : `<span class="delta ${(v < 0) === !!lessIsGood ? 'good' : 'bad'}">${dm(v)}</span>`;
+    if (!sd.all.length) return `<h3>Резюме сценария «${esc(st.s.name)}»</h3><p>Сценарий совпадает с базовым планом. Сделайте ход — здесь появится, чем он отличается от базы и что это даёт.</p>`;
+    const dInv = k.invest - b.invest, big = x => Math.abs(x.dInv) >= 50000 || Math.abs(x.dCum) >= 50000;
+    const verdict = `Инвестор вносит ${mln(k.invest)} вместо ${mln(b.invest)} в базе — ${Math.abs(dInv) < 1 ? 'столько же' : (dInv < 0 ? 'на ' + mln(-dInv) + ' меньше' : 'на ' + mln(dInv) + ' больше')}. Окупаемость: ${pbTxt(k)} против ${pbTxt(b)}${sd.pbShift ? ' — на ' + Math.abs(sd.pbShift) + ' мес. ' + (sd.pbShift < 0 ? 'раньше' : 'позже') : ''}. ${k.paybackM ? 'Цель игры достигнута.' : 'В 26 месяцев проект пока не укладывается.'}`;
+    const top = sd.all.slice().sort((x, y) => Math.abs(y.dInv) + Math.abs(y.dCum) / 3 - Math.abs(x.dInv) - Math.abs(x.dCum) / 3).filter(big).slice(0, 5);
+    const gBig = sd.groups.filter(big), gZero = sd.groups.filter(g => !big(g));
+    return `<h3>Резюме сценария «${esc(st.s.name)}» — что изменено относительно базы и что это даёт</h3>
+      <p style="color:var(--ink);font-size:15px;max-width:90ch">${esc(verdict)}</p>
+      <div class="tbl"><table><thead><tr><th>Показатель</th><th class="r">База</th><th class="r">Этот сценарий</th><th class="r">Разница</th></tr></thead><tbody>` +
+        sd.kpi.map((r, i) => { const num = typeof r[1] === 'number', money = /₽/.test(r[0]), f = v => money ? mln(v) : (num ? pcs(v) : esc(v)), lessGood = [0, 2, 6, 7].includes(i);
+          return `<tr><td>${esc(r[0].replace(', ₽', ''))}</td><td class="r calc">${f(r[1])}</td><td class="r">${f(r[2])}</td><td class="r">${num ? (money ? sg(r[2] - r[1], lessGood) : (r[2] === r[1] ? '<span class="delta">0</span>' : `<span class="delta">${r[2] > r[1] ? '+' : '−'}${Math.abs(r[2] - r[1])}</span>`)) : (sd.pbShift ? `<span class="delta ${sd.pbShift < 0 ? 'good' : 'bad'}">${sd.pbShift < 0 ? 'раньше на ' + (-sd.pbShift) : 'позже на ' + sd.pbShift} мес.</span>` : '<span class="delta">та же</span>')}</td></tr>`; }).join('') + `</tbody></table></div>
+      ${top.length ? `<h3>Пять главных ходов</h3><ol class="tops">${top.map(x => `<li><span>${esc(x.text)}</span><b class="delta ${x.dInv < 0 || (Math.abs(x.dInv) < 500 && x.dCum > 0) ? 'good' : 'bad'}">${Math.abs(x.dInv) >= 500 ? dm(x.dInv) + ' к бюджету' : ''}${Math.abs(x.dInv) >= 500 && Math.abs(x.dCum) >= 500 ? ' · ' : ''}${Math.abs(x.dCum) >= 500 ? dm(x.dCum) + ' к потоку' : ''}</b></li>`).join('')}</ol>` : ''}
+      <h3>Что сделано по разделам</h3>
+      <p>«Бюджет» — сколько вносит инвестор; «поток» — накопленный денежный поток к декабрю 2028. Эффект раздела посчитан так: в базовом плане меняем только этот раздел. Вместе разделы дают немного другой итог, потому что влияют друг на друга.</p>
+      <div class="sumcards">` + gBig.map(g => { const its = g.items.filter(big).slice(0, 3), rest = g.items.length - its.length;
+        return `<section class="grp"><h4>${esc(g.name)}<span>${g.items.length} изм.</span></h4><div class="sumnum"><div><small>бюджет</small>${sg(g.dInv, true)}</div><div><small>поток</small>${sg(g.dCum, false)}</div></div><ul>${its.map(x => `<li>${esc(x.text)}</li>`).join('')}${rest > 0 ? `<li class="more">и ещё ${rest} ${its.length ? 'помельче' : 'мелких'}</li>` : ''}</ul></section>`; }).join('') + `</div>
+      ${gZero.length ? `<p>Без заметного влияния на деньги: ${gZero.map(g => esc(g.name) + ' (' + g.items.map(x => esc(x.text)).join('; ') + ')').join('; ')}.</p>` : ''}
+      <details class="alld"><summary>Все изменения построчно — ${sd.all.length}</summary>
+      <div class="tbl"><table><thead><tr><th>Что изменено</th><th class="r">Бюджет инвестора</th><th class="r">Поток к концу 2028</th></tr></thead>` +
+        sd.groups.map(g => `<tbody><tr class="cat"><td>${esc(g.name)} — ${g.items.length}</td><td class="r">${sg(g.dInv, true)}</td><td class="r">${sg(g.dCum, false)}</td></tr>` + g.items.map(x => `<tr><td>${esc(x.text)}</td><td class="r">${sg(x.dInv, true)}</td><td class="r">${sg(x.dCum, false)}</td></tr>`).join('') + '</tbody>').join('') + `</table></div></details>`;
+  }
   function squarify(items, x, y, w, h) { // раскладка «квадратами» (treemap): площади пропорциональны суммам
     const out = [], tot = items.reduce((a, b) => a + b.v, 0); if (!tot || w <= 0 || h <= 0) return out;
     let rest = items.map(it => ({ it, a: it.v / tot * w * h })), X = x, Y = y, Wd = w, Hd = h;
@@ -355,6 +415,7 @@
   const mm_ = i => MONTHS[i].label;
   function panel() {
     const s = st.s, p = s.p, m = res.m, k = res.k, t = st.tab, ic = i => i >= p.idx_m ? 1 + p.cost_idx : 1, c = k.cost, last = N - 1;
+    if (t === 'summary') return summaryPanel();
     if (t === 'charts') return chartsPanel();
     if (t === 'people') {
       const cost = e => { let x = 0; for (let i = e.from; i <= e.to; i++) x += e.salary * p.tax_k * ic(i); return x; };
@@ -485,7 +546,7 @@
   const RULES = `<div class="rules">
     <div><h3>Цель</h3><p>Вы строите завод АРКТИКА и ведёте его 26 месяцев. Задача — чтобы проект вернул вложенное до декабря 2028, а инвестор внёс как можно меньше. Табло наверху всегда показывает оба числа и разницу с базовым сценарием.</p></div>
     <div><h3>Как играть</h3><ol><li>Посмотрите на ленту: когда уходят деньги, когда кончается запас, когда начинаются продажи.</li><li>Сделайте ход: поменяйте цифру во вкладке или перетащите элемент на ленте.</li><li>Табло покажет, что стало с бюджетом и окупаемостью. Ход записан в журнал.</li><li>Не понравилось — «Отменить ход». Понравилось — «Сохранить сценарий» под именем.</li><li>Вкладка «Рычаги» подсказывает, какой ход сейчас даёт больше всего; значение рычага можно вписать своё.</li></ol></div>
-    <div><h3>Что можно менять</h3><ul><li><b>Люди</b> — добавить, убрать, сдвинуть выход, изменить оклад.</li><li><b>Вложения</b> — добавить или убрать строку, поменять сумму, дату и резерв.</li><li><b>Установки</b> — два типа: ТИП-А30 и ТИП-Б130; сколько на старте и партии докупки.</li><li><b>Продажи</b> — план в литрах, доли и цены трёх бутылок, разгон.</li><li><b>Бутылка</b> — вес преформы, цена крышки и этикетки, размеры и упаковка.</li><li><b>Склад и паллеты</b> — партии и сроки заказа материалов, тип паллеты.</li><li><b>Расходы и налоги</b> — аренда, маркетинг, подушка, возврат инвестору.</li></ul></div>
+    <div><h3>Что можно менять</h3><ul><li><b>Резюме</b> — чем сценарий отличается от базы и что даёт каждое изменение.</li><li><b>Люди</b> — добавить, убрать, сдвинуть выход, изменить оклад.</li><li><b>Вложения</b> — добавить или убрать строку, поменять сумму, дату и резерв.</li><li><b>Установки</b> — два типа: ТИП-А30 и ТИП-Б130; сколько на старте и партии докупки.</li><li><b>Продажи</b> — план в литрах, доли и цены трёх бутылок, разгон.</li><li><b>Бутылка</b> — вес преформы, цена крышки и этикетки, размеры и упаковка.</li><li><b>Склад и паллеты</b> — партии и сроки заказа материалов, тип паллеты.</li><li><b>Расходы и налоги</b> — аренда, маркетинг, подушка, возврат инвестору.</li></ul></div>
     <div><h3>Дорожки ленты</h3><ul><li><b>Деньги на счёте</b> — остаток по дням. Треугольник сверху — взнос инвестора, число рядом — млн ₽.</li><li><b>Крупные платежи</b> — жёлтые столбики: оборудование; бирюзовые: партии материалов. Высота — размер платежа.</li><li><b>Готовая вода</b> — бутылок на складе: разлито минус продано.</li><li><b>Крышки, преформы, этикетки, паллеты, стрейч-плёнка</b> — «пила»: партия пришла — вверх, розлив — вниз. Пунктир — оплачено, но ещё в пути.</li><li><b>Очистка воды</b> — литров в сутки со всех установок обоих типов.</li><li><b>Люди</b> — кто и с какого по какой месяц работает.</li></ul></div>
     <div><h3>Как считаются деньги</h3><ul><li>Инвестор вносит 1-го числа ровно столько, чтобы в конце месяца на счёте остался неснижаемый остаток.</li><li>Зарплата и взносы — 10-го и 25-го. Аренда — 1-го. Партии материалов — 15-го. Налоги — 28-го.</li><li>Выручка приходит равномерно по дням; часть — в следующем месяце (отсрочка покупателям).</li><li>Материалы попадают в расходы, когда воду разлили, а деньги уходят, когда оплатили партию.</li><li>«Резерв» у строки вложений добавляет к ней процент на непредвиденное; платится в том же месяце.</li><li>Окупаемость — месяц, когда накопленный денежный поток без денег инвестора стал неотрицательным.</li></ul></div>
     <div><h3>Производство и продажи</h3><ul><li>Мощность = сумма по типам (штук × литров в сутки) × коэффициент использования × дни.</li><li>Завод разливает столько, сколько нужно по плану продаж плюс целевой запас, но не больше мощности воды и линии.</li><li>Продано = меньшее из плана и того, что есть на складе с учётом розлива.</li><li>Докупили установки, но не подняли план продаж — мощность простаивает, деньги потрачены зря.</li></ul></div>
@@ -539,7 +600,7 @@
     if (!window.ExcelJS) { toast('Не загрузилась библиотека Excel. Проверьте интернет и обновите страницу.'); return; }
     const btn = $('b-xlsx'); btn.disabled = true;
     try {
-      const b = window.Xls.build(window.ExcelJS, st.s, res, st.journal.slice().reverse()), buf = await b.wb.xlsx.writeBuffer();
+      const sd = summaryData(), b = window.Xls.build(window.ExcelJS, st.s, res, st.journal.slice().reverse(), { kpi: sd.kpi, rows: sd.groups.reduce((a, g) => a.concat([[g.name, 'Раздел целиком', g.dInv, g.dCum]], g.items.map(x => [g.name, x.text, x.dInv, x.dCum])), []) }), buf = await b.wb.xlsx.writeBuffer();
       const fname = 'АРКТИКА_' + st.s.name.replace(/[^0-9A-Za-zА-Яа-яЁё-]+/g, '_') + '.xlsx', blob = new Blob([buf], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
       if (await saveFile(fname, blob)) toast('Файл Excel сохранён');
     } catch (err) { toast(err && err.code === 'declined' ? 'Сохранение отменено' : 'Не удалось сохранить файл' + (err && err.code ? ': ' + err.code : '')); }

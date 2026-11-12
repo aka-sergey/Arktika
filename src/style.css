@@ -147,6 +147,11 @@ tr.cat td{background:var(--sunken);font-weight:600;font-size:12.5px;border-botto
 .pubform{display:flex;flex-wrap:wrap;gap:10px 14px;align-items:flex-end;border:1px solid var(--line);border-radius:6px;padding:12px 14px;background:var(--sunken)}
 .pubform label{display:flex;flex-direction:column;gap:4px;font-family:var(--mono);font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);flex:1;min-width:180px}
 .pubform input{font-family:var(--body);font-size:14px;letter-spacing:0;text-transform:none;color:var(--ink)}
+.sumcards{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:14px;align-items:start}
+.sumcards .grp{padding-bottom:10px} .sumnum{display:flex;gap:22px;padding:4px 0 8px;border-top:1px solid var(--line)} .sumnum small{display:block;font-family:var(--mono);font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-bottom:1px} .sumnum .delta{font-size:17px;font-weight:700}
+.sumcards ul{margin:0;padding-left:18px;display:flex;flex-direction:column;gap:4px;font-size:13px} .sumcards li.more{color:var(--muted);list-style:none;margin-left:-18px}
+details.alld{border:1px solid var(--line);border-radius:6px;padding:0 12px} details.alld summary{cursor:pointer;padding:10px 0;font-family:var(--mono);font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)} details.alld[open] summary{border-bottom:1px solid var(--line);margin-bottom:6px}
+.tops{margin:0;padding-left:22px;display:flex;flex-direction:column;gap:6px;max-width:1000px} .tops li{padding-left:4px} .tops li span{margin-right:10px} .tops li b{white-space:nowrap;font-size:12.5px}
 .panel code{font-family:var(--mono);font-size:12px;background:var(--sunken);padding:1px 5px;border-radius:3px;color:var(--ink)}
 .panel p.bad{color:var(--red)} .panel p b{color:var(--ink)}
 .tl-scroll::-webkit-scrollbar{height:12px} .tl-scroll::-webkit-scrollbar-track{background:var(--sunken)} .tl-scroll::-webkit-scrollbar-thumb{background:var(--muted);border-radius:6px;border:2px solid var(--sunken)}

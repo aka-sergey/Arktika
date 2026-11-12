@@ -3,7 +3,7 @@
   const L = n => { let s = ''; while (n > 0) { const r = (n - 1) % 26; s = String.fromCharCode(65 + r) + s; n = (n - r - 1) / 26; } return s; };
   const FMT = { int: '#,##0', money: '#,##0', pct: '0%', pct1: '0.0%', dec1: '0.0', dec2: '0.00', dec3: '0.000', month: '0', opt: '0', txt: '@' };
   const C = { pri: 'FF00533E', inp: 'FFFFF2CC', tot: 'FFE2EFDA', grey: 'FF6B7770', line: 'FFB7C9C0', err: 'FFF8D7DA', white: 'FFFFFFFF' };
-  function build(ExcelJS, s, res, journal) {
+  function build(ExcelJS, s, res, journal, summary) {
     const S = g.Sim, Meta = g.Meta, N = S.N, p = s.p;
     const wb = new ExcelJS.Workbook(); wb.creator = 'АРКТИКА — бизнес-игра'; wb.calcProperties.fullCalcOnLoad = true;
     const fill = c => ({ type: 'pattern', pattern: 'solid', fgColor: { argb: c } });
@@ -250,6 +250,19 @@
         if (evd[x]) wsD.getCell(L(vals.length + 2) + rr).value = evd[x].join('; '); }
       wsD.getColumn(1).width = 12; for (let k = 2; k <= hd.length - 1; k++) wsD.getColumn(k).width = 18; wsD.getColumn(hd.length).width = 90;
     }
+    /* ---------- резюме: сценарий против базы (значения) ---------- */
+    if (summary && summary.kpi) {
+      const wsR = wb.addWorksheet('Резюме', { views: [{ showGridLines: false }] });
+      put(wsR, 'A1', 'Резюме сценария «' + s.name + '» — что изменено относительно базы и что это даёт', { bold: true, size: 14, color: C.pri });
+      put(wsR, 'A2', 'Значения на момент выгрузки. Эффект каждой строки посчитан отдельно: что было бы, если в базовом плане поменять только её.', { kind: 'note' });
+      ['Показатель', 'База', 'Этот сценарий', 'Разница'].forEach((t, k) => put(wsR, L(k + 1) + 4, t, { kind: 'head' }));
+      summary.kpi.forEach((r, k) => { const rr = 5 + k, num = typeof r[1] === 'number'; put(wsR, 'A' + rr, r[0]); put(wsR, 'B' + rr, num ? Math.round(r[1]) : r[1], { fmt: 'money', h: 'right' }); put(wsR, 'C' + rr, num ? Math.round(r[2]) : r[2], { fmt: 'money', h: 'right', bold: true }); if (num) put(wsR, 'D' + rr, `=C${rr}-B${rr}`, { fmt: '+#,##0;-#,##0;0', h: 'right' }); });
+      const r0 = 5 + summary.kpi.length + 2;
+      ['Раздел', 'Что изменено', 'Бюджет инвестора, Δ ₽', 'Поток к концу 2028, Δ ₽'].forEach((t, k) => put(wsR, L(k + 1) + r0, t, { kind: 'head' }));
+      (summary.rows || []).forEach((r, k) => { const rr = r0 + 1 + k, tot = r[1] === 'Раздел целиком'; put(wsR, 'A' + rr, r[0], { kind: tot ? 'total' : null }); put(wsR, 'B' + rr, r[1], { kind: tot ? 'total' : null, wrap: true }); put(wsR, 'C' + rr, Math.round(r[2]), { fmt: '+#,##0;-#,##0;0', kind: tot ? 'total' : null, h: 'right' }); put(wsR, 'D' + rr, Math.round(r[3]), { fmt: '+#,##0;-#,##0;0', kind: tot ? 'total' : null, h: 'right' }); });
+      if (!(summary.rows || []).length) put(wsR, 'A' + (r0 + 1), 'Сценарий совпадает с базовым планом.', { kind: 'note' });
+      wsR.getColumn(1).width = 44; wsR.getColumn(2).width = 90; wsR.getColumn(3).width = 24; wsR.getColumn(4).width = 26;
+    }
     /* ---------- журнал и справка ---------- */
     const wsJ = wb.addWorksheet('Журнал', { views: [{ showGridLines: false }] });
     put(wsJ, 'A1', 'Журнал изменений сценария «' + s.name + '»', { bold: true, size: 14, color: C.pri });
@@ -268,7 +281,7 @@
     '«Персонал» — список людей: оклад, с какого и по какой месяц работает. «Кейс» берёт отсюда сумму окладов за месяц.',
     '«Вложения» — список покупок и платежей: сумма, месяц, начислять ли резерв 10 % на непредвиденное.', '«Установки» — два типа установок (ТИП-А30 и ТИП-Б130): литры, цена, сколько на старте; ниже — партии докупки по типам.',
     '«Продажи» — план продаж в литрах в месяц; каждая строка задаёт новый уровень с указанного месяца.',
-    '«По дням» — подневные остатки денег и склада (значения, не формулы). «Журнал» — что и когда меняли в игре.',
+    '«По дням» — подневные остатки денег и склада (значения, не формулы). «Журнал» — что и когда меняли в игре.', '«Резюме» — чем сценарий отличается от базового плана и что даёт каждое изменение (значения на момент выгрузки).',
     'ЦВЕТА', 'Жёлтое — ввод. Белое — формулы. Зелёное — итоги. Любую белую ячейку в таблице по месяцам можно перебить фактом.',
     'ГЛАВНЫЕ СТРОКИ', '«Инвестор вносит в этом месяце — план»: сколько внести, чтобы на счёте остался неснижаемый остаток. Столбец «Итого» — общая сумма.',
     '«Накопленный денежный поток (без денег инвестора)»: сколько проект заработал или потратил с первого дня. Стал ≥ 0 — проект окупился.',
