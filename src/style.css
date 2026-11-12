@@ -136,12 +136,30 @@ input[type=checkbox]{accent-color:var(--accent);width:16px;height:16px}
 .panel p{margin:0;color:var(--muted);max-width:75ch}
 .tbl{overflow-x:auto}
 table{border-collapse:collapse;width:100%;font-size:13px}
-th{text-align:left;font-weight:500;color:var(--muted);font-family:var(--mono);font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;padding:6px 8px;border-bottom:1px solid var(--line);white-space:nowrap}
+th,.hd>span{text-align:left;font-weight:500;color:var(--muted);font-family:var(--mono);font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;white-space:nowrap}
+th{padding:6px 8px;border-bottom:1px solid var(--line)} .hd>span{white-space:normal}
 td{padding:4px 8px;border-bottom:1px solid var(--line);vertical-align:middle}
 td.r,th.r{text-align:right} td.r{font-family:var(--mono);font-size:12.5px} td.calc,span.calc{color:var(--muted);white-space:nowrap;font-family:var(--mono);font-size:12.5px}
 td input,td select{width:100%} td input[type=checkbox]{width:auto}
 td.name{min-width:240px;width:60%} td.n{width:1%;white-space:nowrap} td.n .in{justify-content:flex-end} td.n input.num{width:118px} td.n.day input.num{width:88px} td.mo{width:1%} td.mo select{width:136px}
 tfoot td{font-weight:600;border-bottom:0;white-space:nowrap}
+.intro{display:flex;flex-direction:column;gap:8px} .intro>p{max-width:none} .intro .more{display:flex;flex-direction:column;gap:8px;border-left:2px solid var(--line);padding-left:12px}
+.lnk{border:0;background:transparent;padding:0;margin-left:4px;font:inherit;color:var(--water);cursor:pointer;text-decoration:underline dotted;text-underline-offset:3px;white-space:nowrap} .lnk:hover{color:var(--ink)}
+/* название строки — как текст: рамка появляется только при вводе */
+input.ttl{width:100%;border-color:transparent;background:transparent;font-weight:500;color:var(--ink);text-overflow:ellipsis;cursor:text}
+input.ttl:hover{border-color:transparent;background:var(--sunken)}
+input.ttl:focus-visible{background:var(--field);border-color:var(--field-hot)}
+.in>input.ttl:first-child{margin-left:-9px}
+table.cx tr.cat{cursor:pointer} table.cx tr.cat td{border-bottom:2px solid var(--surface)} table.cx tr.cat:hover td{background:var(--field)}
+.catbtn{border:0;background:transparent;padding:2px 0;font:inherit;font-weight:600;color:var(--ink);display:inline-flex;align-items:center;gap:6px;cursor:pointer}
+.catn{margin-left:10px;color:var(--muted);font-weight:400;font-family:var(--mono);font-size:11.5px}
+.dmc{display:inline-flex;align-items:center;gap:5px;margin-left:12px;font-family:var(--mono);font-size:11px;font-weight:500;color:var(--muted)} .dmc::before{content:"";width:8px;height:8px;border-radius:50%;background:var(--accent)}
+table.cx tr.sub td.name{padding-left:28px}
+td.act{white-space:nowrap;text-align:right;width:1%} td.act .in{display:inline-flex;width:auto;vertical-align:middle}
+.rowmenu{position:relative;display:inline-block;width:28px;height:28px;border-radius:6px;flex:0 0 auto} .rowmenu::after{content:"⋯";position:absolute;inset:0;display:grid;place-items:center;color:var(--muted);font-weight:700;pointer-events:none}
+.rowmenu:hover{background:var(--sunken)} .rowmenu:hover::after{color:var(--ink)} .rowmenu:focus-within{box-shadow:0 0 0 2px var(--field-hot)}
+.rowmenu select{position:absolute;inset:0;width:100%;height:100%;opacity:0;cursor:pointer;padding:0}
+.calc.ro{color:var(--ink)}
 .x{border:0;background:transparent;color:var(--muted);font-size:16px;line-height:1;padding:4px 6px;border-radius:6px} .x:hover{color:var(--red);background:var(--red-soft)}
 .fields{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:12px 18px}
 .f{display:flex;flex-direction:column;gap:4px;min-width:0}
@@ -212,7 +230,7 @@ details.alld{border:1px solid var(--line);border-radius:6px;padding:0 12px} deta
 .ccleg{flex-basis:100%;padding:6px 0 0}
 .chartbox{overflow-x:auto;border:1px solid var(--line);border-radius:6px;padding:8px;background:linear-gradient(var(--bg),var(--bg))}
 svg.chart{display:block;width:100%;min-width:640px;height:auto} svg.chart text{font-family:var(--mono);font-size:11px;fill:var(--muted)} svg.chart .t-ink{fill:var(--ink)} svg.chart .t-b{font-weight:600}
-.treemap{position:relative;width:100%;aspect-ratio:100/46;min-height:320px;overflow:hidden;background:var(--bg);border-radius:4px;container-type:inline-size}
+.treemap{position:relative;width:100%;aspect-ratio:100/26;min-height:300px;max-height:360px;overflow:hidden;background:var(--bg);border-radius:4px;container-type:inline-size}
 .tm{position:absolute;box-sizing:border-box;border:1.5px solid var(--bg);border-radius:3px;padding:8px 10px;overflow:hidden;display:flex;flex-direction:column;gap:1px;line-height:1.15;transition:filter .12s}
 .tm:hover{filter:brightness(1.18)}
 .tm b{font-size:12px;font-weight:600;letter-spacing:.02em} .tm em{font-style:normal;font-family:var(--mono);font-weight:700;font-size:15px;white-space:nowrap} .tm span{font-family:var(--mono);font-size:11px;white-space:nowrap;opacity:.85}

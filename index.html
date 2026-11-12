@@ -148,12 +148,30 @@ input[type=checkbox]{accent-color:var(--accent);width:16px;height:16px}
 .panel p{margin:0;color:var(--muted);max-width:75ch}
 .tbl{overflow-x:auto}
 table{border-collapse:collapse;width:100%;font-size:13px}
-th{text-align:left;font-weight:500;color:var(--muted);font-family:var(--mono);font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;padding:6px 8px;border-bottom:1px solid var(--line);white-space:nowrap}
+th,.hd>span{text-align:left;font-weight:500;color:var(--muted);font-family:var(--mono);font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;white-space:nowrap}
+th{padding:6px 8px;border-bottom:1px solid var(--line)} .hd>span{white-space:normal}
 td{padding:4px 8px;border-bottom:1px solid var(--line);vertical-align:middle}
 td.r,th.r{text-align:right} td.r{font-family:var(--mono);font-size:12.5px} td.calc,span.calc{color:var(--muted);white-space:nowrap;font-family:var(--mono);font-size:12.5px}
 td input,td select{width:100%} td input[type=checkbox]{width:auto}
 td.name{min-width:240px;width:60%} td.n{width:1%;white-space:nowrap} td.n .in{justify-content:flex-end} td.n input.num{width:118px} td.n.day input.num{width:88px} td.mo{width:1%} td.mo select{width:136px}
 tfoot td{font-weight:600;border-bottom:0;white-space:nowrap}
+.intro{display:flex;flex-direction:column;gap:8px} .intro>p{max-width:none} .intro .more{display:flex;flex-direction:column;gap:8px;border-left:2px solid var(--line);padding-left:12px}
+.lnk{border:0;background:transparent;padding:0;margin-left:4px;font:inherit;color:var(--water);cursor:pointer;text-decoration:underline dotted;text-underline-offset:3px;white-space:nowrap} .lnk:hover{color:var(--ink)}
+/* название строки — как текст: рамка появляется только при вводе */
+input.ttl{width:100%;border-color:transparent;background:transparent;font-weight:500;color:var(--ink);text-overflow:ellipsis;cursor:text}
+input.ttl:hover{border-color:transparent;background:var(--sunken)}
+input.ttl:focus-visible{background:var(--field);border-color:var(--field-hot)}
+.in>input.ttl:first-child{margin-left:-9px}
+table.cx tr.cat{cursor:pointer} table.cx tr.cat td{border-bottom:2px solid var(--surface)} table.cx tr.cat:hover td{background:var(--field)}
+.catbtn{border:0;background:transparent;padding:2px 0;font:inherit;font-weight:600;color:var(--ink);display:inline-flex;align-items:center;gap:6px;cursor:pointer}
+.catn{margin-left:10px;color:var(--muted);font-weight:400;font-family:var(--mono);font-size:11.5px}
+.dmc{display:inline-flex;align-items:center;gap:5px;margin-left:12px;font-family:var(--mono);font-size:11px;font-weight:500;color:var(--muted)} .dmc::before{content:"";width:8px;height:8px;border-radius:50%;background:var(--accent)}
+table.cx tr.sub td.name{padding-left:28px}
+td.act{white-space:nowrap;text-align:right;width:1%} td.act .in{display:inline-flex;width:auto;vertical-align:middle}
+.rowmenu{position:relative;display:inline-block;width:28px;height:28px;border-radius:6px;flex:0 0 auto} .rowmenu::after{content:"⋯";position:absolute;inset:0;display:grid;place-items:center;color:var(--muted);font-weight:700;pointer-events:none}
+.rowmenu:hover{background:var(--sunken)} .rowmenu:hover::after{color:var(--ink)} .rowmenu:focus-within{box-shadow:0 0 0 2px var(--field-hot)}
+.rowmenu select{position:absolute;inset:0;width:100%;height:100%;opacity:0;cursor:pointer;padding:0}
+.calc.ro{color:var(--ink)}
 .x{border:0;background:transparent;color:var(--muted);font-size:16px;line-height:1;padding:4px 6px;border-radius:6px} .x:hover{color:var(--red);background:var(--red-soft)}
 .fields{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:12px 18px}
 .f{display:flex;flex-direction:column;gap:4px;min-width:0}
@@ -224,7 +242,7 @@ details.alld{border:1px solid var(--line);border-radius:6px;padding:0 12px} deta
 .ccleg{flex-basis:100%;padding:6px 0 0}
 .chartbox{overflow-x:auto;border:1px solid var(--line);border-radius:6px;padding:8px;background:linear-gradient(var(--bg),var(--bg))}
 svg.chart{display:block;width:100%;min-width:640px;height:auto} svg.chart text{font-family:var(--mono);font-size:11px;fill:var(--muted)} svg.chart .t-ink{fill:var(--ink)} svg.chart .t-b{font-weight:600}
-.treemap{position:relative;width:100%;aspect-ratio:100/46;min-height:320px;overflow:hidden;background:var(--bg);border-radius:4px;container-type:inline-size}
+.treemap{position:relative;width:100%;aspect-ratio:100/26;min-height:300px;max-height:360px;overflow:hidden;background:var(--bg);border-radius:4px;container-type:inline-size}
 .tm{position:absolute;box-sizing:border-box;border:1.5px solid var(--bg);border-radius:3px;padding:8px 10px;overflow:hidden;display:flex;flex-direction:column;gap:1px;line-height:1.15;transition:filter .12s}
 .tm:hover{filter:brightness(1.18)}
 .tm b{font-size:12px;font-weight:600;letter-spacing:.02em} .tm em{font-style:normal;font-family:var(--mono);font-weight:700;font-size:15px;white-space:nowrap} .tm span{font-family:var(--mono);font-size:11px;white-space:nowrap;opacity:.85}
@@ -1233,6 +1251,11 @@ svg.chart{display:block;width:100%;min-width:640px;height:auto} svg.chart text{f
   const wrapM = (bind, f, html) => `<span class="in">${markFor(bind, f)}${html}</span>`;
   const monthSel = (id, bind, v) => wrapM(bind, 'month', `<select id="${id}" data-bind="${bind}" data-fmt="month">${MONTHS.map(mm => `<option value="${mm.i}"${mm.i === v ? ' selected' : ''}>${mm.label}</option>`).join('')}</select>`);
   const num = (id, bind, v, f) => wrapM(bind, f, `<input class="num" id="${id}" data-bind="${bind}" data-fmt="${f}" inputmode="decimal" autocomplete="off" value="${esc(show(v, f))}">`);
+  /* вводная строка вкладки: одна строка, остальное по «Подробнее» (держится, пока открыта страница) */
+  const infoOpen = new Set(), cxOpen = new Set();
+  const intro = (lead, more) => { const on = infoOpen.has(st.tab); return `<div class="intro"><p>${lead}${more ? ` <button type="button" class="lnk" data-act="info" aria-expanded="${on}">${on ? 'Свернуть' : 'Подробнее'}</button>` : ''}</p>${more && on ? `<div class="more">${more}</div>` : ''}</div>`; };
+  const plur = (n, a, b, c3) => { const d = n % 10, h = n % 100; return d === 1 && h !== 11 ? a : d >= 2 && d <= 4 && (h < 12 || h > 14) ? b : c3; };
+  const capCats = s => CATS.concat(s.capex.map(x => x.cat || 'Прочее').filter(x => !CATS.includes(x)).filter((x, i, a) => a.indexOf(x) === i));
   const removedChip = L => (DIFF && DIFF.removed[L].length) ? `<span class="rmchip">${dot('revdel:' + L, 'Вернуть убранные строки базы: ' + DIFF.removed[L].map(b => b.name || mLabel(b.month)).join('; '))}убрано ${DIFF.removed[L].length}</span>` : '';
   function pIn(k) { const mt = Meta.by[k], f = mt.fmt, v = st.s.p[k];
     if (f === 'month') return monthSel('p-' + k, 'p:' + k, v);
@@ -1384,26 +1407,25 @@ svg.chart{display:block;width:100%;min-width:640px;height:auto} svg.chart text{f
     const base = {}; spend(upto, BASE_S, BASE).forEach(a => { base[a[0]] = a[2]; }); const baseTot = Object.keys(base).reduce((a, n) => a + base[n], 0);
     const dOf = a => base[a[0]] ? (a[2] - base[a[0]]) / base[a[0]] : 1;
     const colOf = a => { if (!delta) return heatC(Math.log10(Math.max(1, a[2] / tot * 100)) / Math.log10(25)); const d = dOf(a); return Math.abs(d) < 0.0005 ? HNeutral() : mix(HNeutral(), d > 0 ? HR : HG, clamp(Math.abs(d) / 0.10, 0.25, 1)); };
-    const boxes = squarify(items.map(a => ({ n: a[0], g: a[1], v: a[2], a })), 0, 0, 100, 46);
+    const boxes = squarify(items.map(a => ({ n: a[0], g: a[1], v: a[2], a })), 0, 0, 100, 26);
     const groups = {}; items.forEach(a => { groups[a[1]] = (groups[a[1]] || 0) + a[2]; });
     const sgn = d => Math.abs(d) < 0.0005 ? '0 %' : (d > 0 ? '+' : '−') + (Math.abs(d) * 100 < 10 ? (Math.abs(d) * 100).toFixed(1).replace('.', ',') : Math.round(Math.abs(d) * 100)) + ' %';
-    const mx = Math.max(1, ...cf.map(Math.abs));
+    const TMH = 26, anyD = items.some(a => Math.abs(dOf(a)) >= 0.0005);
     return `<h3>Окупаемость: накопленный денежный поток без денег инвестора</h3>
-      <p>Линия показывает, сколько проект потратил и заработал с первого дня. Красная зона — проект должен инвестору; самая глубокая точка — максимум вложенного. Линия пересекла ноль — вложения вернулись. Столбики — денежный поток каждого месяца.</p>
+      ` + intro(`Линия — накопленный поток с первого дня: пересекла ноль — вложения вернулись.`, `<p>Красная зона — проект должен инвестору; самая глубокая точка — максимум вложенного. Столбики — денежный поток каждого месяца; наведите на месяц, чтобы увидеть цифры.</p>`) + `
       <div class="chartbox"><svg viewBox="0 0 ${W} ${H}" class="chart" role="img" aria-label="График окупаемости"><text x="${L - 8}" y="14" text-anchor="end">млн ₽</text>${g}</svg></div>
-      <h3>Денежный поток по месяцам, млн ₽</h3>
-      <div class="chartbox"><div class="strip">${cf.map((v, i) => { const col = mix(HNeutral(), v >= 0 ? HG : HR, clamp(0.25 + 0.75 * Math.sqrt(Math.abs(v) / mx), 0, 1)); return `<div style="background:${rgb(col)};color:${inkOn(col)}" title="${mm_(i)}: ${v < 0 ? '−' : '+'}${mln(Math.abs(v))}"><b>${(v / 1e6).toFixed(Math.abs(v) >= 9.95e6 ? 0 : 1).replace('.', ',').replace('-', '−')}</b><span>${MONTHS[i].short}${MONTHS[i].m === 0 || i === 0 ? ' ' + String(MONTHS[i].y).slice(2) : ''}</span></div>`; }).join('')}</div></div>
       <h3>Куда уходят деньги</h3>
       <p>Площадь плитки — доля в общих тратах. ${delta ? 'Цвет — изменение к базовому сценарию: зелёная плитка стала дешевле, красная — дороже, серая не изменилась.' : 'Цвет — «жар»: чем больше денег съедает статья, тем краснее; мелкие статьи зелёные.'}</p>
       <div class="row"><div class="seg" role="group" aria-label="Период"><button data-act="tm:0" aria-pressed="${!st.tmAll}">Пока вносит инвестор: ${MONTHS[0].label} — ${mLabel(k.lastInvM || N)}</button><button data-act="tm:1" aria-pressed="${!!st.tmAll}">Все 26 месяцев</button></div>
         <div class="seg" role="group" aria-label="Цвет плиток"><button data-act="tmc:heat" aria-pressed="${!delta}">Цвет: размер траты</button><button data-act="tmc:delta" aria-pressed="${delta}">Цвет: изменение к базе</button></div>
         <span class="heatleg">${delta ? 'дешевле' : 'мало'}<i style="background:linear-gradient(90deg,${rgb(HG)},${delta ? rgb(HNeutral()) : rgb(HY)},${rgb(HR)})"></i>${delta ? 'дороже' : 'много'}</span></div>
       <p style="font-family:var(--mono);color:var(--ink)">ВСЕГО ЗА ПЕРИОД: ${mln(tot)}${delta && baseTot ? ' · к базе ' + sgn((tot - baseTot) / baseTot) + ' (' + ((tot - baseTot) >= 0 ? '+' : '−') + mln(Math.abs(tot - baseTot)) + ')' : ''}</p>
-      <div class="treemap">` + boxes.map(b => { const big = b.w > 11 && b.h > 9, mid = b.w > 5.5 && b.h > 4.2, col = colOf(b.it.a), d = dOf(b.it.a);
-        return `<div class="tm ${big ? 'big' : mid ? 'mid' : 'tiny'}" style="left:${b.x.toFixed(3)}%;top:${(b.y / 46 * 100).toFixed(3)}%;width:${Math.min(b.w, 100 - b.x).toFixed(3)}%;height:${(Math.min(b.h, 46 - b.y) / 46 * 100).toFixed(3)}%;background:${rgb(col)};color:${inkOn(col)}" title="${esc(b.it.n)} — ${mln(b.it.v)} · ${(b.it.v / tot * 100).toFixed(1)} % всех трат · к базе ${sgn(d)}">${big || mid ? `<b>${esc(b.it.n)}</b><em style="font-size:min(${big ? 30 : 13}px,${(b.w * 0.19).toFixed(2)}cqw)">${nf1.format(b.it.v / 1e6)} млн</em><span>${delta ? sgn(d) + ' к базе' : Math.round(b.it.v / tot * 100) + ' %'}</span>` : ''}</div>`; }).join('') + `</div>
+      <div class="treemap">` + boxes.map(b => { const big = b.w > 11 && b.h > 7.2, mid = b.w > 5.5 && b.h > 3.6, col = colOf(b.it.a), d = dOf(b.it.a);
+        return `<div class="tm ${big ? 'big' : mid ? 'mid' : 'tiny'}" style="left:${b.x.toFixed(3)}%;top:${(b.y / TMH * 100).toFixed(3)}%;width:${Math.min(b.w, 100 - b.x).toFixed(3)}%;height:${(Math.min(b.h, TMH - b.y) / TMH * 100).toFixed(3)}%;background:${rgb(col)};color:${inkOn(col)}" title="${esc(b.it.n)} — ${mln(b.it.v)} · ${(b.it.v / tot * 100).toFixed(1)} % всех трат · к базе ${sgn(d)}">${big || mid ? `<b>${esc(b.it.n)}</b><em style="font-size:min(${big ? 30 : 13}px,${(b.w * 0.19).toFixed(2)}cqw)">${nf1.format(b.it.v / 1e6)} млн</em><span>${delta ? sgn(d) + ' к базе' : Math.round(b.it.v / tot * 100) + ' %'}</span>` : ''}</div>`; }).join('') + `</div>
       <p style="font-family:var(--mono);font-size:12px">${Object.keys(groups).sort((a, b) => groups[b] - groups[a]).map(n => `${n.toUpperCase()} ${nf1.format(groups[n] / 1e6)} млн · ${Math.round(groups[n] / tot * 100)} %`).join('  |  ')}</p>
-      <div class="tbl"><table><thead><tr><th>№</th><th>Статья</th><th>Группа</th><th class="r">Сумма</th><th class="r">Доля</th><th class="r">Накоплено</th><th class="r">К базе</th></tr></thead><tbody>` +
-        (() => { let acc = 0; return items.map((a, i) => { acc += a[2]; const d = dOf(a); return `<tr><td class="calc">${i + 1}</td><td>${esc(a[0])}</td><td class="calc">${a[1]}</td><td class="r">${mln(a[2])}</td><td class="r calc">${(a[2] / tot * 100).toFixed(1).replace('.', ',')} %</td><td class="r calc">${Math.round(acc / tot * 100)} %</td><td class="r" style="color:${Math.abs(d) < 0.0005 ? 'var(--muted)' : d > 0 ? 'var(--red)' : 'var(--brand)'}">${sgn(d)}</td></tr>`; }).join(''); })() + `</tbody></table></div>`;
+      <div class="row"><button type="button" class="btn sm" data-act="tmtbl" aria-expanded="${!!st.tmTbl}">${st.tmTbl ? 'Скрыть таблицу' : 'Показать таблицу — ' + items.length + ' ' + plur(items.length, 'статья', 'статьи', 'статей')}</button></div>` + (!st.tmTbl ? '' : `
+      <div class="tbl"><table><thead><tr><th>№</th><th>Статья</th><th>Группа</th><th class="r">Сумма</th><th class="r">Доля</th><th class="r">Накоплено</th>${anyD ? '<th class="r">К базе</th>' : ''}</tr></thead><tbody>` +
+        (() => { let acc = 0; return items.map((a, i) => { acc += a[2]; const d = dOf(a); return `<tr><td class="calc">${i + 1}</td><td>${esc(a[0])}</td><td class="calc">${a[1]}</td><td class="r">${mln(a[2])}</td><td class="r calc">${(a[2] / tot * 100).toFixed(1).replace('.', ',')} %</td><td class="r calc">${Math.round(acc / tot * 100)} %</td>${anyD ? `<td class="r" style="color:${Math.abs(d) < 0.0005 ? 'var(--muted)' : d > 0 ? 'var(--red)' : 'var(--brand)'}">${sgn(d)}</td>` : ''}</tr>`; }).join(''); })() + `</tbody></table></div>`);
   }
   const mm_ = i => MONTHS[i].label;
   function panel() {
@@ -1414,29 +1436,33 @@ svg.chart{display:block;width:100%;min-width:640px;height:auto} svg.chart text{f
     if (t === 'people') {
       const cost = e => { let x = 0; for (let i = e.from; i <= e.to; i++) x += e.salary * p.tax_k * ic(i); return x; };
       const fot = g => s.staff.filter(e => e.group === g).reduce((a, e) => a + e.salary, 0);
-      return `<p>Каждый человек — полоска на ленте. Оклад до налогов; взносы добавляются коэффициентом ${show(p.tax_k, 'dec2')} (вкладка «Расходы»). Список — пример: ФОТ разложен по ролям из вашего плана, поправьте оклады под себя.</p>
+      return intro(`Каждый человек — полоска на ленте. Оклад до налогов, взносы считаются сверху.`, `<p>Взносы добавляются коэффициентом ${show(p.tax_k, 'dec2')} (вкладка «Расходы»). Список — пример: ФОТ разложен по ролям из вашего плана, поправьте оклады под себя. Название должности меняется щелчком по нему.</p>`) + `
       <div class="tbl"><table><thead><tr><th>Должность</th><th>Группа</th><th class="r">Оклад, ₽/мес</th><th>Работает с</th><th>по</th><th class="r">Стоит за период</th><th></th></tr></thead><tbody>` +
-        s.staff.map(e => `<tr><td class="name">${wrapM('staff:' + e.id + ':name', 'txt', `<input id="st-${e.id}-name" data-bind="staff:${e.id}:name" value="${esc(e.name)}" title="${esc(e.name)}" maxlength="60">`)}</td><td class="mo">${wrapM('staff:' + e.id + ':group', 'group', `<select id="st-${e.id}-group" data-bind="staff:${e.id}:group" data-fmt="group"><option value="office"${e.group === 'office' ? ' selected' : ''}>Офис</option><option value="prod"${e.group === 'prod' ? ' selected' : ''}>Производство</option></select>`)}</td><td class="n">${num('st-' + e.id + '-salary', 'staff:' + e.id + ':salary', e.salary, 'money')}</td><td class="mo">${monthSel('st-' + e.id + '-from', 'staff:' + e.id + ':from', e.from)}</td><td class="mo">${monthSel('st-' + e.id + '-to', 'staff:' + e.id + ':to', e.to)}</td><td class="r calc">${short(cost(e))} ₽</td><td><button class="x" data-act="del:staff:${e.id}" aria-label="Удалить ${esc(e.name)}">×</button></td></tr>`).join('') +
+        s.staff.map(e => `<tr><td class="name">${wrapM('staff:' + e.id + ':name', 'txt', `<input class="ttl" aria-label="Должность" id="st-${e.id}-name" data-bind="staff:${e.id}:name" value="${esc(e.name)}" title="${esc(e.name)}" maxlength="60">`)}</td><td class="mo">${wrapM('staff:' + e.id + ':group', 'group', `<select id="st-${e.id}-group" data-bind="staff:${e.id}:group" data-fmt="group"><option value="office"${e.group === 'office' ? ' selected' : ''}>Офис</option><option value="prod"${e.group === 'prod' ? ' selected' : ''}>Производство</option></select>`)}</td><td class="n">${num('st-' + e.id + '-salary', 'staff:' + e.id + ':salary', e.salary, 'money')}</td><td class="mo">${monthSel('st-' + e.id + '-from', 'staff:' + e.id + ':from', e.from)}</td><td class="mo">${monthSel('st-' + e.id + '-to', 'staff:' + e.id + ':to', e.to)}</td><td class="r calc">${short(cost(e))} ₽</td><td><button class="x" data-act="del:staff:${e.id}" aria-label="Удалить ${esc(e.name)}">×</button></td></tr>`).join('') +
         `</tbody><tfoot><tr><td>Всего ${s.staff.length} чел.</td><td></td><td class="r">${rub(fot('office') + fot('prod'))}</td><td colspan="2">офис ${short(fot('office'))} · производство ${short(fot('prod'))}</td><td class="r">${mln(k.fotTotal)}</td><td></td></tr></tfoot></table></div>
       <div class="row"><button class="btn" data-act="add:staff">＋ Добавить человека</button>${removedChip('staff')}</div>`;
     }
     if (t === 'capex') {
       const startCost = s.utypes.reduce((a, x) => a + x.start * x.price, 0), amt = x => x.auto ? startCost * 0.5 : (+x.amount || 0);
-      const cats = CATS.concat(s.capex.map(x => x.cat || 'Прочее').filter(x => !CATS.includes(x)).filter((x, i, a) => a.indexOf(x) === i));
-      const rowsOf = cat => s.capex.filter(x => (x.cat || 'Прочее') === cat);
-      return `<p>Каждая строка — отдельный платёж: сумма, месяц и день оплаты. Жёлтые столбики на дорожке «Крупные платежи» можно перетаскивать по месяцам. Строки с нулём — заготовки: впишите сумму, когда узнаете цену.</p>
-      <p><b>Что такое «Резерв».</b> Галочка значит: к этой строке добавить ${show(p.contingency, 'pct')} % сверху на непредвиденное — подорожание, доставку, монтаж, курс. Строка 1 000 000 ₽ с галочкой обойдётся в ${nf0.format(1e6 * (1 + p.contingency))} ₽. Снимайте галочку там, где сумма твёрдая и удорожания не будет: депозит, договор с фиксированной ценой. Сам процент меняется во вкладке «Расходы».</p>
-      <div class="tbl"><table><thead><tr><th>Статья</th><th class="r">Сумма, ₽</th><th>Месяц оплаты</th><th class="r">День</th><th title="Добавить к строке резерв на непредвиденное">Резерв ${show(p.contingency, 'pct')} %</th><th>Раздел</th><th></th></tr></thead>` +
-        cats.filter(cat => rowsOf(cat).length).map(cat => `<tbody><tr class="cat"><td>${esc(cat)}</td><td class="r">${rub(rowsOf(cat).reduce((a, x) => a + amt(x), 0))}</td><td colspan="5"></td></tr>` + rowsOf(cat).map(x => `<tr><td class="name">${wrapM('capex:' + x.id + ':name', 'txt', `<input id="cx-${x.id}-name" data-bind="capex:${x.id}:name" value="${esc(x.name)}" title="${esc(x.name)}" maxlength="110">`)}</td><td class="n">${x.auto ? `<span class="calc" title="Считается: штук на старте × цена типа × 50 % (вкладка «Установки и линия»)">${nf0.format(amt(x))}</span>` : num('cx-' + x.id + '-amount', 'capex:' + x.id + ':amount', x.amount, 'money')}</td><td class="mo">${monthSel('cx-' + x.id + '-month', 'capex:' + x.id + ':month', x.month)}</td><td class="n day">${num('cx-' + x.id + '-day', 'capex:' + x.id + ':day', x.day || 10, 'int')}</td><td>${wrapM('capex:' + x.id + ':reserve', 'bool', `<input type="checkbox" id="cx-${x.id}-reserve" data-bind="capex:${x.id}:reserve" data-fmt="bool"${x.reserve ? ' checked' : ''} aria-label="Добавить резерв на непредвиденное">`)}</td><td class="mo">${wrapM('capex:' + x.id + ':cat', 'txt', `<select id="cx-${x.id}-cat" data-bind="capex:${x.id}:cat" data-fmt="txt">${cats.map(z => `<option${z === (x.cat || 'Прочее') ? ' selected' : ''}>${esc(z)}</option>`).join('')}</select>`)}</td><td>${x.auto ? '' : `<button class="x" data-act="del:capex:${x.id}" aria-label="Удалить">×</button>`}</td></tr>`).join('') + '</tbody>').join('') +
-        `<tfoot><tr><td>Итого по списку</td><td class="r">${rub(s.capex.reduce((a, x) => a + amt(x), 0))}</td><td colspan="5">с резервом и докупкой установок: ${mln(k.capexTotal)}</td></tr></tfoot></table></div>
-      <div class="row"><button class="btn" data-act="add:capex">＋ Добавить строку</button>${removedChip('capex')}</div>`;
+      const cats = capCats(s), rowsOf = cat => s.capex.filter(x => (x.cat || 'Прочее') === cat), used = cats.filter(cat => rowsOf(cat).length);
+      const diffN = x => ['name', 'amount', 'month', 'day', 'reserve', 'cat'].filter(f => markFor('capex:' + x.id + ':' + f, 'txt')).length;
+      const line = x => `<tr class="sub"><td class="name">${wrapM('capex:' + x.id + ':name', 'txt', `<input class="ttl" id="cx-${x.id}-name" data-bind="capex:${x.id}:name" value="${esc(x.name)}" title="${esc(x.name)}" maxlength="110" aria-label="Название статьи">`)}</td><td class="n">${x.auto ? `<span class="calc" title="Считается: штук на старте × цена типа × 50 % (вкладка «Установки и линия»)">${nf0.format(amt(x))}</span>` : num('cx-' + x.id + '-amount', 'capex:' + x.id + ':amount', x.amount, 'money')}</td><td class="mo">${monthSel('cx-' + x.id + '-month', 'capex:' + x.id + ':month', x.month)}</td><td class="n day">${num('cx-' + x.id + '-day', 'capex:' + x.id + ':day', x.day || 10, 'int')}</td><td>${wrapM('capex:' + x.id + ':reserve', 'bool', `<input type="checkbox" id="cx-${x.id}-reserve" data-bind="capex:${x.id}:reserve" data-fmt="bool"${x.reserve ? ' checked' : ''} aria-label="Добавить резерв на непредвиденное">`)}</td>` +
+        `<td class="act">${wrapM('capex:' + x.id + ':cat', 'txt', `<span class="rowmenu" title="Перенести в другой раздел"><select id="cx-${x.id}-cat" data-bind="capex:${x.id}:cat" data-fmt="txt" aria-label="Перенести строку в другой раздел"><optgroup label="Перенести в раздел">${cats.map(z => `<option${z === (x.cat || 'Прочее') ? ' selected' : ''}>${esc(z)}</option>`).join('')}</optgroup></select></span>`)}${x.auto ? '' : `<button class="x" data-act="del:capex:${x.id}" aria-label="Удалить строку" title="Удалить строку">×</button>`}</td></tr>`;
+      return intro('Каждая строка — отдельный платёж. Щёлкните по разделу, чтобы раскрыть его строки.',
+        `<p>Сумма, месяц и день оплаты задаются в строке; название меняется щелчком по нему. Столбики с кружком на дорожке «Крупные платежи» можно перетаскивать по месяцам. Строки с нулём — заготовки: впишите сумму, когда узнаете цену. Кнопка «⋯» в строке переносит её в другой раздел.</p>
+        <p><b>Что такое «Резерв».</b> Галочка значит: к этой строке добавить ${show(p.contingency, 'pct')} % сверху на непредвиденное — подорожание, доставку, монтаж, курс. Строка 1 000 000 ₽ с галочкой обойдётся в ${nf0.format(1e6 * (1 + p.contingency))} ₽. Снимайте галочку там, где сумма твёрдая и удорожания не будет: депозит, договор с фиксированной ценой. Сам процент меняется во вкладке «Расходы».</p>`) +
+        `<div class="tbl"><table class="cx"><thead><tr><th>Статья</th><th class="r">Сумма, ₽</th><th>Месяц оплаты</th><th class="r">День</th><th title="Добавить к строке резерв на непредвиденное">Резерв ${show(p.contingency, 'pct')} %</th><th></th></tr></thead>` +
+        used.map(cat => { const rows = rowsOf(cat), open = cxOpen.has(cat), nd = rows.reduce((a, x) => a + diffN(x), 0);
+          return `<tbody><tr class="cat" data-act="cx:${cats.indexOf(cat)}"><td><button type="button" class="catbtn" aria-expanded="${open}"><span class="chev">${open ? '▾' : '▸'}</span>${esc(cat)}</button><span class="catn">${rows.length} ${plur(rows.length, 'строка', 'строки', 'строк')}</span>${nd ? `<span class="dmc" title="Отличий от базы в разделе: ${nd}. Раскройте раздел, чтобы увидеть их и вернуть">${nd}</span>` : ''}</td><td class="r">${rub(rows.reduce((a, x) => a + amt(x), 0))}</td><td colspan="4"></td></tr>` + (open ? rows.map(line).join('') : '') + '</tbody>'; }).join('') +
+        `<tfoot><tr><td>Итого по списку</td><td class="r">${rub(s.capex.reduce((a, x) => a + amt(x), 0))}</td><td colspan="4">с резервом и докупкой установок: ${mln(k.capexTotal)}</td></tr></tfoot></table></div>
+      <div class="row"><button class="btn" data-act="add:capex">＋ Добавить строку</button><button class="btn" data-act="cxall">${used.every(cat => cxOpen.has(cat)) ? 'Свернуть все разделы' : 'Раскрыть все разделы'}</button>${removedChip('capex')}</div>`;
     }
     if (t === 'units') {
       const bought = id => s.batches.reduce((a, b) => a + (b.type === id ? b.qty : 0), 0);
-      return `<p>Установок два типа. Для каждого задаются литры в сутки, цена и сколько штук стоит на старте. Докупка — партиями: тип, количество, месяц запуска. Кружки «+N» на дорожке «Очистка воды» можно тянуть по месяцам.</p>
+      return intro(`Два типа установок: литры в сутки, цена и штук на старте. Докупка — партиями.`, `<p>Для партии задаются тип, количество и месяц запуска. Кружки «+N» на дорожке «Очистка воды» можно тянуть по месяцам.</p>`) + `
       <h3>Типы установок</h3>
       <div class="tbl"><table><thead><tr><th>Тип</th><th class="r">Литров в сутки с одной</th><th class="r">Цена одной, ₽</th><th class="r">На старте, шт</th><th class="r">Докуплено</th><th class="r">Всего к дек. 2028</th><th class="r">Дают в сутки</th></tr></thead><tbody>` +
-        s.utypes.map(u => `<tr><td class="name">${wrapM('ut:' + u.id + ':name', 'txt', `<input id="ut-${u.id}-name" data-bind="ut:${u.id}:name" value="${esc(u.name)}" maxlength="30">`)}</td><td class="n">${num('ut-' + u.id + '-l', 'ut:' + u.id + ':l', u.l, 'int')}</td><td class="n">${num('ut-' + u.id + '-price', 'ut:' + u.id + ':price', u.price, 'money')}</td><td class="n">${num('ut-' + u.id + '-start', 'ut:' + u.id + ':start', u.start, 'int')}</td><td class="r calc">${bought(u.id)}</td><td class="r calc">${u.start + bought(u.id)}</td><td class="r calc">${pcs((u.start + bought(u.id)) * u.l)} л</td></tr>`).join('') +
+        s.utypes.map(u => `<tr><td class="name">${wrapM('ut:' + u.id + ':name', 'txt', `<input class="ttl" aria-label="Название типа" id="ut-${u.id}-name" data-bind="ut:${u.id}:name" value="${esc(u.name)}" maxlength="30">`)}</td><td class="n">${num('ut-' + u.id + '-l', 'ut:' + u.id + ':l', u.l, 'int')}</td><td class="n">${num('ut-' + u.id + '-price', 'ut:' + u.id + ':price', u.price, 'money')}</td><td class="n">${num('ut-' + u.id + '-start', 'ut:' + u.id + ':start', u.start, 'int')}</td><td class="r calc">${bought(u.id)}</td><td class="r calc">${u.start + bought(u.id)}</td><td class="r calc">${pcs((u.start + bought(u.id)) * u.l)} л</td></tr>`).join('') +
         `</tbody><tfoot><tr><td>Всего</td><td></td><td></td><td class="r">${s.utypes.reduce((a, u) => a + u.start, 0)}</td><td class="r">${s.batches.reduce((a, b) => a + b.qty, 0)}</td><td class="r">${s.utypes.reduce((a, u) => a + u.start + bought(u.id), 0)}</td><td class="r">${pcs(m.startL[last] + m.newL[last])} л</td></tr></tfoot></table></div>
       <h3>Партии докупки</h3><p>Новая мощность сама себя не продаёт: после добавления партии поднимите план продаж кнопкой в строке.</p>
       <div class="tbl"><table><thead><tr><th>Тип</th><th class="r">Штук</th><th>Месяц запуска</th><th class="r">Дают в сутки</th><th class="r">Сумма</th><th></th><th></th></tr></thead><tbody>` +
@@ -1461,13 +1487,13 @@ svg.chart{display:block;width:100%;min-width:640px;height:auto} svg.chart text{f
     }
     if (t === 'bottle') {
       const pr = [p.p03, p.p05, p.p10], cols = ['#EA3943', '#F5822A', '#F0B90B', '#8A94A3'], nm = ['Преформа', 'Крышка', 'Этикетка', 'Упаковка'], mxp = Math.max(1, ...pr);
-      return `<p>Столбик — цена продажи с завода. Красно-жёлтые слои снизу — материалы: преформа, крышка, этикетка, упаковка. Зелёная часть — то, что остаётся на зарплаты, аренду, логистику, налоги и прибыль.</p>
+      return intro(`Столбик — цена продажи с завода: снизу материалы, зелёная часть остаётся вам.`, `<p>Слои снизу — преформа, крышка, этикетка, упаковка. Зелёная часть — то, что остаётся на зарплаты, аренду, логистику, налоги и прибыль. Цена продажи меняется на вкладке «Продажи и цены».</p>`) + `
       <div class="colchart">` + BT.map((b, i) => { const parts = [c.pf[i], c.cap, p.label, p.pack], tot = c.m[i], H = Math.round(240 * pr[i] / mxp);
           return `<div class="cc"><span class="cctop">${pr[i]} ₽</span>${colSvg(parts.map((x, j) => [pr[i] ? x / pr[i] : 0, cols[j], nm[j] + ' ' + nf1.format(x) + ' ₽', nf1.format(x)]).concat([[pr[i] ? Math.max(0, 1 - tot / pr[i]) : 0, 'var(--brand)', 'Остаётся ' + nf1.format(pr[i] - tot) + ' ₽', '<b>остаётся ' + nf1.format(pr[i] - tot) + ' ₽ · ' + (pr[i] ? Math.round((1 - tot / pr[i]) * 100) : 0) + ' %</b>']]), H)}<b>${b[1]}</b><span class="ccsub">материалы ${nf1.format(tot)} ₽</span></div>`; }).join('') +
         `<div class="legend ccleg">${nm.map((x, j) => `<span><i style="background:${cols[j]}"></i>${x}</span>`).join('')}<span><i style="background:var(--brand)"></i>остаётся вам</span></div></div>
       <div class="bcards">` + BT.map((b, i) => { const parts = [c.pf[i], c.cap, p.label, p.pack], tot = c.m[i], pl = c.pal[i];
           return `<article class="bcard solo"><div class="brows"><div class="br"><span><b style="font-family:var(--display);font-weight:500">${b[1]}</b></span><span></span></div>
-          ${brow('Цена продажи с завода, с НДС', bin('p' + b[0]))}${brow('Вес преформы', bin('w' + b[0]))}
+          ${brow('Цена продажи с завода, с НДС', `<span class="calc ro">${nf0.format(pr[i])} ₽</span><button type="button" class="lnk" data-act="tab:sales" title="Цена меняется на вкладке «Продажи и цены»">изменить</button>`)}${brow('Вес преформы', bin('w' + b[0]))}
           ${brow('Диаметр', bin('d' + b[0]))}${brow('Высота', bin('h' + b[0]))}${brow('Штук в упаковке', bin('pk' + b[0]))}
           <div class="bres"><h5>Результат</h5>${brow('Преформа', nf1.format(parts[0]) + ' ₽', cols[0])}${brow('Крышка', nf1.format(parts[1]) + ' ₽', cols[1])}${brow('Этикетка', nf1.format(parts[2]) + ' ₽', cols[2])}${brow('Упаковка', nf1.format(parts[3]) + ' ₽', cols[3])}
           ${brow('<b>Материалы всего</b>', '<b>' + nf1.format(tot) + ' ₽</b>')}${brow('<b>Остаётся</b>', '<b>' + nf1.format(pr[i] - tot) + ' ₽ · ' + (pr[i] ? Math.round((1 - tot / pr[i]) * 100) : 0) + ' %</b>')}
@@ -1477,7 +1503,7 @@ svg.chart{display:block;width:100%;min-width:640px;height:auto} svg.chart text{f
     if (t === 'stock') {
       const sh = [p.sh03, p.sh05, p.sh10], bp = [p.sh03 / 0.3, p.sh05 / 0.5, p.sh10].map(x => c.bpl ? x / c.bpl : 0), pf = s.mats.find(x => x.key === 'pf');
       const alt = S.pallet(Object.assign({}, p, { pal_w: p.pal_w === 800 ? 1000 : 800 })), altName = p.pal_w === 800 ? 'американской 1200 × 1000' : 'европаллете 1200 × 800';
-      return `<p>Материалы покупаются целыми партиями и заранее: заказ покрывает расход на столько месяцев вперёд, сколько указано в столбце «за сколько месяцев». Оплата — 15-го числа месяца заказа. Первая партия крышек едет вместе с линией и приходит в ${mLabel(3)}.</p>
+      return intro(`Материалы покупаются целыми партиями и заранее; оплата — 15-го числа месяца заказа.`, `<p>Заказ покрывает расход на столько месяцев вперёд, сколько указано в столбце «за сколько месяцев». Первая партия крышек едет вместе с линией и приходит в ${mLabel(3)}.</p>`) + `
       <div class="tbl"><table><thead><tr><th>Материал</th><th class="r">Цена</th><th class="r">Партия</th><th class="r">Заказ за сколько месяцев</th><th>Первый заказ</th><th class="r">Транспорт следующих партий, ₽</th><th class="r">Расход в дек. 2028</th><th class="r">Куплено за период</th></tr></thead><tbody>` +
         s.mats.map(mt => `<tr><td><b>${esc(mt.name)}</b></td><td class="r calc">${nf1.format(c.mat[mt.key])} ₽/${mt.unit}</td><td class="n"><span class="in">${num('mt-' + mt.key + '-moq', 'mat:' + mt.key + ':moq', mt.moq, 'int')}<span class="u">${mt.unit}</span></span></td><td class="n">${num('mt-' + mt.key + '-lead', 'mat:' + mt.key + ':lead', mt.lead, 'int')}</td><td class="mo">${monthSel('mt-' + mt.key + '-first', 'mat:' + mt.key + ':first', mt.first)}</td><td class="n">${num('mt-' + mt.key + '-ship', 'mat:' + mt.key + ':ship', mt.ship, 'money')}</td><td class="r calc">${mt.unit === 'кг' ? nf1.format(res.useBy[mt.key][last]) : pcs(res.useBy[mt.key][last])} ${mt.unit}</td><td class="r calc">${pcs(res.ord[mt.key].reduce((a, b) => a + b, 0))} ${mt.unit}</td></tr>`).join('') +
         `</tbody></table></div><p>Партию преформ ${pcs(pf.moq)} шт заказывайте в пропорции продаж: 0,3 л — ${pcs(pf.moq * bp[0])}, 0,5 л — ${pcs(pf.moq * bp[1])}, 1,0 л — ${pcs(pf.moq * bp[2])} шт. В запасах материалов заморожено до ${mln(k.wcMax)}.</p>
@@ -1491,11 +1517,11 @@ svg.chart{display:block;width:100%;min-width:640px;height:auto} svg.chart text{f
     }
     if (t === 'costs') {
       const fixed = (m.rent[last] + m.maint[last] + m.other[last]), varr = m.energy[last] + m.logist[last] + m.returns[last] + m.rev_net[last] * p.mkt_pct;
-      return `<p>Расходы, которые не привязаны к людям и оборудованию. Сгруппированы по тому, от чего зависят.</p>` + fields('costs', { 'Зависят от объёма и выручки': '≈ ' + short(varr) + ' ₽ в месяц на полном ходу', 'Запуск': 'разово ' + short(p.mkt_launch + p.pilots) + ' ₽', 'Постоянные каждый месяц': '≈ ' + short(fixed) + ' ₽ в месяц, без зарплат', 'Индексация и резерв': '' });
+      return intro(`Расходы, которые не привязаны к людям и оборудованию. Сгруппированы по тому, от чего зависят.`) + `` + fields('costs', { 'Зависят от объёма и выручки': '≈ ' + short(varr) + ' ₽ в месяц на полном ходу', 'Запуск': 'разово ' + short(p.mkt_launch + p.pilots) + ' ₽', 'Постоянные каждый месяц': '≈ ' + short(fixed) + ' ₽ в месяц, без зарплат', 'Индексация и резерв': '' });
     }
     if (t === 'money') {
       const lastM = Math.min(N, Math.max(6, k.lastInvM + 1));
-      return `<p>Игра сама считает, сколько инвестору внести в каждом месяце, чтобы на счёте оставался неснижаемый остаток. Когда деньги реально внесены — впишите факт, план пересчитается.</p>
+      return intro(`Игра сама считает взносы инвестора так, чтобы на счёте оставался неснижаемый остаток.`, `<p>Когда деньги реально внесены — впишите факт, план пересчитается.</p>`) + `
       <div class="tbl"><table><thead><tr><th>Месяц</th><th class="r">Внести по плану, ₽</th><th class="r">Уже внесено — факт, ₽</th><th class="r">Внесено накоплено, ₽</th></tr></thead><tbody>` +
         MONTHS.slice(0, lastM).map(mm => `<tr><td>${mm.label}</td><td class="r calc">${m.need[mm.i - 1] > 0 ? nf0.format(m.need[mm.i - 1]) : '—'}</td><td class="n">${num('ct-' + mm.i, 'contrib:' + mm.i, m.contrib[mm.i - 1] || '', 'money')}</td><td class="r calc">${nf0.format(m.inv_cum[mm.i - 1])}</td></tr>`).join('') +
         `</tbody><tfoot><tr><td>Всего</td><td class="r">${rub(m.need.reduce((a, b) => a + b, 0))}</td><td class="r">${rub(m.contrib.reduce((a, b) => a + b, 0))}</td><td class="r">${rub(k.invest)}</td></tr></tfoot></table></div>${fields('tax')}`;
@@ -1503,8 +1529,8 @@ svg.chart{display:block;width:100%;min-width:640px;height:auto} svg.chart text{f
     if (t === 'levers') {
       const rows = LEVERS.map((lv, i) => { const z = clone(s); lv.f(z, levVal(i)); const r = S.sim(z).k; return { i, lv, dCum: r.cumEnd - k.cumEnd, dInv: r.invest - k.invest, pb: r.paybackM, est: r.paybackEst }; }).sort((a, b) => b.dCum - a.dCum);
       const mx = Math.max(1, ...rows.map(r => Math.abs(r.dCum)));
-      return `<p>Что сильнее всего сдвигает результат от текущего сценария. Впишите своё значение — полоса и цифры пересчитаются. Полоса показывает, на сколько изменится накопленный денежный поток к декабрю 2028. «Применить» делает ход, его можно отменить.</p>
-      <div><div class="lever" style="color:var(--muted);font-size:12px"><span>Рычаг</span><span>На сколько</span><span>Накопленный поток к концу 2028</span><span>Бюджет, изменение</span><span>Окупаемость станет</span><span></span></div>` +
+      return intro(`Что сильнее всего сдвигает результат. Впишите своё значение и нажмите «Применить».`, `<p>Полоса показывает, на сколько изменится накопленный денежный поток к декабрю 2028 от текущего сценария. «Применить» делает ход, его можно отменить.</p>`) + `
+      <div><div class="lever hd"><span>Рычаг</span><span>На сколько</span><span>Накопленный поток к концу 2028</span><span>Бюджет, изменение</span><span>Окупаемость станет</span><span></span></div>` +
         rows.map(r => `<div class="lever"><span>${esc(r.lv.a(s))}</span><span class="in">${num('lv-' + r.i, 'lev:' + r.i, levVal(r.i), 'dec1')}<span class="u">${r.lv.u}</span></span><span class="track" title="${(r.dCum >= 0 ? '+' : '−') + mln(Math.abs(r.dCum))}"><i style="${r.dCum >= 0 ? 'left:50%' : 'right:50%'};width:${(Math.abs(r.dCum) / mx * 50).toFixed(1)}%;background:${r.dCum >= 0 ? 'var(--brand)' : 'var(--red)'}"></i></span><span>${(r.dInv >= 0 ? '+' : '−') + mln(Math.abs(r.dInv))}</span><span>${r.pb ? esc(mLabel(r.pb)) : r.est ? '≈ ' + esc(mLabel(r.est)) : 'нет'}</span><button class="btn sm" data-act="lever:${r.i}">Применить</button></div>`).join('') + '</div>';
     }
     if (t === 'scn') {
@@ -1533,7 +1559,7 @@ svg.chart{display:block;width:100%;min-width:640px;height:auto} svg.chart text{f
     }
     if (t === 'journal') {
       return `<p>Каждый ход записывается: что изменили и как это сдвинуло бюджет и окупаемость. Журнал уходит в Excel отдельным листом.</p>` +
-        (st.journal.length ? `<div><div class="jr" style="color:var(--muted);font-size:12px"><span>Когда</span><span>Что изменили</span><span>Бюджет инвестора</span><span>Окупаемость</span></div>` + st.journal.map(j => `<div class="jr"><span>${esc(j.t)}</span><span>${esc(j.text)}</span><span class="delta ${Math.abs(j.dInv) < 1 ? '' : j.dInv < 0 ? 'good' : 'bad'}">${Math.abs(j.dInv) < 1 ? 'без изменений' : (j.dInv > 0 ? '+' : '−') + mln(Math.abs(j.dInv))}</span><span class="delta ${!j.dPb ? '' : j.dPb < 0 ? 'good' : 'bad'}">${!j.dPb ? (j.pbNow && !j.pbWas ? 'появилась' : !j.pbNow && j.pbWas ? 'пропала' : 'та же') : (j.dPb < 0 ? 'раньше на ' + (-j.dPb) : 'позже на ' + j.dPb) + ' мес.'}</span></div>`).join('') + `</div><div class="row"><button class="btn sm" data-act="clearj">Очистить журнал</button></div>` : '<p>Пока ходов нет. Измените что-нибудь — запись появится здесь.</p>');
+        (st.journal.length ? `<div><div class="jr hd"><span>Когда</span><span>Что изменили</span><span>Бюджет инвестора</span><span>Окупаемость</span></div>` + st.journal.map(j => `<div class="jr"><span>${esc(j.t)}</span><span>${esc(j.text)}</span><span class="delta ${Math.abs(j.dInv) < 1 ? '' : j.dInv < 0 ? 'good' : 'bad'}">${Math.abs(j.dInv) < 1 ? 'без изменений' : (j.dInv > 0 ? '+' : '−') + mln(Math.abs(j.dInv))}</span><span class="delta ${!j.dPb ? '' : j.dPb < 0 ? 'good' : 'bad'}">${!j.dPb ? (j.pbNow && !j.pbWas ? 'появилась' : !j.pbNow && j.pbWas ? 'пропала' : 'та же') : (j.dPb < 0 ? 'раньше на ' + (-j.dPb) : 'позже на ' + j.dPb) + ' мес.'}</span></div>`).join('') + `</div><div class="row"><button class="btn sm" data-act="clearj">Очистить журнал</button></div>` : '<p>Пока ходов нет. Измените что-нибудь — запись появится здесь.</p>');
     }
     return RULES;
   }
@@ -1574,6 +1600,7 @@ svg.chart{display:block;width:100%;min-width:640px;height:auto} svg.chart text{f
   document.addEventListener('change', e => {
     const t = e.target, b = t.dataset && t.dataset.bind; if (t.id === 'scn') { if (t.value !== 'cur') loadScn(t.value); return; } if (t.id === 'imp') { importFile(t); return; } if (!b) return;
     const a = b.split(':'), kind = a[0], id = a[1], field = a[2], f = t.dataset.fmt || 'txt', s = st.s;
+    if (kind === 'capex' && field === 'cat') cxOpen.add(t.value);
     let v = t.type === 'checkbox' ? t.checked : (f === 'txt' || f === 'group') ? t.value.trim() : parse(t.value, f);
     if (kind === 'contrib' && t.value.trim() === '') v = 0;
     if (kind === 'lev') { if (v === null) { rerender(); return; } st.lev = st.lev || {}; st.lev[id] = v; persist(); renderTabs(); return; }
@@ -1631,6 +1658,10 @@ svg.chart{display:block;width:100%;min-width:640px;height:auto} svg.chart text{f
       case 'xlsx': xlsx(); break;
       case 'clearj': st.journal = []; persist(); renderTabs(); break;
       case 'tm': st.tmAll = a[1] === '1'; renderTabs(); break;
+      case 'tmtbl': st.tmTbl = !st.tmTbl; renderTabs(); break;
+      case 'info': if (infoOpen.has(st.tab)) infoOpen.delete(st.tab); else infoOpen.add(st.tab); renderTabs(); break;
+      case 'cx': { const cat = capCats(s)[+a[1]]; if (!cat || e.target.closest('input,select')) break; if (cxOpen.has(cat)) cxOpen.delete(cat); else cxOpen.add(cat); renderTabs(); break; }
+      case 'cxall': { const used = capCats(s).filter(cat => s.capex.some(x => (x.cat || 'Прочее') === cat)), all = used.every(cat => cxOpen.has(cat)); used.forEach(cat => { if (all) cxOpen.delete(cat); else cxOpen.add(cat); }); renderTabs(); break; }
       case 'tmc': st.tmCol = a[1]; renderTabs(); break;
       case 'rev': { const kind = a[1], id = a[2], field = a[3], r = baseOf(kind, id, field); if (!r || r.added) break; const f = kind === 'p' ? Meta.by[id].fmt : ({ salary: 'money', amount: 'money', ship: 'money', price: 'money', from: 'month', to: 'month', month: 'month', first: 'month', group: 'group', reserve: 'bool' }[field] || 'int');
         const sh = v => kind === 'p' ? dvP(id, v) : (field === 'name' || field === 'cat') ? v : field === 'type' ? tOf(BASE_S, v).name : disp(v, f);
@@ -1641,7 +1672,7 @@ svg.chart{display:block;width:100%;min-width:640px;height:auto} svg.chart text{f
         else { const it = s[kind].find(x => x.id === id), b = DIFF[kind].get(id); act(`Возврат к базе — ${it.name || 'План продаж'}, ${FLD[field] || field}: ${sh(r.cur)} → ${sh(r.base)}`, () => { it[field] = b[field]; }); }
         break; }
       case 'revadd': { const L = a[1] === 'batch' ? 'batches' : a[1], arr = s[L], it = arr.find(x => x.id === a[2]); if (!it) break; act('Возврат к базе — убрана строка, которой нет в базе: ' + (it.name || (L === 'batches' ? tOf(s, it.type).name + ' ×' + it.qty : 'план с ' + mLabel(it.month))), () => { arr.splice(arr.indexOf(it), 1); }); break; }
-      case 'revdel': { const L = a[1], list = DIFF.removed[L].slice(); if (!list.length) break; act('Возврат к базе — возвращены убранные строки: ' + list.map(b => b.name || mLabel(b.month)).join('; '), () => { list.forEach(b => s[L].push(clone(b))); }); break; }
+      case 'revdel': { const L = a[1], list = DIFF.removed[L].slice(); if (!list.length) break; act('Возврат к базе — возвращены убранные строки: ' + list.map(b => b.name || mLabel(b.month)).join('; '), () => { list.forEach(b => { s[L].push(clone(b)); if (L === 'capex') cxOpen.add(b.cat || 'Прочее'); }); }); break; }
       case 'tok': { const v = ($('ghtok').value || '').trim(); if (!v) { toast('Вставьте токен в поле'); break; } try { localStorage.setItem(TOKKEY, v); } catch (x) { } renderTabs(); toast('Токен сохранён в этом браузере'); break; }
       case 'tokdel': try { localStorage.removeItem(TOKKEY); } catch (x) { } renderTabs(); toast('Токен удалён из браузера'); break;
       case 'pub1': { const n = a.slice(1).join(':'), src = st.saved[n]; if (!src) break; const map = Object.assign({}, shared); map[n] = clone(src); t.disabled = true; publish(map, 'Общий сценарий: ' + n).then(ok => { if (ok) { render(); toast('«' + n + '» опубликован. Остальные увидят его через одну-две минуты.'); } else t.disabled = false; }); break; }
@@ -1655,7 +1686,7 @@ svg.chart{display:block;width:100%;min-width:640px;height:auto} svg.chart text{f
       case 'plancap': { const b = s.batches.find(x => x.id === a[1]); if (!b) break; const mo = Math.max(b.month, p.start_m), cap = Math.round(capAt(s, mo)); act(`План продаж с ${mLabel(mo)} поднят до мощности: ${pcs(cap)} л в месяц`, () => { const ex = s.plan.find(q => q.month === mo); if (ex) ex.liters = cap; else s.plan.push({ id: newId(), month: mo, liters: cap }); }); break; }
       case 'add':
         if (a[1] === 'staff') act('Добавлен сотрудник: Новый сотрудник, 60 000 ₽', () => { s.staff.push({ id: newId(), name: 'Новый сотрудник', group: 'prod', salary: 60000, from: Math.max(1, p.start_m - 1), to: N }); });
-        if (a[1] === 'capex') act('Добавлена строка вложений (сумма пока 0)', () => { s.capex.push({ id: newId(), cat: 'Прочее', name: 'Новая строка', amount: 0, month: 2, day: 10, reserve: true, auto: null }); });
+        if (a[1] === 'capex') { cxOpen.add('Прочее'); } if (a[1] === 'capex') act('Добавлена строка вложений (сумма пока 0)', () => { s.capex.push({ id: newId(), cat: 'Прочее', name: 'Новая строка', amount: 0, month: 2, day: 10, reserve: true, auto: null }); });
         if (a[1] === 'batch') { const u = tOf(s, a[2]); act('Добавлена партия: 10 × ' + u.name + ', запуск ' + mLabel(10), () => { s.batches.push({ id: newId(), type: a[2], qty: 10, month: 10 }); }); }
         if (a[1] === 'plan') { const last = s.plan.slice().sort((x, y) => y.month - x.month)[0], mo = Math.min(N, last.month + 6); act('Добавлен уровень плана продаж с ' + mLabel(mo), () => { s.plan.push({ id: newId(), month: mo, liters: last.liters }); }); }
         break;
