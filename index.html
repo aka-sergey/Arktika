@@ -716,7 +716,7 @@ svg.chart{display:block;width:100%;min-width:640px;height:auto} svg.chart text{f
     put(ws, 'B' + T0, '№ месяца', { kind: 'note' }); put(ws, 'B' + (T0 + 1), 'Месяц', { bold: true }); put(ws, 'B' + (T0 + 2), 'Год', { kind: 'note' }); put(ws, 'D' + (T0 + 1), 'Итого', { kind: 'head', h: 'center' });
     S.MONTHS.forEach(mm => { const c = col(mm.i); put(ws, c + T0, mm.i, { kind: 'note', fmt: 'int', h: 'center' }); put(ws, c + (T0 + 1), mm.label, { kind: 'head', h: 'center' }); put(ws, c + (T0 + 2), mm.y, { kind: 'note', fmt: '0', h: 'center' }); });
     const MROW = T0, YROW = T0 + 2; r = T0 + 3;
-    ws.views = [{ showGridLines: false, state: 'frozen', xSplit: 4, ySplit: T0 + 2 }];
+    ws.views = [{ showGridLines: false, state: 'frozen', xSplit: 4, ySplit: 0 }]; // закреплены только столбцы A–D; строки не закрепляем — лист должен свободно листаться вниз
     const R = {}, M = c => `${c}$${MROW}`, Y = c => `${c}$${YROW}`, MR = `$${CF}$${MROW}:$${CL}$${MROW}`;
     const idc = c => `IF(${M(c)}>=${P.idx_m},1+${P.cost_idx},1)`, idp = c => `IF(${M(c)}>=${P.idx_m},1+${P.price_idx},1)`;
     const row = (key, label, unit, fn, fmt, kind, total) => { R[key] = r; put(ws, 'B' + r, label, { kind: kind === 'total' ? 'total' : null }); put(ws, 'C' + r, unit, { kind: kind === 'total' ? 'total' : 'note', h: 'center' });
