@@ -144,6 +144,7 @@ tr.cat td{background:var(--sunken);font-weight:600;font-size:12.5px;border-botto
 .brows{display:flex;flex-direction:column;min-width:0}
 .br{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,150px);gap:10px;align-items:center;padding:5px 0;border-top:1px solid var(--line);font-size:13px}
 .br:first-child{border-top:0} .br>span:last-child{text-align:right} .br i{display:inline-block;width:9px;height:9px;border-radius:2px;margin-right:6px}
+.panel code{font-family:var(--mono);font-size:12px;background:var(--sunken);padding:1px 5px;border-radius:3px;color:var(--ink)}
 .panel p.bad{color:var(--red)} .panel p b{color:var(--ink)}
 .tl-scroll::-webkit-scrollbar{height:12px} .tl-scroll::-webkit-scrollbar-track{background:var(--sunken)} .tl-scroll::-webkit-scrollbar-thumb{background:var(--muted);border-radius:6px;border:2px solid var(--sunken)}
 @supports not selector(::-webkit-scrollbar){ .tl-scroll{scrollbar-color:var(--muted) var(--sunken)} }

@@ -156,6 +156,7 @@ tr.cat td{background:var(--sunken);font-weight:600;font-size:12.5px;border-botto
 .brows{display:flex;flex-direction:column;min-width:0}
 .br{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,150px);gap:10px;align-items:center;padding:5px 0;border-top:1px solid var(--line);font-size:13px}
 .br:first-child{border-top:0} .br>span:last-child{text-align:right} .br i{display:inline-block;width:9px;height:9px;border-radius:2px;margin-right:6px}
+.panel code{font-family:var(--mono);font-size:12px;background:var(--sunken);padding:1px 5px;border-radius:3px;color:var(--ink)}
 .panel p.bad{color:var(--red)} .panel p b{color:var(--ink)}
 .tl-scroll::-webkit-scrollbar{height:12px} .tl-scroll::-webkit-scrollbar-track{background:var(--sunken)} .tl-scroll::-webkit-scrollbar-thumb{background:var(--muted);border-radius:6px;border:2px solid var(--sunken)}
 @supports not selector(::-webkit-scrollbar){ .tl-scroll{scrollbar-color:var(--muted) var(--sunken)} }
@@ -919,6 +920,31 @@ svg.chart{display:block;width:100%;min-width:640px;height:auto} svg.chart text{f
     persist(); setTimeout(rerender, 0);
   }
   function rerender() { const a = document.activeElement, fid = a && a.id; render(); if (fid) { const e = $(fid); if (e && e.focus) e.focus(); } }
+  /* ---------- общие сценарии: файл scenarios.json рядом со страницей видят все, кто открыл ссылку ---------- */
+  let shared = {}, sharedAt = '', shareUrl = '';
+  const IN_CLAUDE = !!(window.claude && window.claude.use), TOKKEY = 'vodaGame.ghToken';
+  const GH = (() => { const m = /^([^.]+)\.github\.io$/.exec(location.hostname), seg = location.pathname.split('/').filter(Boolean)[0]; return (m && seg) ? { owner: m[1], repo: seg } : { owner: 'aka-sergey', repo: 'Arktika' }; })();
+  const getTok = () => { try { return localStorage.getItem(TOKKEY) || ''; } catch (e) { return ''; } };
+  const b64 = bytes => { let s = ''; for (let i = 0; i < bytes.length; i += 0x8000) s += String.fromCharCode.apply(null, bytes.subarray(i, i + 0x8000)); return btoa(s); };
+  const unb64 = t => { const s = atob(t), a = new Uint8Array(s.length); for (let i = 0; i < s.length; i++) a[i] = s.charCodeAt(i); return a; };
+  const scnFile = map => JSON.stringify({ version: 1, updated: new Date().toISOString(), scenarios: map }, null, 1);
+  function readScnFile(j) { const out = {}; const src = j && j.scenarios ? j.scenarios : {}; Object.keys(src).forEach(n => { const s = src[n]; if (s && s.p && s.staff && s.capex && s.mats) { try { out[n] = migrate(clone(s)); out[n].name = n; } catch (e) { } } }); return out; }
+  function loadShared() { fetch('scenarios.json?t=' + Date.now()).then(r => r.ok ? r.json() : null).then(j => { if (!j) return; shared = readScnFile(j); sharedAt = j.updated || ''; renderHeader(); if (st.tab === 'scn') renderTabs(); }).catch(() => { }); }
+  async function publish(map, msg) { // запись scenarios.json в репозиторий через GitHub API; токен хранится только в браузере владельца
+    const tok = getTok(); if (!tok) { toast('Сначала вставьте токен GitHub в поле ниже и нажмите «Запомнить»'); return false; }
+    const api = `https://api.github.com/repos/${GH.owner}/${GH.repo}/contents/scenarios.json`, H = { Authorization: 'Bearer ' + tok, Accept: 'application/vnd.github+json' };
+    try { let sha; const g = await fetch(api, { headers: H }); if (g.status === 200) sha = (await g.json()).sha; else if (g.status === 401 || g.status === 403) { toast('GitHub не принял токен: проверьте срок действия и право Contents: Read and write'); return false; }
+      const body = { message: msg, content: b64(new TextEncoder().encode(scnFile(map))) }; if (sha) body.sha = sha;
+      const r = await fetch(api, { method: 'PUT', headers: H, body: JSON.stringify(body) }); if (!r.ok) { toast('Не удалось опубликовать: GitHub ответил ' + r.status); return false; }
+      shared = readScnFile({ scenarios: map }); sharedAt = new Date().toISOString(); return true;
+    } catch (e) { toast('Нет связи с GitHub'); return false; }
+  }
+  async function pack(s) { const bytes = new TextEncoder().encode(JSON.stringify(s)); if (window.CompressionStream) { const z = new Uint8Array(await new Response(new Blob([bytes]).stream().pipeThrough(new CompressionStream('deflate-raw'))).arrayBuffer()); return 'z' + b64(z).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, ''); } return 'j' + b64(bytes).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, ''); }
+  async function unpack(t) { const bytes = unb64(t.slice(1).replace(/-/g, '+').replace(/_/g, '/')); if (t[0] === 'z') return JSON.parse(new TextDecoder().decode(await new Response(new Blob([bytes]).stream().pipeThrough(new DecompressionStream('deflate-raw'))).arrayBuffer())); return JSON.parse(new TextDecoder().decode(bytes)); }
+  async function saveFile(filename, blob) { // вне Claude — обычное скачивание, внутри — через разрешение на сохранение
+    if (!IN_CLAUDE) { const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = filename; document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 4000); return true; }
+    const dl = await window.claude.use('downloads'); if (!dl) { toast('Скачивание недоступно в этом окне'); return false; } await dl.save({ filename, data: blob }); return true; }
+  function openFromHash() { const h = location.hash || ''; if (h.indexOf('#s=') !== 0) return; unpack(h.slice(3)).then(s => { if (!(s && s.p && s.staff && s.capex && s.mats)) throw 0; undo.push(JSON.stringify({ s: st.s, journal: st.journal })); st.s = migrate(s); st.journal = []; res = S.sim(st.s); try { history.replaceState(null, '', location.pathname + location.search); } catch (e) { } afterChange(); toast('Открыт сценарий из ссылки: «' + st.s.name + '». Чтобы оставить его у себя — «Сохранить сценарий».'); }).catch(() => toast('Ссылка на сценарий повреждена')); }
   let toastT = 0; const toast = t => { const e = $('toast'); e.textContent = t; e.hidden = false; clearTimeout(toastT); toastT = setTimeout(() => { e.hidden = true; }, 3600); };
 
   /* ---------- цвета «тепловой карты»: зелёный → жёлтый → красный ---------- */
@@ -1280,10 +1306,20 @@ svg.chart{display:block;width:100%;min-width:640px;height:auto} svg.chart text{f
         rows.map(r => `<div class="lever"><span>${esc(r.lv.a(s))}</span><span class="in">${num('lv-' + r.i, 'lev:' + r.i, levVal(r.i), 'dec1')}<span class="u">${r.lv.u}</span></span><span class="track" title="${(r.dCum >= 0 ? '+' : '−') + mln(Math.abs(r.dCum))}"><i style="${r.dCum >= 0 ? 'left:50%' : 'right:50%'};width:${(Math.abs(r.dCum) / mx * 50).toFixed(1)}%;background:${r.dCum >= 0 ? 'var(--brand)' : 'var(--red)'}"></i></span><span>${(r.dInv >= 0 ? '+' : '−') + mln(Math.abs(r.dInv))}</span><span>${r.pb ? esc(mLabel(r.pb)) : r.est ? '≈ ' + esc(mLabel(r.est)) : 'нет'}</span><button class="btn sm" data-act="lever:${r.i}">Применить</button></div>`).join('') + '</div>';
     }
     if (t === 'scn') {
-      const all = [['База (исходные цифры)', BASE.k], ['Сейчас на экране: ' + s.name, k]].concat(Object.keys(st.saved).map(n => [n, S.sim(st.saved[n]).k]));
-      return `<p>Сохраняйте варианты под именами кнопкой «Сохранить сценарий» наверху и сравнивайте их здесь. Сценарии хранятся в этом браузере — у каждого участника свои.</p>
-      <div class="tbl"><table><thead><tr><th>Сценарий</th><th class="r">Вносит инвестор</th><th>Окупаемость</th><th class="r">Прибыль 2028</th><th class="r">Минимум на счёте</th><th class="r">Людей</th></tr></thead><tbody>` +
-        all.map(a => `<tr><td>${esc(a[0])}</td><td class="r">${mln(a[1].invest)}</td><td>${a[1].paybackM ? esc(mLabel(a[1].paybackM)) : a[1].paybackEst ? '≈ ' + esc(mLabel(a[1].paybackEst)) : 'нет'}</td><td class="r">${mln(a[1].profit28)}</td><td class="r">${short(a[1].minCash)} ₽</td><td class="r">${a[1].headMax}</td></tr>`).join('') + '</tbody></table></div>';
+      const row = (n, kk, btns) => `<tr><td>${esc(n)}</td><td class="r">${mln(kk.invest)}</td><td>${kk.paybackM ? esc(mLabel(kk.paybackM)) : kk.paybackEst ? '≈ ' + esc(mLabel(kk.paybackEst)) : 'нет'}</td><td class="r">${mln(kk.profit28)}</td><td class="r">${short(kk.minCash)} ₽</td><td class="r">${kk.headMax}</td><td style="white-space:nowrap">${btns}</td></tr>`;
+      const head = '<thead><tr><th>Сценарий</th><th class="r">Вносит инвестор</th><th>Окупаемость</th><th class="r">Прибыль 2028</th><th class="r">Минимум на счёте</th><th class="r">Людей</th><th></th></tr></thead>';
+      const pub = Object.keys(shared), mine = Object.keys(st.saved), tok = getTok();
+      return `<h3>Общие сценарии — видят все, кто открыл ссылку</h3>
+      <p>Лежат в файле <code>scenarios.json</code> рядом со страницей. Любой посетитель может открыть общий сценарий и играть от него; его правки остаются только у него.${sharedAt ? ' Обновлено: ' + esc(new Date(sharedAt).toLocaleString('ru-RU')) + '.' : ''}</p>
+      <div class="tbl"><table>${head}<tbody>` + (pub.length ? pub.map(n => row(n, S.sim(shared[n]).k, `<button class="btn sm" data-act="open:pub:${esc(n)}">Открыть</button>${!IN_CLAUDE && tok ? ` <button class="btn sm" data-act="unpub:${esc(n)}">Убрать из общих</button>` : ''}`)).join('') : '<tr><td colspan="7" class="calc">Общих сценариев пока нет.</td></tr>') + `</tbody></table></div>
+      <h3>Мои сценарии — только в этом браузере</h3>
+      <div class="tbl"><table>${head}<tbody>${row('База (исходные цифры)', BASE.k, '<button class="btn sm" data-act="open:База">Открыть</button>')}${row('Сейчас на экране: ' + s.name, k, '')}` + mine.map(n => row(n, S.sim(st.saved[n]).k, `<button class="btn sm" data-act="open:my:${esc(n)}">Открыть</button>${!IN_CLAUDE ? ` <button class="btn sm" data-act="pub1:${esc(n)}">Сделать общим</button>` : ''}`)).join('') + `</tbody></table></div>
+      <div class="row"><button class="btn" data-act="expscn">Скачать мои сценарии файлом</button><button class="btn" data-act="impscn">Загрузить сценарии из файла</button><input type="file" id="imp" accept=".json,application/json" hidden>${IN_CLAUDE ? '' : '<button class="btn" data-act="sharelink">Ссылка на сценарий с экрана</button>'}</div>
+      ${shareUrl ? `<div class="row"><input id="shareurl" readonly value="${esc(shareUrl)}" style="flex:1;min-width:0;font-family:var(--mono);font-size:12px" aria-label="Ссылка на сценарий"><span style="color:var(--muted)">Отправьте ссылку — у получателя откроется этот сценарий.</span></div>` : ''}
+      ` + (IN_CLAUDE ? '<p>Публиковать общие сценарии можно со страницы на GitHub Pages. Здесь, внутри Claude, доступны просмотр общих, скачивание и загрузка файлом.</p>' : `<h3>Публикация общих сценариев — только для владельца</h3>
+      <p>Кнопка «Сделать общим» записывает сценарий в <code>scenarios.json</code> репозитория <b>${esc(GH.owner)}/${esc(GH.repo)}</b>. Для этого нужен токен GitHub с правом записи в этот репозиторий. Токен хранится только в этом браузере и никуда, кроме GitHub, не отправляется. После публикации сайт обновляется за одну-две минуты.</p>
+      <div class="row"><input id="ghtok" type="password" autocomplete="off" placeholder="Токен GitHub (github_pat_…)" style="flex:1;min-width:220px;max-width:460px" aria-label="Токен GitHub"><button class="btn" data-act="tok">Запомнить</button>${tok ? '<button class="btn" data-act="tokdel">Забыть токен</button><span class="delta good">токен сохранён в этом браузере</span>' : '<span class="delta">токена нет — публикация недоступна</span>'}</div>
+      <p>Без токена тоже можно: «Скачать мои сценарии файлом», переименовать файл в <code>scenarios.json</code> и загрузить в репозиторий через «Add file → Upload files».</p>`);
     }
     if (t === 'journal') {
       return `<p>Каждый ход записывается: что изменили и как это сдвинуло бюджет и окупаемость. Журнал уходит в Excel отдельным листом.</p>` +
@@ -1307,9 +1343,12 @@ svg.chart{display:block;width:100%;min-width:640px;height:auto} svg.chart text{f
     $('panel').innerHTML = panel();
   }
   function renderHeader() {
-    const names = Object.keys(st.saved), cur = st.s.name, known = cur === 'База' || names.includes(cur);
-    $('scn').innerHTML = `<option value="База"${cur === 'База' ? ' selected' : ''}>База (исходные цифры)</option>` + names.map(n => `<option value="${esc(n)}"${n === cur ? ' selected' : ''}>${esc(n)}</option>`).join('') + (known ? '' : `<option value="${esc(cur)}" selected>${esc(cur)}</option>`);
-    $('b-undo').disabled = !undo.length; $('b-del').disabled = !names.includes(cur);
+    const names = Object.keys(st.saved), pub = Object.keys(shared), cur = st.s.name, mine = names.includes(cur), isPub = !mine && pub.includes(cur), known = cur === 'База' || mine || isPub;
+    $('scn').innerHTML = `<option value="База"${cur === 'База' ? ' selected' : ''}>База (исходные цифры)</option>` +
+      (pub.length ? `<optgroup label="Общие — видят все">${pub.map(n => `<option value="pub:${esc(n)}"${isPub && n === cur ? ' selected' : ''}>${esc(n)}</option>`).join('')}</optgroup>` : '') +
+      (names.length ? `<optgroup label="Мои — только в этом браузере">${names.map(n => `<option value="my:${esc(n)}"${mine && n === cur ? ' selected' : ''}>${esc(n)}</option>`).join('')}</optgroup>` : '') +
+      (known ? '' : `<option value="cur" selected>${esc(cur)} (не сохранён)</option>`);
+    $('b-undo').disabled = !undo.length; $('b-del').disabled = !mine;
   }
   function render() { renderHeader(); renderScore(); renderTimeline(); renderTabs(); }
 
@@ -1317,7 +1356,7 @@ svg.chart{display:block;width:100%;min-width:640px;height:auto} svg.chart text{f
   const LIST = { staff: 'staff', capex: 'capex', batch: 'batches', plan: 'plan' };
   const FLD = { type: 'тип', cat: 'раздел', start: 'штук на старте', name: 'название', group: 'группа', salary: 'оклад', from: 'работает с', to: 'работает по', amount: 'сумма', month: 'месяц', day: 'день оплаты', reserve: 'резерв', qty: 'штук', l: 'литров в сутки', price: 'цена', liters: 'план, л в месяц', moq: 'партия', lead: 'заказ за месяцев', first: 'первый заказ', ship: 'транспорт партии' };
   document.addEventListener('change', e => {
-    const t = e.target, b = t.dataset && t.dataset.bind; if (t.id === 'scn') { loadScn(t.value); return; } if (!b) return;
+    const t = e.target, b = t.dataset && t.dataset.bind; if (t.id === 'scn') { if (t.value !== 'cur') loadScn(t.value); return; } if (t.id === 'imp') { importFile(t); return; } if (!b) return;
     const a = b.split(':'), kind = a[0], id = a[1], field = a[2], f = t.dataset.fmt || 'txt', s = st.s;
     let v = t.type === 'checkbox' ? t.checked : (f === 'txt' || f === 'group') ? t.value.trim() : parse(t.value, f);
     if (kind === 'contrib' && t.value.trim() === '') v = 0;
@@ -1334,18 +1373,18 @@ svg.chart{display:block;width:100%;min-width:640px;height:auto} svg.chart text{f
     const who = kind === 'staff' ? (it.name || 'Сотрудник') : kind === 'capex' ? '«' + it.name + '»' : kind === 'batch' ? 'Партия ' + tOf(s, it.type).name + ' ×' + it.qty : 'План продаж с ' + mLabel(it.month), dz = x => field === 'type' ? tOf(s, x).name : disp(x, f);
     act(field === 'name' ? `Переименовано: ${old} → ${v}` : `${who}, ${FLD[field]}: ${dz(old)} → ${dz(v)}`, () => { it[field] = v; });
   });
-  function loadScn(name) { const src = name === 'База' ? BASE_S : st.saved[name]; if (!src) return; undo.push(JSON.stringify({ s: st.s, journal: st.journal })); st.s = migrate(clone(src)); st.s.name = name; st.journal = []; res = S.sim(st.s); afterChange(); toast('Открыт сценарий «' + name + '»'); }
+  function loadScn(val) { const pub = val.indexOf('pub:') === 0, name = val.replace(/^(pub|my):/, ''), src = name === 'База' && !pub && val === 'База' ? BASE_S : pub ? shared[name] : st.saved[name]; if (!src) return;
+    undo.push(JSON.stringify({ s: st.s, journal: st.journal })); st.s = migrate(clone(src)); st.s.name = name; st.journal = []; res = S.sim(st.s); afterChange(); toast('Открыт сценарий «' + name + '»' + (pub ? ' из общих' : '')); }
+  function importFile(inp) { const f = inp.files && inp.files[0]; if (!f) return; const rd = new FileReader();
+    rd.onload = () => { try { const map = readScnFile(JSON.parse(rd.result)), n = Object.keys(map); if (!n.length) throw 0; n.forEach(k => { st.saved[k] = map[k]; }); persist(); render(); toast('Загружено сценариев: ' + n.length + '. Они в списке «Мои».'); } catch (e) { toast('В файле нет сценариев этой игры'); } inp.value = ''; };
+    rd.readAsText(f); }
   async function xlsx() {
     if (!window.ExcelJS) { toast('Не загрузилась библиотека Excel. Проверьте интернет и обновите страницу.'); return; }
     const btn = $('b-xlsx'); btn.disabled = true;
     try {
       const b = window.Xls.build(window.ExcelJS, st.s, res, st.journal.slice().reverse()), buf = await b.wb.xlsx.writeBuffer();
       const fname = 'АРКТИКА_' + st.s.name.replace(/[^0-9A-Za-zА-Яа-яЁё-]+/g, '_') + '.xlsx', blob = new Blob([buf], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
-      if (!(window.claude && window.claude.use)) { // страница открыта вне Claude (GitHub Pages, файл с диска): обычное скачивание браузером
-        const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = fname; document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 4000); toast('Файл Excel скачан'); return; }
-      const dl = await window.claude.use('downloads');
-      if (!dl) { toast('Скачивание недоступно в этом окне. Откройте страницу в Claude.'); return; }
-      await dl.save({ filename: fname, data: blob }); toast('Файл Excel сохранён');
+      if (await saveFile(fname, blob)) toast('Файл Excel сохранён');
     } catch (err) { toast(err && err.code === 'declined' ? 'Сохранение отменено' : 'Не удалось сохранить файл' + (err && err.code ? ': ' + err.code : '')); }
     finally { btn.disabled = false; }
   }
@@ -1359,6 +1398,7 @@ svg.chart{display:block;width:100%;min-width:640px;height:auto} svg.chart text{f
       case 'pan': { const sc = $('tl-scroll'); stopPlay(); sc.scrollBy({ left: +a[1] * sc.clientWidth * 0.8, behavior: 'smooth' }); break; }
       case 'undo': if (undo.length) { const o = JSON.parse(undo.pop()); st.s = o.s; st.journal = o.journal; res = S.sim(st.s); persist(); render(); toast('Ход отменён'); } break;
       case 'reset': loadScn('База'); break;
+      case 'open': loadScn(a.slice(1).join(':')); break;
       case 'save': $('savebox').hidden = false; $('b-save').hidden = true; $('scnname').value = s.name === 'База' ? '' : s.name; $('scnname').focus(); break;
       case 'savecancel': $('savebox').hidden = true; $('b-save').hidden = false; break;
       case 'saveok': { const n = $('scnname').value.trim(); if (!n || n === 'База') { toast('Дайте сценарию своё название'); break; } s.name = n; st.saved[n] = clone(s); $('savebox').hidden = true; $('b-save').hidden = false; if (st.best && res.k.paybackM && Math.abs(st.best.invest - res.k.invest) < 1) st.best.name = n; persist(); render(); toast('Сценарий «' + n + '» сохранён'); break; }
@@ -1367,6 +1407,13 @@ svg.chart{display:block;width:100%;min-width:640px;height:auto} svg.chart text{f
       case 'clearj': st.journal = []; persist(); renderTabs(); break;
       case 'tm': st.tmAll = a[1] === '1'; renderTabs(); break;
       case 'tmc': st.tmCol = a[1]; renderTabs(); break;
+      case 'tok': { const v = ($('ghtok').value || '').trim(); if (!v) { toast('Вставьте токен в поле'); break; } try { localStorage.setItem(TOKKEY, v); } catch (x) { } renderTabs(); toast('Токен сохранён в этом браузере'); break; }
+      case 'tokdel': try { localStorage.removeItem(TOKKEY); } catch (x) { } renderTabs(); toast('Токен удалён из браузера'); break;
+      case 'pub1': { const n = a.slice(1).join(':'), src = st.saved[n]; if (!src) break; const map = Object.assign({}, shared); map[n] = clone(src); t.disabled = true; publish(map, 'Общий сценарий: ' + n).then(ok => { if (ok) { render(); toast('«' + n + '» опубликован. Остальные увидят его через одну-две минуты.'); } else t.disabled = false; }); break; }
+      case 'unpub': { const n = a.slice(1).join(':'), map = Object.assign({}, shared); delete map[n]; t.disabled = true; publish(map, 'Убран общий сценарий: ' + n).then(ok => { if (ok) { render(); toast('«' + n + '» убран из общих'); } else t.disabled = false; }); break; }
+      case 'expscn': { const map = Object.assign({}, st.saved); if (!Object.keys(map).length) { toast('Сначала сохраните хотя бы один сценарий'); break; } saveFile('scenarios.json', new Blob([scnFile(map)], { type: 'application/json' })).then(ok => { if (ok) toast('Файл со сценариями сохранён'); }).catch(() => toast('Сохранение отменено')); break; }
+      case 'impscn': $('imp').click(); break;
+      case 'sharelink': pack(st.s).then(code => { shareUrl = location.origin + location.pathname + '#s=' + code; renderTabs(); const inp = $('shareurl'); if (inp) { inp.focus(); inp.select(); } if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(shareUrl).then(() => toast('Ссылка скопирована'), () => toast('Ссылка в поле ниже — скопируйте её')); else toast('Ссылка в поле ниже — скопируйте её'); }); break;
       case 'lever': { const i = +a[1], v = levVal(i); if (!v) { toast('Впишите значение рычага'); break; } act('Рычаг: ' + levText(i, s), z => LEVERS[i].f(z, v)); break; }
       case 'plancap': { const b = s.batches.find(x => x.id === a[1]); if (!b) break; const mo = Math.max(b.month, p.start_m), cap = Math.round(capAt(s, mo)); act(`План продаж с ${mLabel(mo)} поднят до мощности: ${pcs(cap)} л в месяц`, () => { const ex = s.plan.find(q => q.month === mo); if (ex) ex.liters = cap; else s.plan.push({ id: newId(), month: mo, liters: cap }); }); break; }
       case 'add':
@@ -1381,7 +1428,7 @@ svg.chart{display:block;width:100%;min-width:640px;height:auto} svg.chart text{f
     }
   });
   document.addEventListener('keydown', e => { if (e.key === 'Enter' && e.target.matches && e.target.matches('input[data-bind]')) e.target.blur(); if (e.key === 'Enter' && e.target.id === 'scnname') document.querySelector('[data-act="saveok"]').click(); });
-  initTimelineEvents(); render();
+  initTimelineEvents(); render(); loadShared(); openFromHash();
   if (document.fonts && document.fonts.ready) document.fonts.ready.then(renderTimeline);
 })();
 
