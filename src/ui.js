@@ -82,7 +82,7 @@
       .then(r => r.json().then(j => [r.status, j])).then(a => { btn.disabled = false; const j = a[1];
         if (!j.ok) { toast(j.error === 'bad_code' ? 'Неверный код команды' : j.error === 'too_large' ? 'Сценарий слишком большой' : 'Не удалось опубликовать (' + (j.error || a[0]) + ')'); return; }
         st.s.web = j.id; pubUrl = location.origin + location.pathname + '#id=' + j.id; st.tab = 'scn'; persist(); $('savebox').hidden = true; $('b-save').hidden = false;
-        loadRemote(() => { render(); const i = $('puburl'); if (i) { i.scrollIntoView({ block: 'center' }); i.focus(); i.select(); } }); toast('Опубликовано. Сценарий «' + name + '» теперь видят все.'); })
+        loadRemote(() => { render(); const i = $('puburl'); if (i) { i.scrollIntoView({ block: 'center' }); selText(i); } }); toast('Опубликовано. Сценарий «' + name + '» теперь видят все.'); })
       .catch(() => { btn.disabled = false; toast('Нет связи с сайтом'); }); }
   function webHide(id, btn) { const adm = lsGet('vodaGame.admin'); if (!adm) { toast('Впишите код владельца ниже'); return; } btn.disabled = true;
     fetch(API + '?id=' + encodeURIComponent(id), { method: 'DELETE', headers: { 'x-admin-code': encodeURIComponent(adm) } }).then(r => r.json()).then(j => { if (j.ok) { loadRemote(); toast('Сценарий убран с сайта'); } else { btn.disabled = false; toast('Код владельца не подошёл'); } }).catch(() => { btn.disabled = false; toast('Нет связи с сайтом'); }); }
@@ -92,6 +92,7 @@
     if (!IN_CLAUDE) { const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = filename; document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 4000); return true; }
     const dl = await window.claude.use('downloads'); if (!dl) { toast('Скачивание недоступно в этом окне'); return false; } await dl.save({ filename, data: blob }); return true; }
   function openFromHash() { const h = location.hash || ''; if (h.indexOf('#id=') === 0) { const id = h.slice(4); try { history.replaceState(null, '', location.pathname + location.search); } catch (e) { } openWeb(id); return; } if (h.indexOf('#s=') !== 0) return; unpack(h.slice(3)).then(s => { if (!(s && s.p && s.staff && s.capex && s.mats)) throw 0; undo.push(JSON.stringify({ s: st.s, journal: st.journal })); st.s = migrate(s); st.journal = []; res = S.sim(st.s); try { history.replaceState(null, '', location.pathname + location.search); } catch (e) { } afterChange(); toast('Открыт сценарий из ссылки: «' + st.s.name + '». Чтобы оставить его у себя — «Сохранить сценарий».'); }).catch(() => toast('Ссылка на сценарий повреждена')); }
+  const selText = el => { try { const r = document.createRange(); r.selectNodeContents(el); const sl = window.getSelection(); sl.removeAllRanges(); sl.addRange(r); } catch (e) { } };
   let toastT = 0; const toast = t => { const e = $('toast'); e.textContent = t; e.hidden = false; clearTimeout(toastT); toastT = setTimeout(() => { e.hidden = true; }, 3600); };
 
   /* ---------- цвета «тепловой карты»: зелёный → жёлтый → красный ---------- */
@@ -241,12 +242,36 @@
   const TABS = [['summary', 'Резюме'], ['charts', 'Графики'], ['people', 'Люди'], ['capex', 'Вложения'], ['units', 'Установки и линия'], ['sales', 'Продажи и цены'], ['bottle', 'Бутылка'], ['stock', 'Склад и паллеты'], ['costs', 'Расходы'], ['money', 'Налоги и инвестор'], ['levers', 'Рычаги'], ['scn', 'Сценарии'], ['journal', 'Журнал'], ['rules', 'Правила игры']];
   const CATS = ['Линии', 'Установки очистки', 'Ремонт', 'Оборудование', 'Пресс-формы', 'Техника и мебель', 'Разрешения и бренд', 'Прочее'];
   const BT = [['03', '0,3 л', 0.3, 96], ['05', '0,5 л', 0.5, 122], ['10', '1,0 л', 1, 152]];
-  const monthSel = (id, bind, v) => `<select id="${id}" data-bind="${bind}" data-fmt="month">${MONTHS.map(mm => `<option value="${mm.i}"${mm.i === v ? ' selected' : ''}>${mm.label}</option>`).join('')}</select>`;
-  const num = (id, bind, v, f) => `<input class="num" id="${id}" data-bind="${bind}" data-fmt="${f}" inputmode="decimal" autocomplete="off" value="${esc(show(v, f))}">`;
+  /* маркер отличия от базы: точка у поля; щелчок возвращает базовое значение */
+  let DIFF = null; const FIRSTF = { staff: 'name', capex: 'name', plan: 'month', batch: 'type' };
+  function buildDiff() { const s = st.s, d = { staff: new Map(), capex: new Map(), plan: new Map(), removed: { staff: [], capex: [], plan: [] } };
+    ['staff', 'capex', 'plan'].forEach(L => pairUp(BASE_S[L], s[L]).forEach(pr => { if (pr[1]) d[L].set(pr[1].id, pr[0] || null); else d.removed[L].push(pr[0]); })); DIFF = d; }
+  const dvP = (k, x) => { const mt = Meta.by[k]; return k === 'payout_on' ? (x ? 'да' : 'нет') : mt.opts ? ((mt.opts.find(o => o[0] === x) || [0, x])[1]) : disp(x, mt.fmt); };
+  const dot = (act, title) => `<button type="button" class="dm" data-act="${act}" title="${esc(title)}" aria-label="${esc(title)}"></button>`;
+  const backTo = v => 'Отличается от базы. Щёлкните, чтобы вернуть: ' + v;
+  function baseOf(kind, id, field) { // значение этого поля в базовом сценарии; undefined — сравнивать не с чем
+    const s = st.s;
+    if (kind === 'p') return { cur: s.p[id], base: BASE_S.p[id] };
+    if (kind === 'ut') { const b = BASE_S.utypes.find(x => x.id === id), c = s.utypes.find(x => x.id === id); return b && c ? { cur: c[field], base: b[field] } : null; }
+    if (kind === 'mat') { const b = BASE_S.mats.find(x => x.key === id), c = s.mats.find(x => x.key === id); return b && c ? { cur: +c[field] || 0, base: +b[field] || 0 } : null; }
+    if (kind === 'contrib') return { cur: +s.contrib[id] || 0, base: 0 };
+    if (kind === 'batch') return { added: true };
+    if (DIFF && DIFF[kind]) { const c = s[kind].find(x => x.id === id), b = DIFF[kind].get(id); if (!c) return null; if (!b) return { added: true }; if (kind === 'capex' && field === 'amount' && c.auto) return null;
+      const norm = v => field === 'reserve' ? !!v : field === 'cat' ? (v || 'Прочее') : (field === 'amount' || field === 'salary' || field === 'liters') ? (+v || 0) : field === 'day' ? (v || 10) : v; return { cur: norm(c[field]), base: norm(b[field]) }; }
+    return null; }
+  function markFor(bind, f) { const a = bind.split(':'), kind = a[0], id = a[1], field = a[2], r = baseOf(kind, id, field); if (!r) return '';
+    if (r.added) return field === FIRSTF[kind] ? dot('revadd:' + kind + ':' + id, 'Этой строки нет в базе. Щёлкните, чтобы убрать её') : '';
+    if (r.cur === r.base) return '';
+    const shown = kind === 'p' ? dvP(id, r.base) : field === 'type' ? tOf(BASE_S, r.base).name : field === 'reserve' ? (r.base ? 'с резервом' : 'без резерва') : field === 'cat' || field === 'name' ? r.base : disp(r.base, f);
+    return dot('rev:' + bind, backTo(shown)); }
+  const wrapM = (bind, f, html) => `<span class="in">${markFor(bind, f)}${html}</span>`;
+  const monthSel = (id, bind, v) => wrapM(bind, 'month', `<select id="${id}" data-bind="${bind}" data-fmt="month">${MONTHS.map(mm => `<option value="${mm.i}"${mm.i === v ? ' selected' : ''}>${mm.label}</option>`).join('')}</select>`);
+  const num = (id, bind, v, f) => wrapM(bind, f, `<input class="num" id="${id}" data-bind="${bind}" data-fmt="${f}" inputmode="decimal" autocomplete="off" value="${esc(show(v, f))}">`);
+  const removedChip = L => (DIFF && DIFF.removed[L].length) ? `<span class="rmchip">${dot('revdel:' + L, 'Вернуть убранные строки базы: ' + DIFF.removed[L].map(b => b.name || mLabel(b.month)).join('; '))}убрано ${DIFF.removed[L].length}</span>` : '';
   function pIn(k) { const mt = Meta.by[k], f = mt.fmt, v = st.s.p[k];
     if (f === 'month') return monthSel('p-' + k, 'p:' + k, v);
-    if (f === 'opt') return `<select id="p-${k}" data-bind="p:${k}" data-fmt="int">${mt.opts.map(o => `<option value="${o[0]}"${o[0] === v ? ' selected' : ''}>${o[1]}</option>`).join('')}</select>`;
-    if (k === 'payout_on') return `<select id="p-${k}" data-bind="p:${k}" data-fmt="int"><option value="0"${!v ? ' selected' : ''}>Нет</option><option value="1"${v ? ' selected' : ''}>Да</option></select>`;
+    if (f === 'opt') return wrapM('p:' + k, f, `<select id="p-${k}" data-bind="p:${k}" data-fmt="int">${mt.opts.map(o => `<option value="${o[0]}"${o[0] === v ? ' selected' : ''}>${o[1]}</option>`).join('')}</select>`);
+    if (k === 'payout_on') return wrapM('p:' + k, f, `<select id="p-${k}" data-bind="p:${k}" data-fmt="int"><option value="0"${!v ? ' selected' : ''}>Нет</option><option value="1"${v ? ' selected' : ''}>Да</option></select>`);
     return num('p-' + k, 'p:' + k, v, f); }
   const pUnitFull = k => { const mt = Meta.by[k], f = mt.fmt; return (f === 'pct' || f === 'pct1') ? '%' : (f === 'month' || f === 'opt' || k === 'payout_on') ? '' : mt.unit; };
   const pUnit = k => { const x = pUnitFull(k); return x.length > 6 ? '' : x; }, pUnitLong = k => { const x = pUnitFull(k); return x.length > 6 ? x : ''; };
@@ -416,6 +441,7 @@
   }
   const mm_ = i => MONTHS[i].label;
   function panel() {
+    buildDiff();
     const s = st.s, p = s.p, m = res.m, k = res.k, t = st.tab, ic = i => i >= p.idx_m ? 1 + p.cost_idx : 1, c = k.cost, last = N - 1;
     if (t === 'summary') return summaryPanel();
     if (t === 'charts') return chartsPanel();
@@ -424,9 +450,9 @@
       const fot = g => s.staff.filter(e => e.group === g).reduce((a, e) => a + e.salary, 0);
       return `<p>Каждый человек — полоска на ленте. Оклад до налогов; взносы добавляются коэффициентом ${show(p.tax_k, 'dec2')} (вкладка «Расходы»). Список — пример: ФОТ разложен по ролям из вашего плана, поправьте оклады под себя.</p>
       <div class="tbl"><table><thead><tr><th>Должность</th><th>Группа</th><th class="r">Оклад, ₽/мес</th><th>Работает с</th><th>по</th><th class="r">Стоит за период</th><th></th></tr></thead><tbody>` +
-        s.staff.map(e => `<tr><td class="name"><input id="st-${e.id}-name" data-bind="staff:${e.id}:name" value="${esc(e.name)}" maxlength="60"></td><td class="mo"><select id="st-${e.id}-group" data-bind="staff:${e.id}:group" data-fmt="group"><option value="office"${e.group === 'office' ? ' selected' : ''}>Офис</option><option value="prod"${e.group === 'prod' ? ' selected' : ''}>Производство</option></select></td><td class="n">${num('st-' + e.id + '-salary', 'staff:' + e.id + ':salary', e.salary, 'money')}</td><td class="mo">${monthSel('st-' + e.id + '-from', 'staff:' + e.id + ':from', e.from)}</td><td class="mo">${monthSel('st-' + e.id + '-to', 'staff:' + e.id + ':to', e.to)}</td><td class="r calc">${short(cost(e))} ₽</td><td><button class="x" data-act="del:staff:${e.id}" aria-label="Удалить ${esc(e.name)}">×</button></td></tr>`).join('') +
+        s.staff.map(e => `<tr><td class="name">${wrapM('staff:' + e.id + ':name', 'txt', `<input id="st-${e.id}-name" data-bind="staff:${e.id}:name" value="${esc(e.name)}" title="${esc(e.name)}" maxlength="60">`)}</td><td class="mo">${wrapM('staff:' + e.id + ':group', 'group', `<select id="st-${e.id}-group" data-bind="staff:${e.id}:group" data-fmt="group"><option value="office"${e.group === 'office' ? ' selected' : ''}>Офис</option><option value="prod"${e.group === 'prod' ? ' selected' : ''}>Производство</option></select>`)}</td><td class="n">${num('st-' + e.id + '-salary', 'staff:' + e.id + ':salary', e.salary, 'money')}</td><td class="mo">${monthSel('st-' + e.id + '-from', 'staff:' + e.id + ':from', e.from)}</td><td class="mo">${monthSel('st-' + e.id + '-to', 'staff:' + e.id + ':to', e.to)}</td><td class="r calc">${short(cost(e))} ₽</td><td><button class="x" data-act="del:staff:${e.id}" aria-label="Удалить ${esc(e.name)}">×</button></td></tr>`).join('') +
         `</tbody><tfoot><tr><td>Всего ${s.staff.length} чел.</td><td></td><td class="r">${rub(fot('office') + fot('prod'))}</td><td colspan="2">офис ${short(fot('office'))} · производство ${short(fot('prod'))}</td><td class="r">${mln(k.fotTotal)}</td><td></td></tr></tfoot></table></div>
-      <div class="row"><button class="btn" data-act="add:staff">＋ Добавить человека</button></div>`;
+      <div class="row"><button class="btn" data-act="add:staff">＋ Добавить человека</button>${removedChip('staff')}</div>`;
     }
     if (t === 'capex') {
       const startCost = s.utypes.reduce((a, x) => a + x.start * x.price, 0), amt = x => x.auto ? startCost * 0.5 : (+x.amount || 0);
@@ -435,20 +461,20 @@
       return `<p>Каждая строка — отдельный платёж: сумма, месяц и день оплаты. Жёлтые столбики на дорожке «Крупные платежи» можно перетаскивать по месяцам. Строки с нулём — заготовки: впишите сумму, когда узнаете цену.</p>
       <p><b>Что такое «Резерв».</b> Галочка значит: к этой строке добавить ${show(p.contingency, 'pct')} % сверху на непредвиденное — подорожание, доставку, монтаж, курс. Строка 1 000 000 ₽ с галочкой обойдётся в ${nf0.format(1e6 * (1 + p.contingency))} ₽. Снимайте галочку там, где сумма твёрдая и удорожания не будет: депозит, договор с фиксированной ценой. Сам процент меняется во вкладке «Расходы».</p>
       <div class="tbl"><table><thead><tr><th>Статья</th><th class="r">Сумма, ₽</th><th>Месяц оплаты</th><th class="r">День</th><th title="Добавить к строке резерв на непредвиденное">Резерв ${show(p.contingency, 'pct')} %</th><th>Раздел</th><th></th></tr></thead>` +
-        cats.filter(cat => rowsOf(cat).length).map(cat => `<tbody><tr class="cat"><td>${esc(cat)}</td><td class="r">${rub(rowsOf(cat).reduce((a, x) => a + amt(x), 0))}</td><td colspan="5"></td></tr>` + rowsOf(cat).map(x => `<tr><td class="name"><input id="cx-${x.id}-name" data-bind="capex:${x.id}:name" value="${esc(x.name)}" maxlength="110"></td><td class="n">${x.auto ? `<span class="calc" title="Считается: штук на старте × цена типа × 50 % (вкладка «Установки и линия»)">${nf0.format(amt(x))}</span>` : num('cx-' + x.id + '-amount', 'capex:' + x.id + ':amount', x.amount, 'money')}</td><td class="mo">${monthSel('cx-' + x.id + '-month', 'capex:' + x.id + ':month', x.month)}</td><td style="width:78px">${num('cx-' + x.id + '-day', 'capex:' + x.id + ':day', x.day || 10, 'int')}</td><td><input type="checkbox" id="cx-${x.id}-reserve" data-bind="capex:${x.id}:reserve" data-fmt="bool"${x.reserve ? ' checked' : ''} aria-label="Добавить резерв на непредвиденное"></td><td class="mo"><select id="cx-${x.id}-cat" data-bind="capex:${x.id}:cat" data-fmt="txt">${cats.map(z => `<option${z === (x.cat || 'Прочее') ? ' selected' : ''}>${esc(z)}</option>`).join('')}</select></td><td>${x.auto ? '' : `<button class="x" data-act="del:capex:${x.id}" aria-label="Удалить">×</button>`}</td></tr>`).join('') + '</tbody>').join('') +
+        cats.filter(cat => rowsOf(cat).length).map(cat => `<tbody><tr class="cat"><td>${esc(cat)}</td><td class="r">${rub(rowsOf(cat).reduce((a, x) => a + amt(x), 0))}</td><td colspan="5"></td></tr>` + rowsOf(cat).map(x => `<tr><td class="name">${wrapM('capex:' + x.id + ':name', 'txt', `<input id="cx-${x.id}-name" data-bind="capex:${x.id}:name" value="${esc(x.name)}" title="${esc(x.name)}" maxlength="110">`)}</td><td class="n">${x.auto ? `<span class="calc" title="Считается: штук на старте × цена типа × 50 % (вкладка «Установки и линия»)">${nf0.format(amt(x))}</span>` : num('cx-' + x.id + '-amount', 'capex:' + x.id + ':amount', x.amount, 'money')}</td><td class="mo">${monthSel('cx-' + x.id + '-month', 'capex:' + x.id + ':month', x.month)}</td><td class="n day">${num('cx-' + x.id + '-day', 'capex:' + x.id + ':day', x.day || 10, 'int')}</td><td>${wrapM('capex:' + x.id + ':reserve', 'bool', `<input type="checkbox" id="cx-${x.id}-reserve" data-bind="capex:${x.id}:reserve" data-fmt="bool"${x.reserve ? ' checked' : ''} aria-label="Добавить резерв на непредвиденное">`)}</td><td class="mo">${wrapM('capex:' + x.id + ':cat', 'txt', `<select id="cx-${x.id}-cat" data-bind="capex:${x.id}:cat" data-fmt="txt">${cats.map(z => `<option${z === (x.cat || 'Прочее') ? ' selected' : ''}>${esc(z)}</option>`).join('')}</select>`)}</td><td>${x.auto ? '' : `<button class="x" data-act="del:capex:${x.id}" aria-label="Удалить">×</button>`}</td></tr>`).join('') + '</tbody>').join('') +
         `<tfoot><tr><td>Итого по списку</td><td class="r">${rub(s.capex.reduce((a, x) => a + amt(x), 0))}</td><td colspan="5">с резервом и докупкой установок: ${mln(k.capexTotal)}</td></tr></tfoot></table></div>
-      <div class="row"><button class="btn" data-act="add:capex">＋ Добавить строку</button></div>`;
+      <div class="row"><button class="btn" data-act="add:capex">＋ Добавить строку</button>${removedChip('capex')}</div>`;
     }
     if (t === 'units') {
       const bought = id => s.batches.reduce((a, b) => a + (b.type === id ? b.qty : 0), 0);
       return `<p>Установок два типа. Для каждого задаются литры в сутки, цена и сколько штук стоит на старте. Докупка — партиями: тип, количество, месяц запуска. Кружки «+N» на дорожке «Очистка воды» можно тянуть по месяцам.</p>
       <h3>Типы установок</h3>
       <div class="tbl"><table><thead><tr><th>Тип</th><th class="r">Литров в сутки с одной</th><th class="r">Цена одной, ₽</th><th class="r">На старте, шт</th><th class="r">Докуплено</th><th class="r">Всего к дек. 2028</th><th class="r">Дают в сутки</th></tr></thead><tbody>` +
-        s.utypes.map(u => `<tr><td class="name"><input id="ut-${u.id}-name" data-bind="ut:${u.id}:name" value="${esc(u.name)}" maxlength="30"></td><td class="n">${num('ut-' + u.id + '-l', 'ut:' + u.id + ':l', u.l, 'int')}</td><td class="n">${num('ut-' + u.id + '-price', 'ut:' + u.id + ':price', u.price, 'money')}</td><td class="n">${num('ut-' + u.id + '-start', 'ut:' + u.id + ':start', u.start, 'int')}</td><td class="r calc">${bought(u.id)}</td><td class="r calc">${u.start + bought(u.id)}</td><td class="r calc">${pcs((u.start + bought(u.id)) * u.l)} л</td></tr>`).join('') +
+        s.utypes.map(u => `<tr><td class="name">${wrapM('ut:' + u.id + ':name', 'txt', `<input id="ut-${u.id}-name" data-bind="ut:${u.id}:name" value="${esc(u.name)}" maxlength="30">`)}</td><td class="n">${num('ut-' + u.id + '-l', 'ut:' + u.id + ':l', u.l, 'int')}</td><td class="n">${num('ut-' + u.id + '-price', 'ut:' + u.id + ':price', u.price, 'money')}</td><td class="n">${num('ut-' + u.id + '-start', 'ut:' + u.id + ':start', u.start, 'int')}</td><td class="r calc">${bought(u.id)}</td><td class="r calc">${u.start + bought(u.id)}</td><td class="r calc">${pcs((u.start + bought(u.id)) * u.l)} л</td></tr>`).join('') +
         `</tbody><tfoot><tr><td>Всего</td><td></td><td></td><td class="r">${s.utypes.reduce((a, u) => a + u.start, 0)}</td><td class="r">${s.batches.reduce((a, b) => a + b.qty, 0)}</td><td class="r">${s.utypes.reduce((a, u) => a + u.start + bought(u.id), 0)}</td><td class="r">${pcs(m.startL[last] + m.newL[last])} л</td></tr></tfoot></table></div>
       <h3>Партии докупки</h3><p>Новая мощность сама себя не продаёт: после добавления партии поднимите план продаж кнопкой в строке.</p>
       <div class="tbl"><table><thead><tr><th>Тип</th><th class="r">Штук</th><th>Месяц запуска</th><th class="r">Дают в сутки</th><th class="r">Сумма</th><th></th><th></th></tr></thead><tbody>` +
-        (s.batches.length ? s.batches.map(b => { const u = tOf(s, b.type); return `<tr><td class="mo"><select id="bt-${b.id}-type" data-bind="batch:${b.id}:type" data-fmt="txt">${s.utypes.map(z => `<option value="${z.id}"${z.id === b.type ? ' selected' : ''}>${esc(z.name)}</option>`).join('')}</select></td><td class="n">${num('bt-' + b.id + '-qty', 'batch:' + b.id + ':qty', b.qty, 'int')}</td><td class="mo">${monthSel('bt-' + b.id + '-month', 'batch:' + b.id + ':month', b.month)}</td><td class="r calc">${pcs(b.qty * u.l)} л</td><td class="r calc">${short(b.qty * u.price)} ₽</td><td><button class="btn sm" data-act="plancap:${b.id}">Поднять план продаж до мощности</button></td><td><button class="x" data-act="del:batch:${b.id}" aria-label="Удалить партию">×</button></td></tr>`; }).join('') : '<tr><td colspan="7" class="calc">Партий докупки пока нет.</td></tr>') +
+        (s.batches.length ? s.batches.map(b => { const u = tOf(s, b.type); return `<tr><td class="mo">${wrapM('batch:' + b.id + ':type', 'txt', `<select id="bt-${b.id}-type" data-bind="batch:${b.id}:type" data-fmt="txt">${s.utypes.map(z => `<option value="${z.id}"${z.id === b.type ? ' selected' : ''}>${esc(z.name)}</option>`).join('')}</select>`)}</td><td class="n">${num('bt-' + b.id + '-qty', 'batch:' + b.id + ':qty', b.qty, 'int')}</td><td class="mo">${monthSel('bt-' + b.id + '-month', 'batch:' + b.id + ':month', b.month)}</td><td class="r calc">${pcs(b.qty * u.l)} л</td><td class="r calc">${short(b.qty * u.price)} ₽</td><td><button class="btn sm" data-act="plancap:${b.id}">Поднять план продаж до мощности</button></td><td><button class="x" data-act="del:batch:${b.id}" aria-label="Удалить партию">×</button></td></tr>`; }).join('') : '<tr><td colspan="7" class="calc">Партий докупки пока нет.</td></tr>') +
         `</tbody></table></div><div class="row">${s.utypes.map(u => `<button class="btn" data-act="add:batch:${u.id}">＋ Партия ${esc(u.name)}</button>`).join('')}<span style="color:var(--muted)">Мощность в декабре 2028: ${pcs(m.cap_l[last])} л в месяц · план продаж: ${pcs(m.plan_l[last])} л · линия вытянет ${pcs(k.lineCapB)} бутылок в месяц</span></div>
       ${fields('prod')}`;
     }
@@ -459,13 +485,13 @@
       return `<h3>Три бутылки: доля, цена и что это даёт</h3>
       <div class="bcards">` + BT.map((b, i) => `<article class="bcard"><div class="bpic"><div class="cols2">${colSvg([[sh[i], 'var(--water)', 'Доля литров', Math.round(sh[i] * 100) + ' %']], 120, 'литры')}${colSvg([[revAll ? revT(i) / revAll : 0, 'var(--brand)', 'Доля выручки', (revAll ? Math.round(revT(i) / revAll * 100) : 0) + ' %']], 120, 'выручка')}</div><b>${b[1]}</b></div><div class="brows">
           ${brow('Доля литров', bin('sh' + b[0]))}${brow('Цена продажи с завода, с НДС', bin('p' + b[0]))}
-          ${brow('В декабре 2028: бутылок', pcs(sold[i][last]))}${brow('В декабре 2028: паллет', nf1.format(palOf(m.sold_l[last], i)))}
-          ${brow('За 26 месяцев: бутылок', pcs(sum(sold[i])))}${brow('За 26 месяцев: выручка', mln(revT(i)))}${brow('Доля в выручке', (revAll ? Math.round(revT(i) / revAll * 100) : 0) + ' %')}</div></article>`).join('') + `</div>
+          <div class="bres"><h5>Результат</h5>${brow('В декабре 2028: бутылок', pcs(sold[i][last]))}${brow('В декабре 2028: паллет', nf1.format(palOf(m.sold_l[last], i)))}
+          ${brow('За 26 месяцев: бутылок', pcs(sum(sold[i])))}${brow('За 26 месяцев: выручка', mln(revT(i)))}${brow('Доля в выручке', (revAll ? Math.round(revT(i) / revAll * 100) : 0) + ' %')}</div></div></article>`).join('') + `</div>
       <p class="${Math.abs(shSum - 1) < 1e-4 ? '' : 'bad'}">Сумма долей: ${show(shSum, 'pct')} %${Math.abs(shSum - 1) < 1e-4 ? '.' : ' — должно быть 100 %.'} Столбики: доля бутылки в литрах и в выручке. Цена за литр: ${BT.map((b, i) => b[1] + ' — ' + Math.round(pr[i] / b[2]) + ' ₽').join(', ')}.</p>
       <h3>План продаж</h3><p>Сколько литров в месяц вы продаёте на полном ходу. Каждая строка задаёт новый уровень с указанного месяца. План выше мощности — продажи теряются; ниже — установки простаивают.</p>
       <div class="tbl"><table><thead><tr><th>С месяца</th><th class="r">План, литров в месяц</th><th class="r">0,3 л, бут.</th><th class="r">0,5 л, бут.</th><th class="r">1,0 л, бут.</th><th class="r">Паллет в месяц</th><th class="r">Мощность, л</th><th></th></tr></thead><tbody>` +
         plan.map(q => `<tr><td class="mo">${monthSel('pl-' + q.id + '-month', 'plan:' + q.id + ':month', q.month)}</td><td class="n">${num('pl-' + q.id + '-liters', 'plan:' + q.id + ':liters', q.liters, 'int')}</td>${BT.map((b, i) => `<td class="r calc">${pcs(q.liters * sh[i] / b[2])}</td>`).join('')}<td class="r calc">${nf1.format(palOf(q.liters, 0) + palOf(q.liters, 1) + palOf(q.liters, 2))}</td><td class="r calc">${pcs(capAt(s, Math.max(q.month, p.start_m)))}</td><td>${plan.length > 1 ? `<button class="x" data-act="del:plan:${q.id}" aria-label="Удалить">×</button>` : ''}</td></tr>`).join('') +
-        `</tbody></table></div><div class="row"><button class="btn" data-act="add:plan">＋ Новый уровень плана</button></div>${fields('sales')}`;
+        `</tbody></table></div><div class="row"><button class="btn" data-act="add:plan">＋ Новый уровень плана</button>${removedChip('plan')}</div>${fields('sales')}`;
     }
     if (t === 'bottle') {
       const pr = [p.p03, p.p05, p.p10], cols = ['#EA3943', '#F5822A', '#F0B90B', '#8A94A3'], nm = ['Преформа', 'Крышка', 'Этикетка', 'Упаковка'], mxp = Math.max(1, ...pr);
@@ -476,10 +502,10 @@
       <div class="bcards">` + BT.map((b, i) => { const parts = [c.pf[i], c.cap, p.label, p.pack], tot = c.m[i], pl = c.pal[i];
           return `<article class="bcard solo"><div class="brows"><div class="br"><span><b style="font-family:var(--display);font-weight:500">${b[1]}</b></span><span></span></div>
           ${brow('Цена продажи с завода, с НДС', bin('p' + b[0]))}${brow('Вес преформы', bin('w' + b[0]))}
-          ${brow('Преформа', nf1.format(parts[0]) + ' ₽', cols[0])}${brow('Крышка', nf1.format(parts[1]) + ' ₽', cols[1])}${brow('Этикетка', nf1.format(parts[2]) + ' ₽', cols[2])}${brow('Упаковка', nf1.format(parts[3]) + ' ₽', cols[3])}
-          ${brow('<b>Материалы всего</b>', '<b>' + nf1.format(tot) + ' ₽</b>')}${brow('<b>Остаётся</b>', '<b>' + nf1.format(pr[i] - tot) + ' ₽ · ' + (pr[i] ? Math.round((1 - tot / pr[i]) * 100) : 0) + ' %</b>')}
           ${brow('Диаметр', bin('d' + b[0]))}${brow('Высота', bin('h' + b[0]))}${brow('Штук в упаковке', bin('pk' + b[0]))}
-          ${brow('На паллете', pcs(pl.bottles) + ' бут. · ' + pcs(pl.kg) + ' кг')}</div></article>`; }).join('') + `</div>
+          <div class="bres"><h5>Результат</h5>${brow('Преформа', nf1.format(parts[0]) + ' ₽', cols[0])}${brow('Крышка', nf1.format(parts[1]) + ' ₽', cols[1])}${brow('Этикетка', nf1.format(parts[2]) + ' ₽', cols[2])}${brow('Упаковка', nf1.format(parts[3]) + ' ₽', cols[3])}
+          ${brow('<b>Материалы всего</b>', '<b>' + nf1.format(tot) + ' ₽</b>')}${brow('<b>Остаётся</b>', '<b>' + nf1.format(pr[i] - tot) + ' ₽ · ' + (pr[i] ? Math.round((1 - tot / pr[i]) * 100) : 0) + ' %</b>')}
+          ${brow('На паллете', pcs(pl.bottles) + ' бут. · ' + pcs(pl.kg) + ' кг')}</div></div></article>`; }).join('') + `</div>
       <p>Диаметр и высота бутылок — оценка по типовым бутылкам такого объёма. Впишите размеры из чертежа, когда утвердите форму: от них зависит, сколько встаёт на паллету.</p>${fields('bottle')}`;
     }
     if (t === 'stock') {
@@ -523,7 +549,7 @@
       const anyAuthor = remote.items.some(hasAuthor);
       const web = !remote.on ? '' : `<h3>Сценарии участников — сохранены на сайте, видят все</h3>
       <p>Чтобы опубликовать свой: «Сохранить сценарий» наверху → впишите название → «Опубликовать на сайте». Чужой сценарий можно открыть и играть от него; изменить или удалить его нельзя, можно опубликовать свой вариант рядом.</p>
-      ${pubUrl ? `<div class="row"><input id="puburl" readonly value="${esc(pubUrl)}" style="flex:1;min-width:0;font-family:var(--mono);font-size:12px" aria-label="Ссылка на опубликованный сценарий"><button class="btn sm" data-act="copypub">Скопировать ссылку</button></div>` : ''}
+      ${pubUrl ? `<div class="row"><code id="puburl" class="linkbox">${esc(pubUrl)}</code><button class="btn sm" data-act="copypub">Скопировать ссылку</button></div>` : ''}
       <div class="tbl"><table><thead><tr><th>Сценарий</th>${anyAuthor ? '<th>Автор</th>' : ''}<th>Когда</th><th class="r">Вносит инвестор</th><th>Окупаемость</th><th class="r">Прибыль 2028</th><th></th></tr></thead><tbody>` +
         (remote.items.length ? remote.items.map(x => `<tr><td>${esc(x.name)}</td>${anyAuthor ? `<td>${hasAuthor(x) ? esc(x.author) : ''}</td>` : ''}<td class="calc">${esc(new Date(x.created).toLocaleString('ru-RU', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }))}</td><td class="r">${mln(x.invest || 0)}</td><td>${pbT(x)}</td><td class="r">${mln(x.profit28 || 0)}</td><td style="white-space:nowrap"><button class="btn sm" data-act="open:web:${esc(x.id)}">Открыть</button>${remote.canHide && adm ? ` <button class="btn sm" data-act="webdel:${esc(x.id)}">Убрать</button>` : ''}</td></tr>`).join('') : `<tr><td colspan="${anyAuthor ? 7 : 6}" class="calc">Пока никто ничего не опубликовал. Будьте первым.</td></tr>`) + `</tbody></table></div>
       ${remote.canHide ? `<div class="row"><input id="admcode" type="password" autocomplete="off" placeholder="Код владельца — чтобы убирать сценарии" style="max-width:320px;flex:1" value="${esc(adm)}" aria-label="Код владельца"><button class="btn sm" data-act="admsave">Запомнить</button></div>` : ''}`;
@@ -533,7 +559,7 @@
       return web + fileBlock + `<h3>Мои сценарии — только в этом браузере</h3>
       <div class="tbl"><table>${head}<tbody>${row('База (исходные цифры)', BASE.k, '<button class="btn sm" data-act="open:База">Открыть</button>')}${row('Сейчас на экране: ' + s.name, k, '')}` + mine.map(n => row(n, S.sim(st.saved[n]).k, `<button class="btn sm" data-act="open:my:${esc(n)}">Открыть</button>${!IN_CLAUDE && !remote.on ? ` <button class="btn sm" data-act="pub1:${esc(n)}">Сделать общим</button>` : ''}`)).join('') + `</tbody></table></div>
       <div class="row"><button class="btn" data-act="expscn">Скачать мои сценарии файлом</button><button class="btn" data-act="impscn">Загрузить сценарии из файла</button><input type="file" id="imp" accept=".json,application/json" hidden>${IN_CLAUDE ? '' : '<button class="btn" data-act="sharelink">Ссылка на сценарий с экрана</button>'}</div>
-      ${shareUrl ? `<div class="row"><input id="shareurl" readonly value="${esc(shareUrl)}" style="flex:1;min-width:0;font-family:var(--mono);font-size:12px" aria-label="Ссылка на сценарий"><span style="color:var(--muted)">Отправьте ссылку — у получателя откроется этот сценарий.</span></div>` : ''}
+      ${shareUrl ? `<div class="row"><code id="shareurl" class="linkbox">${esc(shareUrl)}</code><span style="color:var(--muted)">Отправьте ссылку — у получателя откроется этот сценарий.</span></div>` : ''}
       ` + (remote.on ? '' : IN_CLAUDE ? '<p>Публиковать общие сценарии можно со страницы на сайте. Здесь, внутри Claude, доступны просмотр общих, скачивание и загрузка файлом.</p>' : `<h3>Публикация общих сценариев — только для владельца</h3>
       <p>Кнопка «Сделать общим» записывает сценарий в <code>scenarios.json</code> репозитория <b>${esc(GH.owner)}/${esc(GH.repo)}</b>. Для этого нужен токен GitHub с правом записи в этот репозиторий. Токен хранится только в этом браузере и никуда, кроме GitHub, не отправляется. После публикации сайт обновляется за одну-две минуты.</p>
       <div class="row"><input id="ghtok" type="password" autocomplete="off" placeholder="Токен GitHub (github_pat_…)" style="flex:1;min-width:220px;max-width:460px" aria-label="Токен GitHub"><button class="btn" data-act="tok">Запомнить</button>${tok ? '<button class="btn" data-act="tokdel">Забыть токен</button><span class="delta good">токен сохранён в этом браузере</span>' : '<span class="delta">токена нет — публикация недоступна</span>'}</div>
@@ -631,6 +657,16 @@
       case 'clearj': st.journal = []; persist(); renderTabs(); break;
       case 'tm': st.tmAll = a[1] === '1'; renderTabs(); break;
       case 'tmc': st.tmCol = a[1]; renderTabs(); break;
+      case 'rev': { const kind = a[1], id = a[2], field = a[3], r = baseOf(kind, id, field); if (!r || r.added) break; const f = kind === 'p' ? Meta.by[id].fmt : ({ salary: 'money', amount: 'money', ship: 'money', price: 'money', from: 'month', to: 'month', month: 'month', first: 'month', group: 'group', reserve: 'bool' }[field] || 'int');
+        const sh = v => kind === 'p' ? dvP(id, v) : (field === 'name' || field === 'cat') ? v : field === 'type' ? tOf(BASE_S, v).name : disp(v, f);
+        if (kind === 'p') act(`Возврат к базе — ${Meta.by[id].label}: ${sh(r.cur)} → ${sh(r.base)}`, () => { s.p[id] = BASE_S.p[id]; });
+        else if (kind === 'ut') { const un = s.utypes.find(x => x.id === id); act(`Возврат к базе — ${un.name}, ${FLD[field]}: ${sh(r.cur)} → ${sh(r.base)}`, () => { un[field] = r.base; }); }
+        else if (kind === 'mat') { const mt = s.mats.find(x => x.key === id); act(`Возврат к базе — ${mt.name}, ${FLD[field]}: ${sh(r.cur)} → ${sh(r.base)}`, () => { mt[field] = r.base; }); }
+        else if (kind === 'contrib') act(`Возврат к базе — факт взноса за ${mLabel(+id)} убран`, () => { delete s.contrib[id]; });
+        else { const it = s[kind].find(x => x.id === id), b = DIFF[kind].get(id); act(`Возврат к базе — ${it.name || 'План продаж'}, ${FLD[field] || field}: ${sh(r.cur)} → ${sh(r.base)}`, () => { it[field] = b[field]; }); }
+        break; }
+      case 'revadd': { const L = a[1] === 'batch' ? 'batches' : a[1], arr = s[L], it = arr.find(x => x.id === a[2]); if (!it) break; act('Возврат к базе — убрана строка, которой нет в базе: ' + (it.name || (L === 'batches' ? tOf(s, it.type).name + ' ×' + it.qty : 'план с ' + mLabel(it.month))), () => { arr.splice(arr.indexOf(it), 1); }); break; }
+      case 'revdel': { const L = a[1], list = DIFF.removed[L].slice(); if (!list.length) break; act('Возврат к базе — возвращены убранные строки: ' + list.map(b => b.name || mLabel(b.month)).join('; '), () => { list.forEach(b => s[L].push(clone(b))); }); break; }
       case 'tok': { const v = ($('ghtok').value || '').trim(); if (!v) { toast('Вставьте токен в поле'); break; } try { localStorage.setItem(TOKKEY, v); } catch (x) { } renderTabs(); toast('Токен сохранён в этом браузере'); break; }
       case 'tokdel': try { localStorage.removeItem(TOKKEY); } catch (x) { } renderTabs(); toast('Токен удалён из браузера'); break;
       case 'pub1': { const n = a.slice(1).join(':'), src = st.saved[n]; if (!src) break; const map = Object.assign({}, shared); map[n] = clone(src); t.disabled = true; publish(map, 'Общий сценарий: ' + n).then(ok => { if (ok) { render(); toast('«' + n + '» опубликован. Остальные увидят его через одну-две минуты.'); } else t.disabled = false; }); break; }
@@ -639,7 +675,19 @@
       case 'impscn': $('imp').click(); break;
       case 'webdel': webHide(a.slice(1).join(':'), t); break;
       case 'admsave': lsSet('vodaGame.admin', ($('admcode').value || '').trim()); renderTabs(); toast('Код владельца сохранён в этом браузере'); break;
-      case 'copypub': { const i = $('puburl'); i.focus(); i.select(); if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(pubUrl).then(() => toast('Ссылка скопирована'), () => toast('Выделите ссылку и скопируйте')); break; }
+      case 'sharelink': pack(st.s).then(code => { shareUrl = location.origin + location.pathname + '#s=' + code; renderTabs(); const inp = $('shareurl'); if (inp) selText(inp); if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(shareUrl).then(() => toast('Ссылка скопирована'), () => toast('Ссылка ниже — выделите и скопируйте её')); else toast('Ссылка ниже — выделите и скопируйте её'); }); break;
+      case 'lever': { const i = +a[1], v = levVal(i); if (!v) { toast('Впишите значение рычага'); break; } act('Рычаг: ' + levText(i, s), z => LEVERS[i].f(z, v)); break; }
+      case 'plancap': { const b = s.batches.find(x => x.id === a[1]); if (!b) break; const mo = Math.max(b.month, p.start_m), cap = Math.round(capAt(s, mo)); act(`План продаж с ${mLabel(mo)} поднят до мощности: ${pcs(cap)} л в месяц`, () => { const ex = s.plan.find(q => q.month === mo); if (ex) ex.liters = cap; else s.plan.push({ id: newId(), month: mo, liters: cap }); }); break; }
+      case 'add':
+        if (a[1] === 'staff') act('Добавлен сотрудник: Новый сотрудник, 60 000 ₽', () => { s.staff.push({ id: newId(), name: 'Новый сотрудник', group: 'prod', salary: 60000, from: Math.max(1, p.start_m - 1), to: N }); });
+        if (a[1] === 'capex') act('Добавлена строка вложений (сумма пока 0)', () => { s.capex.push({ id: newId(), cat: 'Прочее', name: 'Новая строка', amount: 0, month: 2, day: 10, reserve: true, auto: null }); });
+        if (a[1] === 'batch') { const u = tOf(s, a[2]); act('Добавлена партия: 10 × ' + u.name + ', запуск ' + mLabel(10), () => { s.batches.push({ id: newId(), type: a[2], qty: 10, month: 10 }); }); }
+        if (a[1] === 'plan') { const last = s.plan.slice().sort((x, y) => y.month - x.month)[0], mo = Math.min(N, last.month + 6); act('Добавлен уровень плана продаж с ' + mLabel(mo), () => { s.plan.push({ id: newId(), month: mo, liters: last.liters }); }); }
+        break;
+      case 'del': { const arr = s[LIST[a[1]]], it = arr.find(x => x.id === a[2]); if (!it) break;
+        const txt = a[1] === 'staff' ? 'Убран сотрудник: ' + it.name + ', ' + rub(it.salary) : a[1] === 'capex' ? 'Убрана покупка «' + it.name + '», ' + rub(it.amount) : a[1] === 'batch' ? 'Убрана партия ' + tOf(s, it.type).name + ' ×' + it.qty + ' (' + mLabel(it.month) + ')' : 'Убран уровень плана продаж с ' + mLabel(it.month);
+        act(txt, () => { arr.splice(arr.indexOf(it), 1); }); break; }
+      case 'copypub': { const i = $('puburl'); selText(i); if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(pubUrl).then(() => toast('Ссылка скопирована'), () => toast('Выделите ссылку и скопируйте')); break; }
     }
   });
   document.addEventListener('keydown', e => { if (e.key === 'Enter' && e.target.matches && e.target.matches('input[data-bind]')) e.target.blur(); if (e.key === 'Enter' && e.target.id === 'scnname') document.querySelector('[data-act="saveok"]').click(); });
