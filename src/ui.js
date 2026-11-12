@@ -18,7 +18,7 @@
 
   /* ---------- состояние ---------- */
   const LS = 'vodaGame.v1', BASE_S = S.defaults(), BASE = S.sim(BASE_S);
-  let st = { s: clone(BASE_S), journal: [], saved: {}, best: null, tab: 'people', zoom: 'm', lev: {} }, undo = [];
+  let st = { s: clone(BASE_S), journal: [], saved: {}, best: null, tab: 'charts', zoom: 'm', lev: {} }, undo = [];
   function migrate(s) { // сценарии, сохранённые прежней версией игры, приводим к новой структуре
     const old = s.p || {};
     if (!s.utypes) { s.utypes = clone(BASE_S.utypes); if (old.units0 != null) s.utypes[0].start = old.units0; if (old.l_unit) s.utypes[0].l = old.l_unit; if (old.unit_price) s.utypes[0].price = old.unit_price;
@@ -141,6 +141,7 @@
     $('tl-labels').innerHTML = lanes.filter(l => l.t).map(l => `<div style="top:${l.y + 2}px"><b>${esc(l.t)}</b><span>${esc(l.s)}</span></div>`).join('');
     $('legend').innerHTML = [['var(--brand)', 'деньги, оборудование, производство'], ['var(--water)', 'вода и материалы на складе, оплата партий'], ['var(--office)', 'офис'], ['var(--amber)', '◆ старт продаж'], ['var(--brand)', '◆ EBITDA в плюсе'], ['var(--gold)', '◆ окупаемость, ▼ возврат инвестору']].map(a => `<span><i style="background:${a[0]}"></i>${a[1]}</span>`).join('') + '<span>▲ взнос инвестора, млн ₽ · пунктир — материалы в пути · всё с подсказкой можно тянуть мышью</span>';
     ['m', 'w', 'd'].forEach(z => $('z-' + z).setAttribute('aria-pressed', String(st.zoom === z)));
+    const canScroll = W > avail + 2; $('b-left').hidden = $('b-right').hidden = !canScroll; $('tl-svg').classList.toggle('scrollable', canScroll);
     if (curDay != null) showTip(curDay);
   }
   function showTip(day, follow) {
@@ -155,18 +156,22 @@
     if (follow) { if (x > sc.scrollLeft + sc.clientWidth - 60 || x < sc.scrollLeft) sc.scrollLeft = Math.max(0, x - sc.clientWidth / 2); }
     let left = x + 14; if (left + 262 > sc.scrollLeft + sc.clientWidth) left = x - 264; tip.style.left = Math.max(sc.scrollLeft + 4, left) + 'px';
   }
-  function stopPlay() { clearInterval(playT); playT = 0; $('b-play').textContent = '▶ Проиграть'; }
+  function stopPlay() { clearInterval(playT); playT = 0; $('b-play').textContent = '► Проиграть'; }
   function play() { if (playT) { stopPlay(); return; } let day = (curDay == null || curDay >= DAYS - 2) ? 0 : curDay; const step = st.zoom === 'd' ? 1 : st.zoom === 'w' ? 2 : 4;
     $('b-play').textContent = '❚❚ Пауза'; playT = setInterval(() => { day += step; if (day >= DAYS) { stopPlay(); return; } showTip(day, true); }, 45); }
   function dayAt(e) { const svg = $('tl-svg').firstChild; return clamp(Math.floor((e.clientX - svg.getBoundingClientRect().left) / PPD), 0, DAYS - 1); }
   function initTimelineEvents() {
     const host = $('tl-svg');
-    host.addEventListener('pointerdown', e => { const t = e.target.closest('[data-drag]'); if (!t) return; const a = t.dataset.drag.split(':'); drag = { kind: a[0], id: a[1], part: a[2], m0: S.dateOf(dayAt(e)).i, month: null }; try { host.setPointerCapture(e.pointerId); } catch (x) { } e.preventDefault(); stopPlay(); });
-    host.addEventListener('pointermove', e => { if (!host.firstChild) return; const day = dayAt(e);
+    const sc = $('tl-scroll'); let pan = null;
+    host.addEventListener('pointerdown', e => { const t = e.target.closest('[data-drag]');
+      if (!t) { if (e.pointerType !== 'touch' && e.button === 0 && sc.scrollWidth > sc.clientWidth + 2) { pan = { x0: e.clientX, sl: sc.scrollLeft, moved: false }; try { host.setPointerCapture(e.pointerId); } catch (x) { } stopPlay(); } return; } const a = t.dataset.drag.split(':'); drag = { kind: a[0], id: a[1], part: a[2], m0: S.dateOf(dayAt(e)).i, month: null }; try { host.setPointerCapture(e.pointerId); } catch (x) { } e.preventDefault(); stopPlay(); });
+    host.addEventListener('pointermove', e => { if (!host.firstChild) return;
+      if (pan) { const dx = e.clientX - pan.x0; if (Math.abs(dx) > 3) { pan.moved = true; host.classList.add('panning'); $('tip').hidden = true; } if (pan.moved) sc.scrollLeft = pan.sl - dx; return; }
+      const day = dayAt(e);
       if (drag) { drag.month = S.dateOf(day).i; const cur = $('cur'), x = MONTHS[drag.month - 1].d0 * PPD; cur.setAttribute('x1', x); cur.setAttribute('x2', x); cur.setAttribute('opacity', '1'); const tip = $('tip'); tip.innerHTML = '<h4>Перенести на ' + esc(mLabel(drag.month)) + '</h4>'; tip.hidden = false; tip.style.left = Math.max($('tl-scroll').scrollLeft + 4, x + 12) + 'px'; }
       else if (!playT) showTip(day); });
-    const end = () => { if (!drag) return; const dg = drag; drag = null; if (dg.month && dg.month !== dg.m0) applyDrag(dg); else $('tip').hidden = true; };
-    host.addEventListener('pointerup', end); host.addEventListener('pointercancel', () => { drag = null; });
+    const end = () => { if (pan) { pan = null; host.classList.remove('panning'); return; } if (!drag) return; const dg = drag; drag = null; if (dg.month && dg.month !== dg.m0) applyDrag(dg); else $('tip').hidden = true; };
+    host.addEventListener('pointerup', end); host.addEventListener('pointercancel', () => { drag = null; pan = null; host.classList.remove('panning'); });
     host.addEventListener('pointerleave', () => { if (!playT && !drag) { $('tip').hidden = true; const c = $('cur'); if (c) c.setAttribute('opacity', '0'); curDay = null; } });
     let rt = 0; window.addEventListener('resize', () => { clearTimeout(rt); rt = setTimeout(renderTimeline, 150); });
   }
@@ -180,7 +185,7 @@
   }
 
   /* ---------- вкладки ---------- */
-  const TABS = [['people', 'Люди'], ['capex', 'Вложения'], ['units', 'Установки и линия'], ['sales', 'Продажи и цены'], ['bottle', 'Бутылка'], ['stock', 'Склад и паллеты'], ['costs', 'Расходы'], ['money', 'Налоги и инвестор'], ['levers', 'Рычаги'], ['scn', 'Сценарии'], ['journal', 'Журнал'], ['rules', 'Правила игры']];
+  const TABS = [['charts', 'Графики'], ['people', 'Люди'], ['capex', 'Вложения'], ['units', 'Установки и линия'], ['sales', 'Продажи и цены'], ['bottle', 'Бутылка'], ['stock', 'Склад и паллеты'], ['costs', 'Расходы'], ['money', 'Налоги и инвестор'], ['levers', 'Рычаги'], ['scn', 'Сценарии'], ['journal', 'Журнал'], ['rules', 'Правила игры']];
   const CATS = ['Линии', 'Установки очистки', 'Ремонт', 'Оборудование', 'Пресс-формы', 'Техника и мебель', 'Разрешения и бренд', 'Прочее'];
   const BT = [['03', '0,3 л', 0.3, 96], ['05', '0,5 л', 0.5, 122], ['10', '1,0 л', 1, 152]];
   const monthSel = (id, bind, v) => `<select id="${id}" data-bind="${bind}" data-fmt="month">${MONTHS.map(mm => `<option value="${mm.i}"${mm.i === v ? ' selected' : ''}>${mm.label}</option>`).join('')}</select>`;
@@ -196,10 +201,8 @@
     return '<div class="grps">' + subs.map(sb => `<section class="grp"><h4>${esc(sb)}${notes && notes[sb] ? `<span>${esc(notes[sb])}</span>` : ''}</h4>` + items.filter(mt => mt.sub === sb).map(mt => { const u = pUnit(mt.key);
       return `<div class="fr"><label for="p-${mt.key}">${esc(mt.label)}${mt.hint ? `<small>${esc(mt.hint)}</small>` : ''}</label><div class="in">${pIn(mt.key)}${u ? `<span class="u">${esc(u)}</span>` : ''}</div></div>`; }).join('') + '</section>').join('') + '</div>';
   }
-  const BP = 'M24,12 h12 v12 c0,9 16,11 16,26 v98 a8,8 0 0 1 -8,8 h-28 a8,8 0 0 1 -8,-8 v-98 c0,-15 16,-17 16,-26 z';
-  function bottleSvg(key, layers, hpx) { // бутылка-диаграмма: слои снизу вверх, доли от высоты
-    let y = 156, rects = ''; layers.forEach(l => { const h = 132 * clamp(l[0], 0, 1); y -= h; rects += `<rect x="6" y="${y.toFixed(1)}" width="48" height="${h.toFixed(1)}" fill="${l[1]}"/>`; });
-    return `<svg viewBox="0 0 60 160" height="${hpx}" width="${(hpx * 60 / 160).toFixed(0)}" aria-hidden="true"><defs><clipPath id="clip-${key}"><path d="${BP}"/></clipPath></defs><path d="${BP}" fill="var(--sunken)"/><g clip-path="url(#clip-${key})">${rects}</g><path d="${BP}" fill="none" stroke="var(--ink)" stroke-width="1.6" stroke-linejoin="round"/><rect x="21" y="3" width="18" height="9" rx="2.5" fill="var(--ink)"/></svg>`;
+  function colSvg(segs, hpx, cap) { // столбик-диаграмма: сегменты снизу вверх [доля, цвет, подпись]
+    return `<div class="col" style="height:${hpx}px">${cap ? `<span class="colcap">${cap}</span>` : ''}<div class="colbar">${segs.map(g => `<i style="height:${(clamp(g[0], 0, 1) * 100).toFixed(2)}%;background:${g[1]}" title="${esc(g[2] || '')}">${g[0] * hpx >= 15 && g[3] ? `<em>${g[3]}</em>` : ''}</i>`).join('')}</div></div>`;
   }
   const brow = (lab, val, dot) => `<div class="br"><span>${dot ? `<i style="background:${dot}"></i>` : ''}${lab}</span><span>${val}</span></div>`;
   const bin = (k) => `<span class="in">${pIn(k)}<span class="u">${esc(pUnit(k))}</span></span>`;
@@ -224,8 +227,70 @@
   ];
   const levVal = i => (st.lev && st.lev[i] != null) ? st.lev[i] : LEVERS[i].d;
   const levText = (i, s) => { const lv = LEVERS[i], v = levVal(i); return lv.abs ? lv.a(s) + ': ' + v + ' ' + lv.u : lv.a(s) + ' ' + (v > 0 ? '+' : '−') + trim(Math.abs(v), 2) + ' ' + lv.u; };
+  function squarify(items, x, y, w, h) { // раскладка «квадратами» (treemap): площади пропорциональны суммам
+    const out = [], tot = items.reduce((a, b) => a + b.v, 0); if (!tot || w <= 0 || h <= 0) return out;
+    let rest = items.map(it => ({ it, a: it.v / tot * w * h })), X = x, Y = y, Wd = w, Hd = h;
+    const worst = (row, side) => { const s = row.reduce((a, b) => a + b.a, 0), mx = Math.max(...row.map(r => r.a)), mn = Math.min(...row.map(r => r.a)); return Math.max(side * side * mx / (s * s), s * s / (side * side * mn)); };
+    while (rest.length) { const side = Math.min(Wd, Hd); let row = [rest[0]], k = 1;
+      while (k < rest.length && worst(row.concat([rest[k]]), side) <= worst(row, side)) { row.push(rest[k]); k++; }
+      const s = row.reduce((a, b) => a + b.a, 0), th = s / side; let off = 0;
+      row.forEach(r => { const len = r.a / th; if (Wd >= Hd) out.push({ it: r.it, x: X, y: Y + off, w: th, h: len }); else out.push({ it: r.it, x: X + off, y: Y, w: len, h: th }); off += len; });
+      if (Wd >= Hd) { X += th; Wd -= th; } else { Y += th; Hd -= th; } rest = rest.slice(k); }
+    return out;
+  }
+  function spend(upto) { // куда ушли деньги за месяцы 1..upto: [название, группа, сумма]
+    const s = st.s, p = s.p, m = res.m, c = res.k.cost, ic = i => i >= p.idx_m ? 1 + p.cost_idx : 1, sumTo = a => a.slice(0, upto).reduce((x, y) => x + y, 0), out = [];
+    const startCost = s.utypes.reduce((a, x) => a + x.start * x.price, 0), byCat = {};
+    s.capex.forEach(x => { if (x.month >= 1 && x.month <= upto) byCat[x.cat || 'Прочее'] = (byCat[x.cat || 'Прочее'] || 0) + (x.auto ? startCost * 0.5 : (+x.amount || 0)); });
+    Object.keys(byCat).forEach(k => out.push([k === 'Прочее' ? 'Депозит, вход в сети, прочие вложения' : k, 'Вложения', byCat[k]]));
+    out.push(['Докупка установок', 'Вложения', sumTo(m.new_pay)], ['Резерв на непредвиденное', 'Вложения', sumTo(m.contingency)]);
+    let off = 0, prd = 0; for (let i = 1; i <= upto; i++) s.staff.forEach(e => { if (i >= e.from && i <= e.to) { const v = e.salary * p.tax_k * ic(i); if (e.group === 'office') off += v; else prd += v; } });
+    out.push(['Зарплаты офиса', 'Люди', off], ['Зарплаты производства', 'Люди', prd]);
+    const use = (key, price) => { let v = 0; for (let i = 1; i <= upto; i++) v += res.useBy[key][i - 1] * price * ic(i); return v; };
+    let pack = 0; for (let i = 1; i <= upto; i++) pack += m.use_pcs[i - 1] * p.pack * ic(i);
+    out.push(['Крышки', 'Материалы', use('cap', c.mat.cap)], ['Преформы', 'Материалы', use('pf', c.mat.pf)], ['Этикетки', 'Материалы', use('label', c.mat.label)], ['Упаковка, паллеты, стрейч', 'Материалы', pack + use('pallet', c.mat.pallet) + use('stretch', c.mat.stretch) + (upto >= p.pilots_m ? p.pilots : 0)]);
+    out.push(['Запас материалов на складе', 'Материалы', Math.max(0, sumTo(m.wc))]);
+    out.push(['Логистика и бонусы сетям', 'Продажи', sumTo(m.logist)], ['Маркетинг', 'Продажи', sumTo(m.mkt)], ['Возвраты и списания', 'Продажи', sumTo(m.returns)]);
+    out.push(['Аренда', 'Постоянные', sumTo(m.rent)], ['Электричество и вода', 'Постоянные', sumTo(m.energy)], ['Обслуживание производства', 'Постоянные', sumTo(m.maint)], ['Прочие расходы', 'Постоянные', sumTo(m.other)]);
+    out.push(['Налоги (НДС и УСН)', 'Налоги', sumTo(m.vat) + sumTo(m.usn)]);
+    return out.filter(a => a[2] > 0.5).sort((a, b) => b[2] - a[2]);
+  }
+  const GCOL = { 'Вложения': ['var(--brand-soft)', 'var(--brand)'], 'Люди': ['var(--office-soft)', 'var(--office)'], 'Материалы': ['var(--water-soft)', 'var(--water)'], 'Продажи': ['var(--amber-soft)', 'var(--amber)'], 'Постоянные': ['var(--sunken)', 'var(--muted)'], 'Налоги': ['var(--red-soft)', 'var(--red)'] };
+  function chartsPanel() {
+    const m = res.m, k = res.k, W = 960, H = 330, L = 64, R = 18, T = 26, B = 34, pw = W - L - R, ph = H - T - B;
+    const cum = m.cum_cf, cf = m.cf, lo = Math.min(0, ...cum, ...cf), hi = Math.max(0, ...cum, ...cf), span = (hi - lo) || 1;
+    const X = i => L + (i + 0.5) * pw / N, Y = v => T + (hi - v) / span * ph, y0 = Y(0), bw = pw / N * 0.5;
+    const stepv = (() => { const raw = span / 6, e = Math.pow(10, Math.floor(Math.log10(raw))), f = raw / e; return (f < 1.5 ? 1 : f < 3.5 ? 2 : f < 7.5 ? 5 : 10) * e; })();
+    let g = ''; for (let v = Math.ceil(lo / stepv) * stepv; v <= hi + 1; v += stepv) g += `<line x1="${L}" x2="${W - R}" y1="${Y(v)}" y2="${Y(v)}" stroke="var(--line)" stroke-width="${Math.abs(v) < 1 ? 1.4 : 0.6}"/><text x="${L - 8}" y="${Y(v) + 4}" text-anchor="end">${nf0.format(v / 1e6)}</text>`;
+    MONTHS.forEach((mm, i) => { if (i % 2 === 0 || mm.m === 0) g += `<text x="${X(i)}" y="${H - 12}" text-anchor="middle" class="${mm.m === 0 || i === 0 ? 't-ink t-b' : ''}">${mm.short}${mm.m === 0 || i === 0 ? ' ' + String(mm.y).slice(2) : ''}</text>`; });
+    const pts = cum.map((v, i) => X(i).toFixed(1) + ',' + Y(v).toFixed(1)), line = 'M' + pts.join('L'), area = line + `L${X(N - 1)},${y0}L${X(0)},${y0}Z`;
+    g += `<defs><clipPath id="cpos"><rect x="0" y="0" width="${W}" height="${y0}"/></clipPath><clipPath id="cneg"><rect x="0" y="${y0}" width="${W}" height="${H}"/></clipPath></defs>`;
+    g += `<path d="${area}" fill="var(--brand-soft)" clip-path="url(#cpos)"/><path d="${area}" fill="var(--red-soft)" clip-path="url(#cneg)"/>`;
+    cf.forEach((v, i) => { g += `<rect x="${X(i) - bw / 2}" y="${Math.min(Y(v), y0)}" width="${bw}" height="${Math.max(1, Math.abs(Y(v) - y0))}" fill="${v >= 0 ? 'var(--brand)' : 'var(--red)'}" opacity=".3"/>`; });
+    g += `<path d="${line}" fill="none" stroke="var(--brand)" stroke-width="2.4" clip-path="url(#cpos)"/><path d="${line}" fill="none" stroke="var(--red)" stroke-width="2.4" clip-path="url(#cneg)"/>`;
+    const pi = cum.indexOf(Math.min(...cum)); if (cum[pi] < 0) g += `<circle cx="${X(pi)}" cy="${Y(cum[pi])}" r="5" fill="var(--red)"/><text x="${X(pi) + 12}" y="${Y(cum[pi]) - 12}" class="t-ink t-b">Дно: −${mln(-cum[pi])}, ${mLabel(pi + 1)}</text>`;
+    if (k.paybackM) { const i = k.paybackM - 1; g += `<path d="M${X(i)},${y0 - 9}l8,9l-8,9l-8,-9z" fill="var(--gold)"/><text x="${X(i)}" y="${y0 - 16}" text-anchor="middle" class="t-ink t-b">Окупаемость: ${mLabel(k.paybackM)}</text>`; }
+    else g += `<text x="${W - R - 4}" y="${Y(cum[N - 1]) - 10}" text-anchor="end" class="t-ink t-b">Дек. 2028: −${mln(-cum[N - 1])}${k.paybackEst ? ' · по темпу окупится ≈ ' + mLabel(k.paybackEst) : ''}</text>`;
+    cum.forEach((v, i) => { g += `<rect x="${X(i) - pw / N / 2}" y="${T}" width="${pw / N}" height="${ph}" fill="transparent"><title>${mm_(i)}: накоплено ${v < 0 ? '−' : '+'}${mln(Math.abs(v))}, за месяц ${cf[i] < 0 ? '−' : '+'}${mln(Math.abs(cf[i]))}</title></rect>`; });
+    const upto = (st.tmAll || !k.lastInvM) ? N : k.lastInvM, items = spend(upto), tot = items.reduce((a, b) => a + b[2], 0);
+    const boxes = squarify(items.map(a => ({ n: a[0], g: a[1], v: a[2] })), 0, 0, 100, 46);
+    const groups = {}; items.forEach(a => { groups[a[1]] = (groups[a[1]] || 0) + a[2]; });
+    return `<h3>Окупаемость: накопленный денежный поток без денег инвестора</h3>
+      <p>Линия показывает, сколько проект потратил и заработал с первого дня. Красная зона — проект должен инвестору; самая глубокая точка — максимум вложенного. Линия пересекла ноль — вложения вернулись. Полупрозрачные столбики — денежный поток каждого месяца.</p>
+      <div class="chartbox"><svg viewBox="0 0 ${W} ${H}" class="chart" role="img" aria-label="График окупаемости"><text x="${L - 8}" y="14" text-anchor="end">млн ₽</text>${g}</svg></div>
+      <h3>Куда уходят деньги</h3>
+      <p>Площадь прямоугольника — доля в общих тратах. ${k.lastInvM ? 'Период «пока вносит инвестор» показывает, на что уходят его деньги.' : ''}</p>
+      <div class="row"><div class="seg" role="group" aria-label="Период"><button data-act="tm:0" aria-pressed="${!st.tmAll}">Пока вносит инвестор: ${MONTHS[0].label} — ${mLabel(k.lastInvM || N)}</button><button data-act="tm:1" aria-pressed="${!!st.tmAll}">Все 26 месяцев</button></div><span style="color:var(--muted)">Всего потрачено за период: ${mln(tot)}</span></div>
+      <div class="treemap">` + boxes.map(b => { const big = b.w * b.h > 70 && b.w > 9 && b.h > 5.5, mid = b.w * b.h > 22 && b.w > 6 && b.h > 3.4, col = GCOL[b.it.g] || GCOL['Постоянные'];
+        return `<div class="tm ${big ? 'big' : mid ? 'mid' : 'tiny'}" style="left:${b.x.toFixed(3)}%;top:${(b.y / 46 * 100).toFixed(3)}%;width:${Math.min(b.w, 100 - b.x).toFixed(3)}%;height:${(Math.min(b.h, 46 - b.y) / 46 * 100).toFixed(3)}%;background:${col[0]};border-color:${col[1]}" title="${esc(b.it.n)} — ${mln(b.it.v)} · ${(b.it.v / tot * 100).toFixed(1)} %">${big || mid ? `<b>${esc(b.it.n)}</b><span>${nf1.format(b.it.v / 1e6)} млн · ${Math.round(b.it.v / tot * 100)} %</span>` : ''}</div>`; }).join('') + `</div>
+      <div class="legend" style="padding:0">${Object.keys(groups).sort((a, b) => groups[b] - groups[a]).map(n => `<span><i style="background:${(GCOL[n] || GCOL['Постоянные'])[0]};border:1px solid ${(GCOL[n] || GCOL['Постоянные'])[1]}"></i>${n}: ${mln(groups[n])} · ${Math.round(groups[n] / tot * 100)} %</span>`).join('')}</div>
+      <div class="tbl"><table><thead><tr><th>№</th><th>Статья</th><th>Группа</th><th class="r">Сумма</th><th class="r">Доля</th><th class="r">Накопленно</th></tr></thead><tbody>` +
+        (() => { let acc = 0; return items.map((a, i) => { acc += a[2]; return `<tr><td class="calc">${i + 1}</td><td>${esc(a[0])}</td><td class="calc">${a[1]}</td><td class="r">${mln(a[2])}</td><td class="r calc">${(a[2] / tot * 100).toFixed(1)} %</td><td class="r calc">${Math.round(acc / tot * 100)} %</td></tr>`; }).join(''); })() + `</tbody></table></div>`;
+  }
+  const mm_ = i => MONTHS[i].label;
   function panel() {
     const s = st.s, p = s.p, m = res.m, k = res.k, t = st.tab, ic = i => i >= p.idx_m ? 1 + p.cost_idx : 1, c = k.cost, last = N - 1;
+    if (t === 'charts') return chartsPanel();
     if (t === 'people') {
       const cost = e => { let x = 0; for (let i = e.from; i <= e.to; i++) x += e.salary * p.tax_k * ic(i); return x; };
       const fot = g => s.staff.filter(e => e.group === g).reduce((a, e) => a + e.salary, 0);
@@ -264,22 +329,25 @@
       const revT = i => sold[i].reduce((a, x, q) => a + x * pr[i] * (q + 1 >= p.idx_m ? 1 + p.price_idx : 1), 0), revAll = revT(0) + revT(1) + revT(2), shSum = sh[0] + sh[1] + sh[2];
       const palOf = (lit, i) => c.pal[i].bottles ? lit * sh[i] / BT[i][2] / c.pal[i].bottles : 0;
       return `<h3>Три бутылки: доля, цена и что это даёт</h3>
-      <div class="bcards">` + BT.map((b, i) => `<article class="bcard"><div class="bpic">${bottleSvg('s' + b[0], [[sh[i], 'var(--water)']], b[3])}<b>${b[1]}</b></div><div class="brows">
-          ${brow('Доля литров', bin('sh' + b[0]))}${brow('Отпускная цена с НДС', bin('p' + b[0]))}
+      <div class="bcards">` + BT.map((b, i) => `<article class="bcard"><div class="bpic"><div class="cols2">${colSvg([[sh[i], 'var(--water)', 'Доля литров', Math.round(sh[i] * 100) + ' %']], 120, 'литры')}${colSvg([[revAll ? revT(i) / revAll : 0, 'var(--brand)', 'Доля выручки', (revAll ? Math.round(revT(i) / revAll * 100) : 0) + ' %']], 120, 'выручка')}</div><b>${b[1]}</b></div><div class="brows">
+          ${brow('Доля литров', bin('sh' + b[0]))}${brow('Цена продажи с завода, с НДС', bin('p' + b[0]))}
           ${brow('В декабре 2028: бутылок', pcs(sold[i][last]))}${brow('В декабре 2028: паллет', nf1.format(palOf(m.sold_l[last], i)))}
           ${brow('За 26 месяцев: бутылок', pcs(sum(sold[i])))}${brow('За 26 месяцев: выручка', mln(revT(i)))}${brow('Доля в выручке', (revAll ? Math.round(revT(i) / revAll * 100) : 0) + ' %')}</div></article>`).join('') + `</div>
-      <p class="${Math.abs(shSum - 1) < 1e-4 ? '' : 'bad'}">Сумма долей: ${show(shSum, 'pct')} %${Math.abs(shSum - 1) < 1e-4 ? '. Бутылка залита по доле литров.' : ' — должно быть 100 %.'} Цена за литр: ${BT.map((b, i) => b[1] + ' — ' + Math.round(pr[i] / b[2]) + ' ₽').join(', ')}.</p>
+      <p class="${Math.abs(shSum - 1) < 1e-4 ? '' : 'bad'}">Сумма долей: ${show(shSum, 'pct')} %${Math.abs(shSum - 1) < 1e-4 ? '.' : ' — должно быть 100 %.'} Столбики: доля бутылки в литрах и в выручке. Цена за литр: ${BT.map((b, i) => b[1] + ' — ' + Math.round(pr[i] / b[2]) + ' ₽').join(', ')}.</p>
       <h3>План продаж</h3><p>Сколько литров в месяц вы продаёте на полном ходу. Каждая строка задаёт новый уровень с указанного месяца. План выше мощности — продажи теряются; ниже — установки простаивают.</p>
       <div class="tbl"><table><thead><tr><th>С месяца</th><th class="r">План, литров в месяц</th><th class="r">0,3 л, бут.</th><th class="r">0,5 л, бут.</th><th class="r">1,0 л, бут.</th><th class="r">Паллет в месяц</th><th class="r">Мощность, л</th><th></th></tr></thead><tbody>` +
         plan.map(q => `<tr><td class="mo">${monthSel('pl-' + q.id + '-month', 'plan:' + q.id + ':month', q.month)}</td><td class="n">${num('pl-' + q.id + '-liters', 'plan:' + q.id + ':liters', q.liters, 'int')}</td>${BT.map((b, i) => `<td class="r calc">${pcs(q.liters * sh[i] / b[2])}</td>`).join('')}<td class="r calc">${nf1.format(palOf(q.liters, 0) + palOf(q.liters, 1) + palOf(q.liters, 2))}</td><td class="r calc">${pcs(capAt(s, Math.max(q.month, p.start_m)))}</td><td>${plan.length > 1 ? `<button class="x" data-act="del:plan:${q.id}" aria-label="Удалить">×</button>` : ''}</td></tr>`).join('') +
         `</tbody></table></div><div class="row"><button class="btn" data-act="add:plan">＋ Новый уровень плана</button></div>${fields('sales')}`;
     }
     if (t === 'bottle') {
-      const pr = [p.p03, p.p05, p.p10], cols = ['var(--water)', 'var(--brand)', 'var(--amber)', 'var(--muted)'];
-      return `<p>Бутылка залита по слоям: сколько от отпускной цены съедают преформа, крышка, этикетка и упаковка. Светлая часть — то, что остаётся на зарплаты, аренду, логистику, налоги и прибыль.</p>
+      const pr = [p.p03, p.p05, p.p10], cols = ['var(--water)', 'var(--brand)', 'var(--amber)', 'var(--muted)'], nm = ['Преформа', 'Крышка', 'Этикетка', 'Упаковка'], mxp = Math.max(1, ...pr);
+      return `<p>Столбик — цена продажи с завода. Цветные слои снизу — материалы: преформа, крышка, этикетка, упаковка. Светлая часть сверху — то, что остаётся на зарплаты, аренду, логистику, налоги и прибыль.</p>
+      <div class="colchart">` + BT.map((b, i) => { const parts = [c.pf[i], c.cap, p.label, p.pack], tot = c.m[i], H = Math.round(240 * pr[i] / mxp);
+          return `<div class="cc"><span class="cctop">${pr[i]} ₽</span>${colSvg(parts.map((x, j) => [pr[i] ? x / pr[i] : 0, cols[j], nm[j] + ' ' + nf1.format(x) + ' ₽', nf1.format(x)]).concat([[pr[i] ? Math.max(0, 1 - tot / pr[i]) : 0, 'var(--sunken)', 'Остаётся ' + nf1.format(pr[i] - tot) + ' ₽', '<b>остаётся ' + nf1.format(pr[i] - tot) + ' ₽ · ' + (pr[i] ? Math.round((1 - tot / pr[i]) * 100) : 0) + ' %</b>']]), H)}<b>${b[1]}</b><span class="ccsub">материалы ${nf1.format(tot)} ₽</span></div>`; }).join('') +
+        `<div class="legend ccleg">${nm.map((x, j) => `<span><i style="background:${cols[j]}"></i>${x}</span>`).join('')}<span><i style="background:var(--sunken);border:1px solid var(--line)"></i>остаётся</span></div></div>
       <div class="bcards">` + BT.map((b, i) => { const parts = [c.pf[i], c.cap, p.label, p.pack], tot = c.m[i], pl = c.pal[i];
-          return `<article class="bcard"><div class="bpic">${bottleSvg('b' + b[0], parts.map((x, j) => [pr[i] ? x / pr[i] : 0, cols[j]]), b[3])}<b>${b[1]}</b></div><div class="brows">
-          ${brow('Отпускная цена с НДС', bin('p' + b[0]))}${brow('Вес преформы', bin('w' + b[0]))}
+          return `<article class="bcard solo"><div class="brows"><div class="br"><span><b style="font-family:var(--display);font-weight:500">${b[1]}</b></span><span></span></div>
+          ${brow('Цена продажи с завода, с НДС', bin('p' + b[0]))}${brow('Вес преформы', bin('w' + b[0]))}
           ${brow('Преформа', nf1.format(parts[0]) + ' ₽', cols[0])}${brow('Крышка', nf1.format(parts[1]) + ' ₽', cols[1])}${brow('Этикетка', nf1.format(parts[2]) + ' ₽', cols[2])}${brow('Упаковка', nf1.format(parts[3]) + ' ₽', cols[3])}
           ${brow('<b>Материалы всего</b>', '<b>' + nf1.format(tot) + ' ₽</b>')}${brow('<b>Остаётся</b>', '<b>' + nf1.format(pr[i] - tot) + ' ₽ · ' + (pr[i] ? Math.round((1 - tot / pr[i]) * 100) : 0) + ' %</b>')}
           ${brow('Диаметр', bin('d' + b[0]))}${brow('Высота', bin('h' + b[0]))}${brow('Штук в упаковке', bin('pk' + b[0]))}
@@ -395,6 +463,7 @@
       case 'tab': st.tab = a[1]; persist(); renderTabs(); break;
       case 'zoom': st.zoom = a[1]; stopPlay(); persist(); renderTimeline(); $('tl-scroll').scrollLeft = 0; break;
       case 'play': play(); break;
+      case 'pan': { const sc = $('tl-scroll'); stopPlay(); sc.scrollBy({ left: +a[1] * sc.clientWidth * 0.8, behavior: 'smooth' }); break; }
       case 'undo': if (undo.length) { const o = JSON.parse(undo.pop()); st.s = o.s; st.journal = o.journal; res = S.sim(st.s); persist(); render(); toast('Ход отменён'); } break;
       case 'reset': loadScn('База'); break;
       case 'save': $('savebox').hidden = false; $('b-save').hidden = true; $('scnname').value = s.name === 'База' ? '' : s.name; $('scnname').focus(); break;
@@ -403,6 +472,7 @@
       case 'delscn': if (st.saved[s.name]) { const n = s.name; delete st.saved[n]; persist(); render(); toast('Сценарий «' + n + '» удалён из сохранённых'); } break;
       case 'xlsx': xlsx(); break;
       case 'clearj': st.journal = []; persist(); renderTabs(); break;
+      case 'tm': st.tmAll = a[1] === '1'; renderTabs(); break;
       case 'lever': { const i = +a[1], v = levVal(i); if (!v) { toast('Впишите значение рычага'); break; } act('Рычаг: ' + levText(i, s), z => LEVERS[i].f(z, v)); break; }
       case 'plancap': { const b = s.batches.find(x => x.id === a[1]); if (!b) break; const mo = Math.max(b.month, p.start_m), cap = Math.round(capAt(s, mo)); act(`План продаж с ${mLabel(mo)} поднят до мощности: ${pcs(cap)} л в месяц`, () => { const ex = s.plan.find(q => q.month === mo); if (ex) ex.liters = cap; else s.plan.push({ id: newId(), month: mo, liters: cap }); }); break; }
       case 'add':
