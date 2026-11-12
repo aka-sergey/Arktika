@@ -131,6 +131,13 @@
       ['Окупаемость', fm[1](vals[1]), d(dPb, dPb < 0, pd || (k.paybackM ? '' : 'за пределами 26 месяцев'))],
       ['Минимум на счёте', fm[2](vals[2]), d(k.minCash < 0 ? 1 : 0, false, esc(S.dateOf(k.minCashDay).text))],
       ['Прибыль после налогов за 2028', fm[3](vals[3]), d(dP, dP > 0, Math.abs(dP) < 1 ? 'как в базе' : (dP > 0 ? '+' : '−') + mln(Math.abs(dP)).replace(' ₽', '') + ' к базе')]];
+    const aM = v => Math.abs(v) >= 950000 ? nf1.format(Math.abs(v) / 1e6) + ' млн ₽' : nf0.format(Math.abs(v) / 1e3) + ' тыс. ₽', sM = v => (v < 0 ? '−' : '+') + aM(v);
+    const m28 = res.m, i28 = MONTHS.map((mm, i) => mm.y === 2028 ? i : -1).filter(i => i >= 0), s28 = arr => i28.reduce((q, i) => q + (arr[i] || 0), 0);
+    const cf28 = s28(m28.cf), gap = cf28 - k.profit28, parts = [['запас материалов', -s28(m28.wc)], ['отсрочка покупателей', s28(m28.receipts) - s28(m28.rev)], ['оплата оборудования', -s28(m28.capex)]].filter(x => Math.abs(x[1]) >= 50000);
+    const less = [parts.some(x => x[0] === 'запас материалов' && x[1] < 0) ? 'заплачено за запас материалов вперёд' : '', parts.some(x => x[0] === 'отсрочка покупателей' && x[1] < 0) ? 'покупатели ещё не оплатили' : '', parts.some(x => x[0] === 'оплата оборудования') ? 'в 2028 оплачено оборудование' : ''].filter(Boolean);
+    const why = 'Прибыль считает выручку по отгрузке и материалы по расходу. ' + (Math.abs(gap) < 50000 ? 'В этом сценарии деньги за 2028 почти совпадают с прибылью.' : gap < 0 ? 'Денег приходит меньше на то, что ' + (less.length ? less.map((x, i) => i === 0 ? x : (i === less.length - 1 ? ' и что ' : ', что ') + x).join('') : 'часть расходов оплачена раньше, чем списана') + '.' : 'Денег пришло больше: израсходован запас материалов, купленный раньше, или оплачены прошлые отгрузки.');
+    const pTitle = `Прибыль после налогов за 2028: ${aM(k.profit28)}. Денежный поток за 2028: ${aM(cf28)}. ${why}`;
+    const qd = `<details class="qd"><summary aria-label="Чем прибыль отличается от денежного потока" title="Чем прибыль отличается от денежного потока">?</summary><div class="pop"><dl><dt>Прибыль после налогов за 2028</dt><dd>${aM(k.profit28)}</dd><dt>Денежный поток за 2028</dt><dd>${aM(cf28)}</dd><dt>Разница</dt><dd>${Math.abs(gap) < 500 ? '0' : sM(gap)}</dd></dl>${parts.length ? `<p class="pp">${parts.map(x => x[0] + ' ' + sM(x[1])).join(' · ')}</p>` : ''}<p>${why}</p></div></details>`;
     const chips = ['', '', '', ''];
     if (mv && Date.now() - mv.t < 1500) { const f = mv.from, fpb = f.paybackM || f.paybackEst || 0, chip = (txt, good) => `<span class="mv ${good ? 'good' : 'bad'}">${txt}</span>`;
       const dI = k.invest - f.invest, dM = (pbN && fpb) ? pbN - fpb : 0, dC = k.minCash - f.minCash, dR = k.profit28 - f.profit28;
@@ -143,9 +150,9 @@
     $('score').innerHTML = `
       <div class="goal ${k.paybackM ? 'ok' : ''}${flip ? ' flip' : ''}"><span class="verdict"><i class="led"></i>${verdict}</span><b>Окупиться до декабря 2028 с минимальным бюджетом</b><span class="status" title="${esc(status)}">${esc(status)}</span>
         <div class="debtrow" title="${esc(backT)}"><div class="debt"><i style="width:${(back * 100).toFixed(1)}%;background:${heat(1 - back)}"></i></div><span>возврат ${Math.round(back * 100)} %</span></div></div>` +
-      tiles.map((t, i) => `<div class="metric"><span class="lab">${t[0]}</span><span class="val">${t[1]}</span>${t[2]}${chips[i]}</div>`).join('');
+      tiles.map((t, i) => `<div class="metric"${i === 3 ? ` title="${esc(pTitle)}"` : ''}><span class="lab">${t[0]}</span><span class="val">${t[1]}</span>${t[2]}${chips[i]}${i === 3 ? qd : ''}</div>`).join('');
     $('sbar-in').innerHTML = `<span class="sb-st ${k.paybackM ? 'ok' : ''}"><i class="led"></i><span>${verdict}</span></span>` +
-      tiles.map((t, i) => `<span class="sb-c${chips[i] ? ' moved' : ''}" title="${t[0]}"><small><span class="l">${t[0]}</span>${chips[i]}</small><b>${t[1]}</b></span>`).join('') +
+      tiles.map((t, i) => `<span class="sb-c${chips[i] ? ' moved' : ''}" title="${i === 3 ? esc(pTitle) : t[0]}"><small><span class="l">${t[0]}</span>${chips[i]}</small><b>${t[1]}</b></span>`).join('') +
       `<button class="btn sm" data-act="undo" id="b-undo2"${undo.length ? '' : ' disabled'} title="Отменить ход" aria-label="Отменить ход"><span aria-hidden="true">↶</span><span class="t">Отменить ход</span></button>`;
     if (shown && shown.some((v, i) => v !== vals[i])) { const from = shown, M = document.querySelectorAll('#score .metric .val'), B = document.querySelectorAll('#sbar-in .sb-c b'), put = (i, h) => { if (M[i]) M[i].innerHTML = h; if (B[i]) B[i].innerHTML = h; };
       tween('score', 380, e => vals.forEach((v, i) => { if (from[i] !== v && !(i === 1 && !(from[i] && v))) put(i, fm[i](from[i] + (v - from[i]) * e)); }), () => vals.forEach((v, i) => put(i, fm[i](v))), 1.5); }
@@ -176,7 +183,7 @@
     PPD = st.zoom === 'm' ? Math.max(1.45, avail / DAYS) : st.zoom === 'w' ? 7 : 24;
     const W = Math.ceil(DAYS * PPD), X = x => x * PPD;
     const allZero = arr => { for (let i = 0; i < arr.length; i++) if (Math.abs(arr[i]) > 1e-9) return false; return true; };
-    const lanes = [{ k: 'axis', h: 40 }, { k: 'cash', h: 80, t: 'Деньги на счёте', s: 'до ' + short(amax(d.cash)) + ' ₽' }, { k: 'pays', h: 46, t: 'Крупные платежи', s: 'техника и сырьё' }];
+    const lanes = [{ k: 'axis', h: 40 }, { k: 'cash', h: 80, t: 'Деньги на счёте', s: 'с учётом взносов инвестора', tip: 'Остаток по дням вместе с деньгами, которые внёс инвестор. Максимум за период: ' + short(amax(d.cash)) + ' ₽' }, { k: 'pays', h: 46, t: 'Крупные платежи', s: 'техника и сырьё' }];
     if (!allZero(d.fg)) lanes.push({ k: 'fg', h: 46, t: 'Готовая вода', s: 'до ' + short(amax(d.fg)) + ' бут.' });
     lanes.push({ k: 'units', h: 48, t: 'Очистка воды', s: 'до ' + pcs(amax(m.startL.map((u, i) => u + m.newL[i]))) + ' л/сут' });
     if (ui.mat) { lanes.push({ k: 'hdr', h: 36, t: 'Склад материалов', s: 'остаток и партии в пути', tog: 'mat', open: true });
@@ -243,7 +250,7 @@
     $('tl-labels').style.height = H + 'px'; $('tl-svg').style.height = H + 'px';
     $('tl-labels').innerHTML = lanes.filter(l => l.t).map(l => l.tog
       ? `<button type="button" class="lanebtn" style="top:${l.y + 2}px" data-act="ui:${l.tog}" aria-expanded="${!!l.open}" title="${l.open ? 'Свернуть в одну дорожку' : 'Раскрыть подробно'}"><b><span class="chev">${l.open ? '▾' : '▸'}</span>${esc(l.t)}</b><span>${esc(l.s)}</span></button>`
-      : `<div style="top:${l.y + 2}px"><b>${esc(l.t)}</b><span>${esc(l.s)}</span></div>`).join('');
+      : `<div style="top:${l.y + 2}px"${l.tip ? ` title="${esc(l.tip)}"` : ''}><b>${esc(l.t)}</b><span>${esc(l.s)}</span></div>`).join('');
     $('draghint').hidden = !!ui.hint;
     $('legend').innerHTML = [['var(--brand)', 'деньги и мощность'], ['var(--capex)', 'оплата оборудования'], ['var(--water)', 'материалы и оплата партий'], ['var(--office)', ui.staff ? 'офис' : 'люди']].map(a => `<span><i style="background:${a[0]}"></i>${a[1]}</span>`).join('') +
       [['var(--ink)', '◆', 'старт продаж'], ['var(--brand)', '◆', 'EBITDA в плюсе'], ['var(--brand)', '★', 'окупаемость'], ['var(--brand)', '▲', 'взнос инвестора, млн ₽'], ['var(--ink)', '▼', 'возврат инвестору']].map(a => `<span><b style="color:${a[0]}">${a[1]}</b>${a[2]}</span>`).join('') + (!ui.mat && s.mats.some(mt => amin(d[mt.key]) < -0.5) ? '<span><i style="background:var(--red)"></i>месяц с дефицитом</span>' : '') + (ui.mat ? '<span>пунктир — материалы в пути</span>' : '');
@@ -363,6 +370,12 @@
     { a: s => 'Докупить ' + tOf(s, 'B').name + ' с августа 2027 и поднять план продаж', u: 'шт', d: 10, f: addUnits('B'), abs: true },
     { a: s => 'Докупить ' + tOf(s, 'A').name + ' с августа 2027 и поднять план продаж', u: 'шт', d: 10, f: addUnits('A'), abs: true }
   ];
+  let LEVMX = 1;
+  const levCalc = (i, v, s, k) => { const z = clone(s); LEVERS[i].f(z, v); const r = S.sim(z).k; return { i, lv: LEVERS[i], dCum: r.cumEnd - k.cumEnd, dInv: r.invest - k.invest, pb: r.paybackM, est: r.paybackEst }; };
+  const levCells = r => { const am = v => Math.abs(v) >= 950000 ? nf1.format(Math.abs(v) / 1e6) + ' млн' : nf0.format(Math.abs(v) / 1e3) + ' тыс.', flat = Math.abs(r.dCum) < 500, pos = r.dCum >= 0;
+    return { bar: `<span class="track"><i style="${pos ? 'left:50%' : 'right:50%'};width:${flat ? 0 : Math.max(0.8, Math.min(50, Math.abs(r.dCum) / LEVMX * 50)).toFixed(1)}%;background:${pos ? 'var(--brand)' : 'var(--red)'}"></i></span><span class="lnum">${flat ? '0' : (pos ? '+' : '−') + am(r.dCum)}</span>`,
+      inv: r.dInv < -500 ? `<span class="good">экономия ${am(r.dInv)}</span>` : r.dInv > 500 ? `+${am(r.dInv)} вложений` : `<span class="calc">без изменений</span>`,
+      pb: r.pb ? esc(mLabel(r.pb)) : r.est ? '≈ ' + esc(mLabel(r.est)) : 'нет' }; };
   const levVal = i => (st.lev && st.lev[i] != null) ? st.lev[i] : LEVERS[i].d;
   const levText = (i, s) => { const lv = LEVERS[i], v = levVal(i); return lv.abs ? lv.a(s) + ': ' + v + ' ' + lv.u : lv.a(s) + ' ' + (v > 0 ? '+' : '−') + trim(Math.abs(v), 2) + ' ' + lv.u; };
   /* ---------- резюме: чем сценарий отличается от базы и что это даёт ---------- */
@@ -597,11 +610,11 @@
         `</tbody><tfoot><tr><td>Всего</td><td class="r">${rub(m.need.reduce((a, b) => a + b, 0))}</td><td class="r">${rub(m.contrib.reduce((a, b) => a + b, 0))}</td><td class="r">${rub(k.invest)}</td></tr></tfoot></table></div>${fields('tax')}`;
     }
     if (t === 'levers') {
-      const rows = LEVERS.map((lv, i) => { const z = clone(s); lv.f(z, levVal(i)); const r = S.sim(z).k; return { i, lv, dCum: r.cumEnd - k.cumEnd, dInv: r.invest - k.invest, pb: r.paybackM, est: r.paybackEst }; }).sort((a, b) => b.dCum - a.dCum);
-      const mx = Math.max(1, ...rows.map(r => Math.abs(r.dCum)));
-      return intro(`Что сильнее всего сдвигает результат. Впишите своё значение и нажмите «Применить».`, `<p>Полоса показывает, на сколько изменится накопленный денежный поток к декабрю 2028 от текущего сценария. «Применить» делает ход, его можно отменить.</p>`) + `
-      <div><div class="lever hd"><span>Рычаг</span><span>На сколько</span><span>Накопленный поток к концу 2028</span><span>Бюджет, изменение</span><span>Окупаемость станет</span><span></span></div>` +
-        rows.map(r => `<div class="lever"><span>${esc(r.lv.a(s))}</span><span class="in">${num('lv-' + r.i, 'lev:' + r.i, levVal(r.i), 'dec1')}<span class="u">${r.lv.u}</span></span><span class="track" title="${(r.dCum >= 0 ? '+' : '−') + mln(Math.abs(r.dCum))}"><i style="${r.dCum >= 0 ? 'left:50%' : 'right:50%'};width:${(Math.abs(r.dCum) / mx * 50).toFixed(1)}%;background:${r.dCum >= 0 ? 'var(--brand)' : 'var(--red)'}"></i></span><span>${(r.dInv >= 0 ? '+' : '−') + mln(Math.abs(r.dInv))}</span><span>${r.pb ? esc(mLabel(r.pb)) : r.est ? '≈ ' + esc(mLabel(r.est)) : 'нет'}</span><button class="btn sm" data-act="lever:${r.i}">Применить</button></div>`).join('') + '</div>';
+      const pbOf = r => r.pb || r.est || 9999, rows = LEVERS.map((lv, i) => levCalc(i, levVal(i), s, k)).sort((a, b) => (b.dCum - a.dCum) || (pbOf(a) - pbOf(b)));
+      LEVMX = Math.max(1, ...rows.map(r => Math.abs(r.dCum)));
+      return intro(`Что сильнее всего сдвигает результат. Впишите своё значение и нажмите «Применить».`, `<p>Полоса и число рядом показывают, на сколько изменится накопленный денежный поток к декабрю 2028 от текущего сценария. «Экономия» в колонке бюджета — на сколько меньше внесёт инвестор. Строки пересчитываются, пока вы набираете значение, а порядок обновляется, когда вы выходите из поля. «Применить» делает ход, его можно отменить.</p>`) + `
+      <div><div class="lever hd"><span>Рычаг</span><span>Значение</span><span>К потоку к дек. 2028</span><span>Бюджет инвестора</span><span>Окупаемость</span><span>Применить</span></div>` +
+        rows.map(r => { const cl = levCells(r); return `<div class="lever" data-lev="${r.i}"><span>${esc(r.lv.a(s))}</span><span class="in">${num('lv-' + r.i, 'lev:' + r.i, levVal(r.i), 'dec1')}<span class="u">${r.lv.u}</span></span><span class="lb">${cl.bar}</span><span class="li">${cl.inv}</span><span class="lp">${cl.pb}</span><button class="btn sm" data-act="lever:${r.i}">Применить</button></div>`; }).join('') + '</div>';
     }
     if (t === 'scn') {
       const row = (n, kk, btns) => `<tr><td>${esc(n)}</td><td class="r">${mln(kk.invest)}</td><td>${kk.paybackM ? esc(mLabel(kk.paybackM)) : kk.paybackEst ? '≈ ' + esc(mLabel(kk.paybackEst)) : 'нет'}</td><td class="r">${mln(kk.profit28)}</td><td class="r">${short(kk.minCash)} ₽</td><td class="r">${kk.headMax}</td><td style="white-space:nowrap">${btns}</td></tr>`;
@@ -672,13 +685,16 @@
   /* ---------- ввод ---------- */
   const LIST = { staff: 'staff', capex: 'capex', batch: 'batches', plan: 'plan' };
   const FLD = { type: 'тип', cat: 'раздел', start: 'штук на старте', name: 'название', group: 'группа', salary: 'оклад', from: 'работает с', to: 'работает по', amount: 'сумма', month: 'месяц', day: 'день оплаты', reserve: 'резерв', qty: 'штук', l: 'литров в сутки', price: 'цена', liters: 'план, л в месяц', moq: 'партия', lead: 'заказ за месяцев', first: 'первый заказ', ship: 'транспорт партии' };
+  let levT = 0;
+  document.addEventListener('input', e => { const t = e.target, bd = t.dataset && t.dataset.bind; if (!bd || bd.indexOf('lev:') !== 0) return; const row = t.closest('.lever'), v = parse(t.value, 'dec1'); if (!row || v === null) return;
+    const cl = levCells(levCalc(+bd.split(':')[1], v, st.s, res.k)); row.querySelector('.lb').innerHTML = cl.bar; row.querySelector('.li').innerHTML = cl.inv; row.querySelector('.lp').innerHTML = cl.pb; });
   document.addEventListener('change', e => {
     const t = e.target, b = t.dataset && t.dataset.bind; if (t.id === 'scn') { if (t.value !== 'cur') loadScn(t.value); return; } if (t.id === 'imp') { importFile(t); return; } if (!b) return;
     const a = b.split(':'), kind = a[0], id = a[1], field = a[2], f = t.dataset.fmt || 'txt', s = st.s;
     if (kind === 'capex' && field === 'cat') cxOpen.add(t.value);
     let v = t.type === 'checkbox' ? t.checked : (f === 'txt' || f === 'group') ? t.value.trim() : parse(t.value, f);
     if (kind === 'contrib' && t.value.trim() === '') v = 0;
-    if (kind === 'lev') { if (v === null) { rerender(); return; } st.lev = st.lev || {}; st.lev[id] = v; persist(); renderTabs(); return; }
+    if (kind === 'lev') { if (v === null) { rerender(); return; } st.lev = st.lev || {}; st.lev[id] = v; persist(); clearTimeout(levT); levT = setTimeout(() => { if (st.tab === 'levers') rerender(); }, 220); return; }
     if (v === null || v === '') { toast('Здесь нужно значение'); rerender(); return; }
     if (typeof v === 'number' && v < 0 && !(kind === 'p' && /idx/.test(id))) { toast('Отрицательные значения не подходят'); rerender(); return; }
     if (kind === 'p') { const mt = Meta.by[id], old = s.p[id]; if (old === v) { rerender(); return; } const dv = x => id === 'payout_on' ? (x ? 'да' : 'нет') : mt.opts ? ((mt.opts.find(o => o[0] === x) || [0, x])[1]) : disp(x, mt.fmt); act(`${mt.label}: ${dv(old)} → ${dv(v)}`, () => { s.p[id] = v; }); return; }
@@ -710,6 +726,7 @@
   function tabTop() { const sb = $('sbar'), off = sb.hidden ? 0 : sb.offsetHeight, r = $('tabcard').getBoundingClientRect(); if (r.top < off) window.scrollBy(0, r.top - off); }
   document.addEventListener('click', e => {
     const mo = $('more'); if (mo.open && !e.target.closest('#more summary')) mo.open = false;
+    document.querySelectorAll('details.qd[open]').forEach(x => { if (!x.contains(e.target)) x.open = false; });
     const t = e.target.closest('[data-act]'); if (!t) return; const a = t.dataset.act.split(':'), s = st.s, p = s.p;
     switch (a[0]) {
       case 'tab': st.tab = a[1]; ui.last[grpOf(a[1])[0]] = a[1]; saveUi(); persist(); renderTabs(); tabTop(); break;
@@ -759,7 +776,7 @@
       case 'webdel': webHide(a.slice(1).join(':'), t); break;
       case 'admsave': lsSet('vodaGame.admin', ($('admcode').value || '').trim()); renderTabs(); toast('Код владельца сохранён в этом браузере'); break;
       case 'sharelink': pack(st.s).then(code => { shareUrl = location.origin + location.pathname + '#s=' + code; renderTabs(); const inp = $('shareurl'); if (inp) selText(inp); if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(shareUrl).then(() => toast('Ссылка скопирована'), () => toast('Ссылка ниже — выделите и скопируйте её')); else toast('Ссылка ниже — выделите и скопируйте её'); }); break;
-      case 'lever': { const i = +a[1], v = levVal(i); if (!v) { toast('Впишите значение рычага'); break; } act('Рычаг: ' + levText(i, s), z => LEVERS[i].f(z, v)); break; }
+      case 'lever': { clearTimeout(levT); const i = +a[1], v = levVal(i); if (!v) { toast('Впишите значение рычага'); break; } act('Рычаг: ' + levText(i, s), z => LEVERS[i].f(z, v)); break; }
       case 'plancap': { const b = s.batches.find(x => x.id === a[1]); if (!b) break; const mo = Math.max(b.month, p.start_m), cap = Math.round(capAt(s, mo)); act(`План продаж с ${mLabel(mo)} поднят до мощности: ${pcs(cap)} л в месяц`, () => { const ex = s.plan.find(q => q.month === mo); if (ex) ex.liters = cap; else s.plan.push({ id: newId(), month: mo, liters: cap }); }); break; }
       case 'add':
         if (a[1] === 'staff') act('Добавлен сотрудник: Новый сотрудник, 60 000 ₽', () => { s.staff.push({ id: newId(), name: 'Новый сотрудник', group: 'prod', salary: 60000, from: Math.max(1, p.start_m - 1), to: N }); });
