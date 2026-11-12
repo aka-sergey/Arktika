@@ -46,6 +46,11 @@
   function rerender() { const a = document.activeElement, fid = a && a.id; render(); if (fid) { const e = $(fid); if (e && e.focus) e.focus(); } }
   let toastT = 0; const toast = t => { const e = $('toast'); e.textContent = t; e.hidden = false; clearTimeout(toastT); toastT = setTimeout(() => { e.hidden = true; }, 3600); };
 
+  /* ---------- цвета «тепловой карты»: зелёный → жёлтый → красный ---------- */
+  const HG = [22, 199, 132], HY = [240, 185, 11], HR = [234, 57, 67], HN = [38, 45, 56];
+  const mix = (a, b, t) => a.map((x, i) => Math.round(x + (b[i] - x) * t)), rgb = c => 'rgb(' + c.join(',') + ')';
+  const heatC = t => { t = clamp(t, 0, 1); return t < 0.5 ? mix(HG, HY, t * 2) : mix(HY, HR, (t - 0.5) * 2); }, heat = t => rgb(heatC(t));
+  const inkOn = c => (0.299 * c[0] + 0.587 * c[1] + 0.114 * c[2]) > 120 ? '#0B0E11' : '#FFFFFF';
   /* ---------- табло ---------- */
   function renderScore() {
     const k = res.k, b = BASE.k;
@@ -58,8 +63,8 @@
     const md = dInv === 0 ? 'как в базе' : (dInv > 0 ? '+' : '−') + mln(Math.abs(dInv)).replace(' ₽', '') + ' к базе';
     const pd = !dPb ? (k.paybackEst ? 'как в базе' : '') : (dPb < 0 ? 'на ' + (-dPb) + ' мес. раньше базы' : 'на ' + dPb + ' мес. позже базы');
     $('score').innerHTML = `
-      <div class="goal"><span class="eyebrow">Цель игры</span><b>Окупиться до декабря 2028 с минимальным бюджетом</b><span class="status">${esc(status)}</span>
-        <div class="debt" title="Деньги на счёте в конце 2028 плюс выплаты инвестору — к сумме вложений"><i style="width:${(back * 100).toFixed(1)}%"></i></div>
+      <div class="goal ${k.paybackM ? 'ok' : ''}"><span class="eyebrow">Цель игры</span><b>Окупиться до декабря 2028 с минимальным бюджетом</b><span class="verdict"><i class="led"></i>${k.paybackM ? 'Цель достигнута' : 'Не окупается'}</span><span class="status">${esc(status)}</span>
+        <div class="debt" title="Деньги на счёте в конце 2028 плюс выплаты инвестору — к сумме вложений"><i style="width:${(back * 100).toFixed(1)}%;background:${heat(1 - back)}"></i></div>
         <span class="status">К концу 2028 проект возвращает ${Math.round(back * 100)} % вложенного${k.payout > 0 ? ' · инвестору выплачено ' + mln(k.payout) : ''}</span></div>
       <div class="metric"><span class="lab">Вносит инвестор</span><span class="val">${nf1.format(k.invest / 1e6)} <small>млн ₽</small></span>${d(dInv, dInv < 0, md)}</div>
       <div class="metric"><span class="lab">Окупаемость</span><span class="val">${k.paybackM ? esc(mLabel(k.paybackM)) : k.paybackEst ? '≈ ' + esc(mLabel(k.paybackEst)) : 'нет'}</span>${d(dPb, dPb < 0, pd || (k.paybackM ? '' : 'за пределами 26 месяцев'))}</div>
@@ -119,7 +124,7 @@
         const big = res.ev.filter(e => e.kind === 'capex' || e.kind === 'buy'), mx = Math.max(1, ...big.map(e => -e.amt)), bw = clamp(PPD, 3, 10), seen = {};
         big.forEach(e => { const n = seen[e.day] = (seen[e.day] || 0) + 1, bh = Math.max(3, Math.sqrt(-e.amt / mx) * (h - 4)), x = X(e.day) + (PPD - bw) / 2 + (n - 1) * 3;
           const dr = e.kind === 'capex' && s.capex.some(c => c.id === e.ref) ? ` data-drag="capex:${e.ref}"` : '';
-          g.push(`<rect x="${x.toFixed(1)}" y="${(y0 + h - bh).toFixed(1)}" width="${bw}" height="${bh.toFixed(1)}" rx="1.5" fill="${e.kind === 'capex' ? 'var(--brand)' : 'var(--water)'}"${dr}><title>${esc(e.label)} — ${rub(-e.amt)}${dr ? ' · потяните, чтобы перенести оплату' : ''}</title></rect>`); });
+          g.push(`<rect x="${x.toFixed(1)}" y="${(y0 + h - bh).toFixed(1)}" width="${bw}" height="${bh.toFixed(1)}" rx="1.5" fill="${e.kind === 'capex' ? 'var(--accent)' : 'var(--water)'}"${dr}><title>${esc(e.label)} — ${rub(-e.amt)}${dr ? ' · потяните, чтобы перенести оплату' : ''}</title></rect>`); });
       }
       if (l.k === 'fg') { const mx = Math.max(1, amax(d.fg)); g.push(`<path d="${stepPath(d.fg, y0 + 4, h - 4, 0, mx, true)}" fill="var(--water-soft)"/><path d="${stepPath(d.fg, y0 + 4, h - 4, 0, mx, false)}" fill="none" stroke="var(--water)" stroke-width="1.4"/>`); }
       if (l.k === 'mat') { const a = d[l.mt.key], wy = d[l.mt.key + '_way'], mx = Math.max(1, amax(a), amax(wy)), mn = Math.min(0, amin(a));
@@ -139,7 +144,7 @@
     $('tl-svg').innerHTML = `<svg width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" role="img" aria-label="Лента времени: деньги, склад, мощность и люди по дням">${g.join('')}</svg>`;
     $('tl-labels').style.height = H + 'px';
     $('tl-labels').innerHTML = lanes.filter(l => l.t).map(l => `<div style="top:${l.y + 2}px"><b>${esc(l.t)}</b><span>${esc(l.s)}</span></div>`).join('');
-    $('legend').innerHTML = [['var(--brand)', 'деньги, оборудование, производство'], ['var(--water)', 'вода и материалы на складе, оплата партий'], ['var(--office)', 'офис'], ['var(--amber)', '◆ старт продаж'], ['var(--brand)', '◆ EBITDA в плюсе'], ['var(--gold)', '◆ окупаемость, ▼ возврат инвестору']].map(a => `<span><i style="background:${a[0]}"></i>${a[1]}</span>`).join('') + '<span>▲ взнос инвестора, млн ₽ · пунктир — материалы в пути · всё с подсказкой можно тянуть мышью</span>';
+    $('legend').innerHTML = [['var(--brand)', 'деньги, мощность, производство'], ['var(--accent)', 'платежи за оборудование'], ['var(--water)', 'вода и материалы на складе, оплата партий'], ['var(--office)', 'офис'], ['var(--amber)', '◆ старт продаж'], ['var(--brand)', '◆ EBITDA в плюсе'], ['var(--gold)', '◆ окупаемость, ▼ возврат инвестору']].map(a => `<span><i style="background:${a[0]}"></i>${a[1]}</span>`).join('') + '<span>▲ взнос инвестора, млн ₽ · пунктир — материалы в пути · всё с подсказкой можно тянуть мышью</span>';
     ['m', 'w', 'd'].forEach(z => $('z-' + z).setAttribute('aria-pressed', String(st.zoom === z)));
     const canScroll = W > avail + 2; $('b-left').hidden = $('b-right').hidden = !canScroll; $('tl-svg').classList.toggle('scrollable', canScroll);
     if (curDay != null) showTip(curDay);
@@ -238,11 +243,11 @@
       if (Wd >= Hd) { X += th; Wd -= th; } else { Y += th; Hd -= th; } rest = rest.slice(k); }
     return out;
   }
-  function spend(upto) { // куда ушли деньги за месяцы 1..upto: [название, группа, сумма]
-    const s = st.s, p = s.p, m = res.m, c = res.k.cost, ic = i => i >= p.idx_m ? 1 + p.cost_idx : 1, sumTo = a => a.slice(0, upto).reduce((x, y) => x + y, 0), out = [];
+  function spend(upto, s, res) { // куда ушли деньги за месяцы 1..upto: [название, группа, сумма]
+    const p = s.p, m = res.m, c = res.k.cost, ic = i => i >= p.idx_m ? 1 + p.cost_idx : 1, sumTo = a => a.slice(0, upto).reduce((x, y) => x + y, 0), out = [];
     const startCost = s.utypes.reduce((a, x) => a + x.start * x.price, 0), byCat = {};
     s.capex.forEach(x => { if (x.month >= 1 && x.month <= upto) byCat[x.cat || 'Прочее'] = (byCat[x.cat || 'Прочее'] || 0) + (x.auto ? startCost * 0.5 : (+x.amount || 0)); });
-    Object.keys(byCat).forEach(k => out.push([k === 'Прочее' ? 'Депозит, вход в сети, прочие вложения' : k, 'Вложения', byCat[k]]));
+    Object.keys(byCat).forEach(k => out.push([k === 'Прочее' ? 'Депозит и вход в сети' : k, 'Вложения', byCat[k]]));
     out.push(['Докупка установок', 'Вложения', sumTo(m.new_pay)], ['Резерв на непредвиденное', 'Вложения', sumTo(m.contingency)]);
     let off = 0, prd = 0; for (let i = 1; i <= upto; i++) s.staff.forEach(e => { if (i >= e.from && i <= e.to) { const v = e.salary * p.tax_k * ic(i); if (e.group === 'office') off += v; else prd += v; } });
     out.push(['Зарплаты офиса', 'Люди', off], ['Зарплаты производства', 'Люди', prd]);
@@ -255,37 +260,49 @@
     out.push(['Налоги (НДС и УСН)', 'Налоги', sumTo(m.vat) + sumTo(m.usn)]);
     return out.filter(a => a[2] > 0.5).sort((a, b) => b[2] - a[2]);
   }
-  const GCOL = { 'Вложения': ['var(--brand-soft)', 'var(--brand)'], 'Люди': ['var(--office-soft)', 'var(--office)'], 'Материалы': ['var(--water-soft)', 'var(--water)'], 'Продажи': ['var(--amber-soft)', 'var(--amber)'], 'Постоянные': ['var(--sunken)', 'var(--muted)'], 'Налоги': ['var(--red-soft)', 'var(--red)'] };
   function chartsPanel() {
     const m = res.m, k = res.k, W = 960, H = 330, L = 64, R = 18, T = 26, B = 34, pw = W - L - R, ph = H - T - B;
     const cum = m.cum_cf, cf = m.cf, lo = Math.min(0, ...cum, ...cf), hi = Math.max(0, ...cum, ...cf), span = (hi - lo) || 1;
     const X = i => L + (i + 0.5) * pw / N, Y = v => T + (hi - v) / span * ph, y0 = Y(0), bw = pw / N * 0.5;
     const stepv = (() => { const raw = span / 6, e = Math.pow(10, Math.floor(Math.log10(raw))), f = raw / e; return (f < 1.5 ? 1 : f < 3.5 ? 2 : f < 7.5 ? 5 : 10) * e; })();
-    let g = ''; for (let v = Math.ceil(lo / stepv) * stepv; v <= hi + 1; v += stepv) g += `<line x1="${L}" x2="${W - R}" y1="${Y(v)}" y2="${Y(v)}" stroke="var(--line)" stroke-width="${Math.abs(v) < 1 ? 1.4 : 0.6}"/><text x="${L - 8}" y="${Y(v) + 4}" text-anchor="end">${nf0.format(v / 1e6)}</text>`;
+    let g = ''; for (let v = Math.ceil(lo / stepv) * stepv; v <= hi + 1; v += stepv) g += `<line x1="${L}" x2="${W - R}" y1="${Y(v)}" y2="${Y(v)}" stroke="${Math.abs(v) < 1 ? 'var(--muted)' : 'var(--line)'}" stroke-width="${Math.abs(v) < 1 ? 1 : 0.8}" stroke-dasharray="${Math.abs(v) < 1 ? '' : '2 5'}"/><text x="${L - 8}" y="${Y(v) + 4}" text-anchor="end">${nf0.format(v / 1e6)}</text>`;
     MONTHS.forEach((mm, i) => { if (i % 2 === 0 || mm.m === 0) g += `<text x="${X(i)}" y="${H - 12}" text-anchor="middle" class="${mm.m === 0 || i === 0 ? 't-ink t-b' : ''}">${mm.short}${mm.m === 0 || i === 0 ? ' ' + String(mm.y).slice(2) : ''}</text>`; });
     const pts = cum.map((v, i) => X(i).toFixed(1) + ',' + Y(v).toFixed(1)), line = 'M' + pts.join('L'), area = line + `L${X(N - 1)},${y0}L${X(0)},${y0}Z`;
-    g += `<defs><clipPath id="cpos"><rect x="0" y="0" width="${W}" height="${y0}"/></clipPath><clipPath id="cneg"><rect x="0" y="${y0}" width="${W}" height="${H}"/></clipPath></defs>`;
-    g += `<path d="${area}" fill="var(--brand-soft)" clip-path="url(#cpos)"/><path d="${area}" fill="var(--red-soft)" clip-path="url(#cneg)"/>`;
-    cf.forEach((v, i) => { g += `<rect x="${X(i) - bw / 2}" y="${Math.min(Y(v), y0)}" width="${bw}" height="${Math.max(1, Math.abs(Y(v) - y0))}" fill="${v >= 0 ? 'var(--brand)' : 'var(--red)'}" opacity=".3"/>`; });
-    g += `<path d="${line}" fill="none" stroke="var(--brand)" stroke-width="2.4" clip-path="url(#cpos)"/><path d="${line}" fill="none" stroke="var(--red)" stroke-width="2.4" clip-path="url(#cneg)"/>`;
+    g += `<defs><clipPath id="cpos"><rect x="0" y="0" width="${W}" height="${y0}"/></clipPath><clipPath id="cneg"><rect x="0" y="${y0}" width="${W}" height="${H}"/></clipPath>
+      <linearGradient id="gneg" gradientUnits="userSpaceOnUse" x1="0" y1="${y0}" x2="0" y2="${T + ph}"><stop offset="0" stop-color="#F6465D" stop-opacity=".05"/><stop offset="1" stop-color="#F6465D" stop-opacity=".42"/></linearGradient>
+      <linearGradient id="gpos" gradientUnits="userSpaceOnUse" x1="0" y1="${y0}" x2="0" y2="${T}"><stop offset="0" stop-color="#16C784" stop-opacity=".05"/><stop offset="1" stop-color="#16C784" stop-opacity=".42"/></linearGradient>
+      <filter id="glow" x="-10%" y="-30%" width="120%" height="160%"><feGaussianBlur stdDeviation="3.2" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter></defs>`;
+    g += `<path d="${area}" fill="url(#gpos)" clip-path="url(#cpos)"/><path d="${area}" fill="url(#gneg)" clip-path="url(#cneg)"/>`;
+    cf.forEach((v, i) => { g += `<rect x="${X(i) - bw / 2}" y="${Math.min(Y(v), y0)}" width="${bw}" height="${Math.max(1, Math.abs(Y(v) - y0))}" fill="${v >= 0 ? 'var(--brand)' : 'var(--red)'}" opacity=".5"/>`; });
+    g += `<g filter="url(#glow)"><path d="${line}" fill="none" stroke="var(--brand)" stroke-width="2.4" stroke-linejoin="round" clip-path="url(#cpos)"/><path d="${line}" fill="none" stroke="var(--red)" stroke-width="2.4" stroke-linejoin="round" clip-path="url(#cneg)"/></g>`;
     const pi = cum.indexOf(Math.min(...cum)); if (cum[pi] < 0) g += `<circle cx="${X(pi)}" cy="${Y(cum[pi])}" r="5" fill="var(--red)"/><text x="${X(pi) + 12}" y="${Y(cum[pi]) - 12}" class="t-ink t-b">Дно: −${mln(-cum[pi])}, ${mLabel(pi + 1)}</text>`;
     if (k.paybackM) { const i = k.paybackM - 1; g += `<path d="M${X(i)},${y0 - 9}l8,9l-8,9l-8,-9z" fill="var(--gold)"/><text x="${X(i)}" y="${y0 - 16}" text-anchor="middle" class="t-ink t-b">Окупаемость: ${mLabel(k.paybackM)}</text>`; }
     else g += `<text x="${W - R - 4}" y="${Y(cum[N - 1]) - 10}" text-anchor="end" class="t-ink t-b">Дек. 2028: −${mln(-cum[N - 1])}${k.paybackEst ? ' · по темпу окупится ≈ ' + mLabel(k.paybackEst) : ''}</text>`;
     cum.forEach((v, i) => { g += `<rect x="${X(i) - pw / N / 2}" y="${T}" width="${pw / N}" height="${ph}" fill="transparent"><title>${mm_(i)}: накоплено ${v < 0 ? '−' : '+'}${mln(Math.abs(v))}, за месяц ${cf[i] < 0 ? '−' : '+'}${mln(Math.abs(cf[i]))}</title></rect>`; });
-    const upto = (st.tmAll || !k.lastInvM) ? N : k.lastInvM, items = spend(upto), tot = items.reduce((a, b) => a + b[2], 0);
-    const boxes = squarify(items.map(a => ({ n: a[0], g: a[1], v: a[2] })), 0, 0, 100, 46);
+    const upto = (st.tmAll || !k.lastInvM) ? N : k.lastInvM, items = spend(upto, st.s, res), tot = items.reduce((a, b) => a + b[2], 0), delta = st.tmCol === 'delta';
+    const base = {}; spend(upto, BASE_S, BASE).forEach(a => { base[a[0]] = a[2]; }); const baseTot = Object.keys(base).reduce((a, n) => a + base[n], 0);
+    const dOf = a => base[a[0]] ? (a[2] - base[a[0]]) / base[a[0]] : 1;
+    const colOf = a => { if (!delta) return heatC(Math.log10(Math.max(1, a[2] / tot * 100)) / Math.log10(25)); const d = dOf(a); return Math.abs(d) < 0.0005 ? HN : mix(HN, d > 0 ? HR : HG, clamp(Math.abs(d) / 0.10, 0.25, 1)); };
+    const boxes = squarify(items.map(a => ({ n: a[0], g: a[1], v: a[2], a })), 0, 0, 100, 46);
     const groups = {}; items.forEach(a => { groups[a[1]] = (groups[a[1]] || 0) + a[2]; });
+    const sgn = d => Math.abs(d) < 0.0005 ? '0 %' : (d > 0 ? '+' : '−') + (Math.abs(d) * 100 < 10 ? (Math.abs(d) * 100).toFixed(1).replace('.', ',') : Math.round(Math.abs(d) * 100)) + ' %';
+    const mx = Math.max(1, ...cf.map(Math.abs));
     return `<h3>Окупаемость: накопленный денежный поток без денег инвестора</h3>
-      <p>Линия показывает, сколько проект потратил и заработал с первого дня. Красная зона — проект должен инвестору; самая глубокая точка — максимум вложенного. Линия пересекла ноль — вложения вернулись. Полупрозрачные столбики — денежный поток каждого месяца.</p>
+      <p>Линия показывает, сколько проект потратил и заработал с первого дня. Красная зона — проект должен инвестору; самая глубокая точка — максимум вложенного. Линия пересекла ноль — вложения вернулись. Столбики — денежный поток каждого месяца.</p>
       <div class="chartbox"><svg viewBox="0 0 ${W} ${H}" class="chart" role="img" aria-label="График окупаемости"><text x="${L - 8}" y="14" text-anchor="end">млн ₽</text>${g}</svg></div>
+      <h3>Денежный поток по месяцам, млн ₽</h3>
+      <div class="chartbox"><div class="strip">${cf.map((v, i) => { const col = mix(HN, v >= 0 ? HG : HR, clamp(0.25 + 0.75 * Math.sqrt(Math.abs(v) / mx), 0, 1)); return `<div style="background:${rgb(col)};color:${inkOn(col)}" title="${mm_(i)}: ${v < 0 ? '−' : '+'}${mln(Math.abs(v))}"><b>${(v / 1e6).toFixed(Math.abs(v) >= 9.95e6 ? 0 : 1).replace('.', ',').replace('-', '−')}</b><span>${MONTHS[i].short}${MONTHS[i].m === 0 || i === 0 ? ' ' + String(MONTHS[i].y).slice(2) : ''}</span></div>`; }).join('')}</div></div>
       <h3>Куда уходят деньги</h3>
-      <p>Площадь прямоугольника — доля в общих тратах. ${k.lastInvM ? 'Период «пока вносит инвестор» показывает, на что уходят его деньги.' : ''}</p>
-      <div class="row"><div class="seg" role="group" aria-label="Период"><button data-act="tm:0" aria-pressed="${!st.tmAll}">Пока вносит инвестор: ${MONTHS[0].label} — ${mLabel(k.lastInvM || N)}</button><button data-act="tm:1" aria-pressed="${!!st.tmAll}">Все 26 месяцев</button></div><span style="color:var(--muted)">Всего потрачено за период: ${mln(tot)}</span></div>
-      <div class="treemap">` + boxes.map(b => { const big = b.w * b.h > 70 && b.w > 9 && b.h > 5.5, mid = b.w * b.h > 22 && b.w > 6 && b.h > 3.4, col = GCOL[b.it.g] || GCOL['Постоянные'];
-        return `<div class="tm ${big ? 'big' : mid ? 'mid' : 'tiny'}" style="left:${b.x.toFixed(3)}%;top:${(b.y / 46 * 100).toFixed(3)}%;width:${Math.min(b.w, 100 - b.x).toFixed(3)}%;height:${(Math.min(b.h, 46 - b.y) / 46 * 100).toFixed(3)}%;background:${col[0]};border-color:${col[1]}" title="${esc(b.it.n)} — ${mln(b.it.v)} · ${(b.it.v / tot * 100).toFixed(1)} %">${big || mid ? `<b>${esc(b.it.n)}</b><span>${nf1.format(b.it.v / 1e6)} млн · ${Math.round(b.it.v / tot * 100)} %</span>` : ''}</div>`; }).join('') + `</div>
-      <div class="legend" style="padding:0">${Object.keys(groups).sort((a, b) => groups[b] - groups[a]).map(n => `<span><i style="background:${(GCOL[n] || GCOL['Постоянные'])[0]};border:1px solid ${(GCOL[n] || GCOL['Постоянные'])[1]}"></i>${n}: ${mln(groups[n])} · ${Math.round(groups[n] / tot * 100)} %</span>`).join('')}</div>
-      <div class="tbl"><table><thead><tr><th>№</th><th>Статья</th><th>Группа</th><th class="r">Сумма</th><th class="r">Доля</th><th class="r">Накопленно</th></tr></thead><tbody>` +
-        (() => { let acc = 0; return items.map((a, i) => { acc += a[2]; return `<tr><td class="calc">${i + 1}</td><td>${esc(a[0])}</td><td class="calc">${a[1]}</td><td class="r">${mln(a[2])}</td><td class="r calc">${(a[2] / tot * 100).toFixed(1)} %</td><td class="r calc">${Math.round(acc / tot * 100)} %</td></tr>`; }).join(''); })() + `</tbody></table></div>`;
+      <p>Площадь плитки — доля в общих тратах. ${delta ? 'Цвет — изменение к базовому сценарию: зелёная плитка стала дешевле, красная — дороже, серая не изменилась.' : 'Цвет — «жар»: чем больше денег съедает статья, тем краснее; мелкие статьи зелёные.'}</p>
+      <div class="row"><div class="seg" role="group" aria-label="Период"><button data-act="tm:0" aria-pressed="${!st.tmAll}">Пока вносит инвестор: ${MONTHS[0].label} — ${mLabel(k.lastInvM || N)}</button><button data-act="tm:1" aria-pressed="${!!st.tmAll}">Все 26 месяцев</button></div>
+        <div class="seg" role="group" aria-label="Цвет плиток"><button data-act="tmc:heat" aria-pressed="${!delta}">Цвет: размер траты</button><button data-act="tmc:delta" aria-pressed="${delta}">Цвет: изменение к базе</button></div>
+        <span class="heatleg">${delta ? 'дешевле' : 'мало'}<i style="background:linear-gradient(90deg,${rgb(HG)},${delta ? rgb(HN) : rgb(HY)},${rgb(HR)})"></i>${delta ? 'дороже' : 'много'}</span></div>
+      <p style="font-family:var(--mono);color:var(--ink)">ВСЕГО ЗА ПЕРИОД: ${mln(tot)}${delta && baseTot ? ' · к базе ' + sgn((tot - baseTot) / baseTot) + ' (' + ((tot - baseTot) >= 0 ? '+' : '−') + mln(Math.abs(tot - baseTot)) + ')' : ''}</p>
+      <div class="treemap">` + boxes.map(b => { const big = b.w > 11 && b.h > 9, mid = b.w > 5.5 && b.h > 4.2, col = colOf(b.it.a), d = dOf(b.it.a);
+        return `<div class="tm ${big ? 'big' : mid ? 'mid' : 'tiny'}" style="left:${b.x.toFixed(3)}%;top:${(b.y / 46 * 100).toFixed(3)}%;width:${Math.min(b.w, 100 - b.x).toFixed(3)}%;height:${(Math.min(b.h, 46 - b.y) / 46 * 100).toFixed(3)}%;background:${rgb(col)};color:${inkOn(col)}" title="${esc(b.it.n)} — ${mln(b.it.v)} · ${(b.it.v / tot * 100).toFixed(1)} % всех трат · к базе ${sgn(d)}">${big || mid ? `<b>${esc(b.it.n)}</b><em style="font-size:min(${big ? 30 : 13}px,${(b.w * 0.19).toFixed(2)}cqw)">${nf1.format(b.it.v / 1e6)} млн</em><span>${delta ? sgn(d) + ' к базе' : Math.round(b.it.v / tot * 100) + ' %'}</span>` : ''}</div>`; }).join('') + `</div>
+      <p style="font-family:var(--mono);font-size:12px">${Object.keys(groups).sort((a, b) => groups[b] - groups[a]).map(n => `${n.toUpperCase()} ${nf1.format(groups[n] / 1e6)} млн · ${Math.round(groups[n] / tot * 100)} %`).join('  |  ')}</p>
+      <div class="tbl"><table><thead><tr><th>№</th><th>Статья</th><th>Группа</th><th class="r">Сумма</th><th class="r">Доля</th><th class="r">Накопленно</th><th class="r">К базе</th></tr></thead><tbody>` +
+        (() => { let acc = 0; return items.map((a, i) => { acc += a[2]; const d = dOf(a); return `<tr><td class="calc">${i + 1}</td><td>${esc(a[0])}</td><td class="calc">${a[1]}</td><td class="r">${mln(a[2])}</td><td class="r calc">${(a[2] / tot * 100).toFixed(1).replace('.', ',')} %</td><td class="r calc">${Math.round(acc / tot * 100)} %</td><td class="r" style="color:${Math.abs(d) < 0.0005 ? 'var(--muted)' : d > 0 ? 'var(--red)' : 'var(--brand)'}">${sgn(d)}</td></tr>`; }).join(''); })() + `</tbody></table></div>`;
   }
   const mm_ = i => MONTHS[i].label;
   function panel() {
@@ -304,7 +321,7 @@
       const startCost = s.utypes.reduce((a, x) => a + x.start * x.price, 0), amt = x => x.auto ? startCost * 0.5 : (+x.amount || 0);
       const cats = CATS.concat(s.capex.map(x => x.cat || 'Прочее').filter(x => !CATS.includes(x)).filter((x, i, a) => a.indexOf(x) === i));
       const rowsOf = cat => s.capex.filter(x => (x.cat || 'Прочее') === cat);
-      return `<p>Каждая строка — отдельный платёж: сумма, месяц и день оплаты. Зелёные столбики на дорожке «Крупные платежи» можно перетаскивать по месяцам. Строки с нулём — заготовки: впишите сумму, когда узнаете цену.</p>
+      return `<p>Каждая строка — отдельный платёж: сумма, месяц и день оплаты. Жёлтые столбики на дорожке «Крупные платежи» можно перетаскивать по месяцам. Строки с нулём — заготовки: впишите сумму, когда узнаете цену.</p>
       <p><b>Что такое «Резерв».</b> Галочка значит: к этой строке добавить ${show(p.contingency, 'pct')} % сверху на непредвиденное — подорожание, доставку, монтаж, курс. Строка 1 000 000 ₽ с галочкой обойдётся в ${nf0.format(1e6 * (1 + p.contingency))} ₽. Снимайте галочку там, где сумма твёрдая и удорожания не будет: депозит, договор с фиксированной ценой. Сам процент меняется во вкладке «Расходы».</p>
       <div class="tbl"><table><thead><tr><th>Статья</th><th class="r">Сумма, ₽</th><th>Месяц оплаты</th><th class="r">День</th><th title="Добавить к строке резерв на непредвиденное">Резерв ${show(p.contingency, 'pct')} %</th><th>Раздел</th><th></th></tr></thead>` +
         cats.filter(cat => rowsOf(cat).length).map(cat => `<tbody><tr class="cat"><td>${esc(cat)}</td><td class="r">${rub(rowsOf(cat).reduce((a, x) => a + amt(x), 0))}</td><td colspan="5"></td></tr>` + rowsOf(cat).map(x => `<tr><td class="name"><input id="cx-${x.id}-name" data-bind="capex:${x.id}:name" value="${esc(x.name)}" maxlength="110"></td><td class="n">${x.auto ? `<span class="calc" title="Считается: штук на старте × цена типа × 50 % (вкладка «Установки и линия»)">${nf0.format(amt(x))}</span>` : num('cx-' + x.id + '-amount', 'capex:' + x.id + ':amount', x.amount, 'money')}</td><td class="mo">${monthSel('cx-' + x.id + '-month', 'capex:' + x.id + ':month', x.month)}</td><td style="width:66px">${num('cx-' + x.id + '-day', 'capex:' + x.id + ':day', x.day || 10, 'int')}</td><td><input type="checkbox" id="cx-${x.id}-reserve" data-bind="capex:${x.id}:reserve" data-fmt="bool"${x.reserve ? ' checked' : ''} aria-label="Добавить резерв на непредвиденное"></td><td class="mo"><select id="cx-${x.id}-cat" data-bind="capex:${x.id}:cat" data-fmt="txt">${cats.map(z => `<option${z === (x.cat || 'Прочее') ? ' selected' : ''}>${esc(z)}</option>`).join('')}</select></td><td>${x.auto ? '' : `<button class="x" data-act="del:capex:${x.id}" aria-label="Удалить">×</button>`}</td></tr>`).join('') + '</tbody>').join('') +
@@ -340,11 +357,11 @@
         `</tbody></table></div><div class="row"><button class="btn" data-act="add:plan">＋ Новый уровень плана</button></div>${fields('sales')}`;
     }
     if (t === 'bottle') {
-      const pr = [p.p03, p.p05, p.p10], cols = ['var(--water)', 'var(--brand)', 'var(--amber)', 'var(--muted)'], nm = ['Преформа', 'Крышка', 'Этикетка', 'Упаковка'], mxp = Math.max(1, ...pr);
-      return `<p>Столбик — цена продажи с завода. Цветные слои снизу — материалы: преформа, крышка, этикетка, упаковка. Светлая часть сверху — то, что остаётся на зарплаты, аренду, логистику, налоги и прибыль.</p>
+      const pr = [p.p03, p.p05, p.p10], cols = ['#EA3943', '#F5822A', '#F0B90B', '#8A94A3'], nm = ['Преформа', 'Крышка', 'Этикетка', 'Упаковка'], mxp = Math.max(1, ...pr);
+      return `<p>Столбик — цена продажи с завода. Красно-жёлтые слои снизу — материалы: преформа, крышка, этикетка, упаковка. Зелёная часть — то, что остаётся на зарплаты, аренду, логистику, налоги и прибыль.</p>
       <div class="colchart">` + BT.map((b, i) => { const parts = [c.pf[i], c.cap, p.label, p.pack], tot = c.m[i], H = Math.round(240 * pr[i] / mxp);
-          return `<div class="cc"><span class="cctop">${pr[i]} ₽</span>${colSvg(parts.map((x, j) => [pr[i] ? x / pr[i] : 0, cols[j], nm[j] + ' ' + nf1.format(x) + ' ₽', nf1.format(x)]).concat([[pr[i] ? Math.max(0, 1 - tot / pr[i]) : 0, 'var(--sunken)', 'Остаётся ' + nf1.format(pr[i] - tot) + ' ₽', '<b>остаётся ' + nf1.format(pr[i] - tot) + ' ₽ · ' + (pr[i] ? Math.round((1 - tot / pr[i]) * 100) : 0) + ' %</b>']]), H)}<b>${b[1]}</b><span class="ccsub">материалы ${nf1.format(tot)} ₽</span></div>`; }).join('') +
-        `<div class="legend ccleg">${nm.map((x, j) => `<span><i style="background:${cols[j]}"></i>${x}</span>`).join('')}<span><i style="background:var(--sunken);border:1px solid var(--line)"></i>остаётся</span></div></div>
+          return `<div class="cc"><span class="cctop">${pr[i]} ₽</span>${colSvg(parts.map((x, j) => [pr[i] ? x / pr[i] : 0, cols[j], nm[j] + ' ' + nf1.format(x) + ' ₽', nf1.format(x)]).concat([[pr[i] ? Math.max(0, 1 - tot / pr[i]) : 0, 'var(--brand)', 'Остаётся ' + nf1.format(pr[i] - tot) + ' ₽', '<b>остаётся ' + nf1.format(pr[i] - tot) + ' ₽ · ' + (pr[i] ? Math.round((1 - tot / pr[i]) * 100) : 0) + ' %</b>']]), H)}<b>${b[1]}</b><span class="ccsub">материалы ${nf1.format(tot)} ₽</span></div>`; }).join('') +
+        `<div class="legend ccleg">${nm.map((x, j) => `<span><i style="background:${cols[j]}"></i>${x}</span>`).join('')}<span><i style="background:var(--brand)"></i>остаётся вам</span></div></div>
       <div class="bcards">` + BT.map((b, i) => { const parts = [c.pf[i], c.cap, p.label, p.pack], tot = c.m[i], pl = c.pal[i];
           return `<article class="bcard solo"><div class="brows"><div class="br"><span><b style="font-family:var(--display);font-weight:500">${b[1]}</b></span><span></span></div>
           ${brow('Цена продажи с завода, с НДС', bin('p' + b[0]))}${brow('Вес преформы', bin('w' + b[0]))}
@@ -403,7 +420,7 @@
     <div><h3>Цель</h3><p>Вы строите завод АРКТИКА и ведёте его 26 месяцев. Задача — чтобы проект вернул вложенное до декабря 2028, а инвестор внёс как можно меньше. Табло наверху всегда показывает оба числа и разницу с базовым сценарием.</p></div>
     <div><h3>Как играть</h3><ol><li>Посмотрите на ленту: когда уходят деньги, когда кончается запас, когда начинаются продажи.</li><li>Сделайте ход: поменяйте цифру во вкладке или перетащите элемент на ленте.</li><li>Табло покажет, что стало с бюджетом и окупаемостью. Ход записан в журнал.</li><li>Не понравилось — «Отменить ход». Понравилось — «Сохранить сценарий» под именем.</li><li>Вкладка «Рычаги» подсказывает, какой ход сейчас даёт больше всего; значение рычага можно вписать своё.</li></ol></div>
     <div><h3>Что можно менять</h3><ul><li><b>Люди</b> — добавить, убрать, сдвинуть выход, изменить оклад.</li><li><b>Вложения</b> — добавить или убрать строку, поменять сумму, дату и резерв.</li><li><b>Установки</b> — два типа: ТИП-А30 и ТИП-Б130; сколько на старте и партии докупки.</li><li><b>Продажи</b> — план в литрах, доли и цены трёх бутылок, разгон.</li><li><b>Бутылка</b> — вес преформы, цена крышки и этикетки, размеры и упаковка.</li><li><b>Склад и паллеты</b> — партии и сроки заказа материалов, тип паллеты.</li><li><b>Расходы и налоги</b> — аренда, маркетинг, подушка, возврат инвестору.</li></ul></div>
-    <div><h3>Дорожки ленты</h3><ul><li><b>Деньги на счёте</b> — остаток по дням. Треугольник сверху — взнос инвестора, число рядом — млн ₽.</li><li><b>Крупные платежи</b> — зелёные столбики: оборудование; синие: партии материалов. Высота — размер платежа.</li><li><b>Готовая вода</b> — бутылок на складе: разлито минус продано.</li><li><b>Крышки, преформы, этикетки, паллеты, стрейч-плёнка</b> — «пила»: партия пришла — вверх, розлив — вниз. Пунктир — оплачено, но ещё в пути.</li><li><b>Очистка воды</b> — литров в сутки со всех установок обоих типов.</li><li><b>Люди</b> — кто и с какого по какой месяц работает.</li></ul></div>
+    <div><h3>Дорожки ленты</h3><ul><li><b>Деньги на счёте</b> — остаток по дням. Треугольник сверху — взнос инвестора, число рядом — млн ₽.</li><li><b>Крупные платежи</b> — жёлтые столбики: оборудование; бирюзовые: партии материалов. Высота — размер платежа.</li><li><b>Готовая вода</b> — бутылок на складе: разлито минус продано.</li><li><b>Крышки, преформы, этикетки, паллеты, стрейч-плёнка</b> — «пила»: партия пришла — вверх, розлив — вниз. Пунктир — оплачено, но ещё в пути.</li><li><b>Очистка воды</b> — литров в сутки со всех установок обоих типов.</li><li><b>Люди</b> — кто и с какого по какой месяц работает.</li></ul></div>
     <div><h3>Как считаются деньги</h3><ul><li>Инвестор вносит 1-го числа ровно столько, чтобы в конце месяца на счёте остался неснижаемый остаток.</li><li>Зарплата и взносы — 10-го и 25-го. Аренда — 1-го. Партии материалов — 15-го. Налоги — 28-го.</li><li>Выручка приходит равномерно по дням; часть — в следующем месяце (отсрочка покупателям).</li><li>Материалы попадают в расходы, когда воду разлили, а деньги уходят, когда оплатили партию.</li><li>«Резерв» у строки вложений добавляет к ней процент на непредвиденное; платится в том же месяце.</li><li>Окупаемость — месяц, когда накопленный денежный поток без денег инвестора стал неотрицательным.</li></ul></div>
     <div><h3>Производство и продажи</h3><ul><li>Мощность = сумма по типам (штук × литров в сутки) × коэффициент использования × дни.</li><li>Завод разливает столько, сколько нужно по плану продаж плюс целевой запас, но не больше мощности воды и линии.</li><li>Продано = меньшее из плана и того, что есть на складе с учётом розлива.</li><li>Докупили установки, но не подняли план продаж — мощность простаивает, деньги потрачены зря.</li></ul></div>
     <div><h3>Паллеты</h3><ul><li>Бутылок на паллете = упаковок в слое × штук в упаковке × слоёв.</li><li>Упаковок в слое — сколько прямоугольников упаковки встаёт рядами на 1200 × 800 или 1200 × 1000.</li><li>Слоёв — сколько проходит и по высоте груза, и по весу.</li><li>Паллеты и стрейч-плёнка расходуются на каждую разлитую паллету и покупаются партиями, как крышки.</li></ul></div>
@@ -473,6 +490,7 @@
       case 'xlsx': xlsx(); break;
       case 'clearj': st.journal = []; persist(); renderTabs(); break;
       case 'tm': st.tmAll = a[1] === '1'; renderTabs(); break;
+      case 'tmc': st.tmCol = a[1]; renderTabs(); break;
       case 'lever': { const i = +a[1], v = levVal(i); if (!v) { toast('Впишите значение рычага'); break; } act('Рычаг: ' + levText(i, s), z => LEVERS[i].f(z, v)); break; }
       case 'plancap': { const b = s.batches.find(x => x.id === a[1]); if (!b) break; const mo = Math.max(b.month, p.start_m), cap = Math.round(capAt(s, mo)); act(`План продаж с ${mLabel(mo)} поднят до мощности: ${pcs(cap)} л в месяц`, () => { const ex = s.plan.find(q => q.month === mo); if (ex) ex.liters = cap; else s.plan.push({ id: newId(), month: mo, liters: cap }); }); break; }
       case 'add':
