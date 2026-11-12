@@ -16,6 +16,12 @@
   const clamp = (x, a, b) => Math.max(a, Math.min(b, x));
   const stamp = () => { const d = new Date(), z = n => String(n).padStart(2, '0'); return z(d.getDate()) + '.' + z(d.getMonth() + 1) + ' ' + z(d.getHours()) + ':' + z(d.getMinutes()); };
 
+  /* ---------- тема: тёмная по умолчанию, выбор запоминается в браузере ---------- */
+  const TKEY = 'vodaGame.theme'; let theme = 'dark';
+  try { const t = localStorage.getItem(TKEY); if (t === 'light' || t === 'dark') theme = t; } catch (e) { }
+  const ICON = { dark: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="4.2"/><path d="M12 2.5v2.4M12 19.1v2.4M2.5 12h2.4M19.1 12h2.4M5.3 5.3l1.7 1.7M17 17l1.7 1.7M5.3 18.7 7 17M17 7l1.7-1.7"/></svg>', light: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M20 14.2A8 8 0 0 1 9.8 4a8 8 0 1 0 10.2 10.2z"/></svg>' };
+  function applyTheme() { document.documentElement.setAttribute('data-theme', theme); const b = $('b-theme'); if (b) { b.innerHTML = ICON[theme]; b.setAttribute('aria-label', theme === 'dark' ? 'Включить светлую тему' : 'Включить тёмную тему'); b.title = theme === 'dark' ? 'Светлая тема' : 'Тёмная тема'; } }
+  applyTheme();
   /* ---------- состояние ---------- */
   const LS = 'vodaGame.v1', BASE_S = S.defaults(), BASE = S.sim(BASE_S);
   let st = { s: clone(BASE_S), journal: [], saved: {}, best: null, tab: 'charts', zoom: 'm', lev: {} }, undo = [];
@@ -47,7 +53,7 @@
   let toastT = 0; const toast = t => { const e = $('toast'); e.textContent = t; e.hidden = false; clearTimeout(toastT); toastT = setTimeout(() => { e.hidden = true; }, 3600); };
 
   /* ---------- цвета «тепловой карты»: зелёный → жёлтый → красный ---------- */
-  const HG = [22, 199, 132], HY = [240, 185, 11], HR = [234, 57, 67], HN = [38, 45, 56];
+  const HG = [22, 199, 132], HY = [240, 185, 11], HR = [234, 57, 67], HNeutral = () => theme === 'light' ? [212, 217, 225] : [38, 45, 56];
   const mix = (a, b, t) => a.map((x, i) => Math.round(x + (b[i] - x) * t)), rgb = c => 'rgb(' + c.join(',') + ')';
   const heatC = t => { t = clamp(t, 0, 1); return t < 0.5 ? mix(HG, HY, t * 2) : mix(HY, HR, (t - 0.5) * 2); }, heat = t => rgb(heatC(t));
   const inkOn = c => (0.299 * c[0] + 0.587 * c[1] + 0.114 * c[2]) > 120 ? '#0B0E11' : '#FFFFFF';
@@ -282,7 +288,7 @@
     const upto = (st.tmAll || !k.lastInvM) ? N : k.lastInvM, items = spend(upto, st.s, res), tot = items.reduce((a, b) => a + b[2], 0), delta = st.tmCol === 'delta';
     const base = {}; spend(upto, BASE_S, BASE).forEach(a => { base[a[0]] = a[2]; }); const baseTot = Object.keys(base).reduce((a, n) => a + base[n], 0);
     const dOf = a => base[a[0]] ? (a[2] - base[a[0]]) / base[a[0]] : 1;
-    const colOf = a => { if (!delta) return heatC(Math.log10(Math.max(1, a[2] / tot * 100)) / Math.log10(25)); const d = dOf(a); return Math.abs(d) < 0.0005 ? HN : mix(HN, d > 0 ? HR : HG, clamp(Math.abs(d) / 0.10, 0.25, 1)); };
+    const colOf = a => { if (!delta) return heatC(Math.log10(Math.max(1, a[2] / tot * 100)) / Math.log10(25)); const d = dOf(a); return Math.abs(d) < 0.0005 ? HNeutral() : mix(HNeutral(), d > 0 ? HR : HG, clamp(Math.abs(d) / 0.10, 0.25, 1)); };
     const boxes = squarify(items.map(a => ({ n: a[0], g: a[1], v: a[2], a })), 0, 0, 100, 46);
     const groups = {}; items.forEach(a => { groups[a[1]] = (groups[a[1]] || 0) + a[2]; });
     const sgn = d => Math.abs(d) < 0.0005 ? '0 %' : (d > 0 ? '+' : '−') + (Math.abs(d) * 100 < 10 ? (Math.abs(d) * 100).toFixed(1).replace('.', ',') : Math.round(Math.abs(d) * 100)) + ' %';
@@ -291,12 +297,12 @@
       <p>Линия показывает, сколько проект потратил и заработал с первого дня. Красная зона — проект должен инвестору; самая глубокая точка — максимум вложенного. Линия пересекла ноль — вложения вернулись. Столбики — денежный поток каждого месяца.</p>
       <div class="chartbox"><svg viewBox="0 0 ${W} ${H}" class="chart" role="img" aria-label="График окупаемости"><text x="${L - 8}" y="14" text-anchor="end">млн ₽</text>${g}</svg></div>
       <h3>Денежный поток по месяцам, млн ₽</h3>
-      <div class="chartbox"><div class="strip">${cf.map((v, i) => { const col = mix(HN, v >= 0 ? HG : HR, clamp(0.25 + 0.75 * Math.sqrt(Math.abs(v) / mx), 0, 1)); return `<div style="background:${rgb(col)};color:${inkOn(col)}" title="${mm_(i)}: ${v < 0 ? '−' : '+'}${mln(Math.abs(v))}"><b>${(v / 1e6).toFixed(Math.abs(v) >= 9.95e6 ? 0 : 1).replace('.', ',').replace('-', '−')}</b><span>${MONTHS[i].short}${MONTHS[i].m === 0 || i === 0 ? ' ' + String(MONTHS[i].y).slice(2) : ''}</span></div>`; }).join('')}</div></div>
+      <div class="chartbox"><div class="strip">${cf.map((v, i) => { const col = mix(HNeutral(), v >= 0 ? HG : HR, clamp(0.25 + 0.75 * Math.sqrt(Math.abs(v) / mx), 0, 1)); return `<div style="background:${rgb(col)};color:${inkOn(col)}" title="${mm_(i)}: ${v < 0 ? '−' : '+'}${mln(Math.abs(v))}"><b>${(v / 1e6).toFixed(Math.abs(v) >= 9.95e6 ? 0 : 1).replace('.', ',').replace('-', '−')}</b><span>${MONTHS[i].short}${MONTHS[i].m === 0 || i === 0 ? ' ' + String(MONTHS[i].y).slice(2) : ''}</span></div>`; }).join('')}</div></div>
       <h3>Куда уходят деньги</h3>
       <p>Площадь плитки — доля в общих тратах. ${delta ? 'Цвет — изменение к базовому сценарию: зелёная плитка стала дешевле, красная — дороже, серая не изменилась.' : 'Цвет — «жар»: чем больше денег съедает статья, тем краснее; мелкие статьи зелёные.'}</p>
       <div class="row"><div class="seg" role="group" aria-label="Период"><button data-act="tm:0" aria-pressed="${!st.tmAll}">Пока вносит инвестор: ${MONTHS[0].label} — ${mLabel(k.lastInvM || N)}</button><button data-act="tm:1" aria-pressed="${!!st.tmAll}">Все 26 месяцев</button></div>
         <div class="seg" role="group" aria-label="Цвет плиток"><button data-act="tmc:heat" aria-pressed="${!delta}">Цвет: размер траты</button><button data-act="tmc:delta" aria-pressed="${delta}">Цвет: изменение к базе</button></div>
-        <span class="heatleg">${delta ? 'дешевле' : 'мало'}<i style="background:linear-gradient(90deg,${rgb(HG)},${delta ? rgb(HN) : rgb(HY)},${rgb(HR)})"></i>${delta ? 'дороже' : 'много'}</span></div>
+        <span class="heatleg">${delta ? 'дешевле' : 'мало'}<i style="background:linear-gradient(90deg,${rgb(HG)},${delta ? rgb(HNeutral()) : rgb(HY)},${rgb(HR)})"></i>${delta ? 'дороже' : 'много'}</span></div>
       <p style="font-family:var(--mono);color:var(--ink)">ВСЕГО ЗА ПЕРИОД: ${mln(tot)}${delta && baseTot ? ' · к базе ' + sgn((tot - baseTot) / baseTot) + ' (' + ((tot - baseTot) >= 0 ? '+' : '−') + mln(Math.abs(tot - baseTot)) + ')' : ''}</p>
       <div class="treemap">` + boxes.map(b => { const big = b.w > 11 && b.h > 9, mid = b.w > 5.5 && b.h > 4.2, col = colOf(b.it.a), d = dOf(b.it.a);
         return `<div class="tm ${big ? 'big' : mid ? 'mid' : 'tiny'}" style="left:${b.x.toFixed(3)}%;top:${(b.y / 46 * 100).toFixed(3)}%;width:${Math.min(b.w, 100 - b.x).toFixed(3)}%;height:${(Math.min(b.h, 46 - b.y) / 46 * 100).toFixed(3)}%;background:${rgb(col)};color:${inkOn(col)}" title="${esc(b.it.n)} — ${mln(b.it.v)} · ${(b.it.v / tot * 100).toFixed(1)} % всех трат · к базе ${sgn(d)}">${big || mid ? `<b>${esc(b.it.n)}</b><em style="font-size:min(${big ? 30 : 13}px,${(b.w * 0.19).toFixed(2)}cqw)">${nf1.format(b.it.v / 1e6)} млн</em><span>${delta ? sgn(d) + ' к базе' : Math.round(b.it.v / tot * 100) + ' %'}</span>` : ''}</div>`; }).join('') + `</div>
@@ -480,6 +486,7 @@
       case 'tab': st.tab = a[1]; persist(); renderTabs(); break;
       case 'zoom': st.zoom = a[1]; stopPlay(); persist(); renderTimeline(); $('tl-scroll').scrollLeft = 0; break;
       case 'play': play(); break;
+      case 'theme': theme = theme === 'dark' ? 'light' : 'dark'; try { localStorage.setItem(TKEY, theme); } catch (x) { } applyTheme(); render(); break;
       case 'pan': { const sc = $('tl-scroll'); stopPlay(); sc.scrollBy({ left: +a[1] * sc.clientWidth * 0.8, behavior: 'smooth' }); break; }
       case 'undo': if (undo.length) { const o = JSON.parse(undo.pop()); st.s = o.s; st.journal = o.journal; res = S.sim(st.s); persist(); render(); toast('Ход отменён'); } break;
       case 'reset': loadScn('База'); break;

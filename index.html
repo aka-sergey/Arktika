@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<style>html{background:#0B0E11}body{margin:0;font:14px system-ui,sans-serif}img{max-width:100%}[hidden]{display:none!important}</style>
+<style>body{margin:0;font:14px system-ui,sans-serif}img{max-width:100%}[hidden]{display:none!important}</style>
 </head>
 <body>
 <title>Завод воды АРКТИКА</title>
@@ -15,13 +15,26 @@
   /* Единый тёмный вид: пульт наблюдения + крипто-терминал. Зелёный — деньги и «в плюсе», красный — траты и «в минусе», жёлтый — акцент и внимание, бирюзовый — склад. */
   --bg:#0B0E11; --surface:#12161C; --sunken:#1B212B; --ink:#EAECEF; --muted:#8A94A3; --line:#262D38;
   --brand:#16C784; --brand-soft:#0E2C22; --on-brand:#06120D;
-  --accent:#F0B90B; --on-accent:#14110A;
+  --accent:#F0B90B; --on-accent:#14110A; --accent-ink:#F0B90B;
   --water:#22D3EE; --water-soft:#0C2A33; --amber:#F0B90B; --amber-soft:#2C2408; --red:#F6465D; --red-soft:#34151B; --gold:#FFE08A;
   --office:#A78BFA; --office-soft:#221C3D;
   --display:'JetBrains Mono',ui-monospace,'SF Mono',Menlo,Consolas,monospace; --mono:'JetBrains Mono',ui-monospace,'SF Mono',Menlo,Consolas,monospace;
   --body:'Golos Text',system-ui,-apple-system,'Segoe UI',sans-serif;
   --r:6px; color-scheme:dark;
 }
+@media (prefers-color-scheme: light){ :root:not([data-theme="dark"]){
+  --bg:#F3F4F7; --surface:#FFFFFF; --sunken:#E9ECF1; --ink:#0B0E11; --muted:#5B6472; --line:#D5DAE2;
+  --brand:#0E9F6E; --brand-soft:#DAF2E8; --on-brand:#FFFFFF;
+  --accent:#F0B90B; --on-accent:#14110A; --accent-ink:#8F6400;
+  --water:#0A8FB0; --water-soft:#D6F0F6; --amber:#A66E00; --amber-soft:#FBF0CC; --red:#D9304A; --red-soft:#FBE0E4; --gold:#C99400;
+  --office:#6D4FE0; --office-soft:#E7E1FB; color-scheme:light } }
+:root[data-theme="light"]{
+  --bg:#F3F4F7; --surface:#FFFFFF; --sunken:#E9ECF1; --ink:#0B0E11; --muted:#5B6472; --line:#D5DAE2;
+  --brand:#0E9F6E; --brand-soft:#DAF2E8; --on-brand:#FFFFFF;
+  --accent:#F0B90B; --on-accent:#14110A; --accent-ink:#8F6400;
+  --water:#0A8FB0; --water-soft:#D6F0F6; --amber:#A66E00; --amber-soft:#FBF0CC; --red:#D9304A; --red-soft:#FBE0E4; --gold:#C99400;
+  --office:#6D4FE0; --office-soft:#E7E1FB; color-scheme:light }
+html{background:var(--bg)}
 *{box-sizing:border-box}
 body{background:var(--bg);color:var(--ink);font-family:var(--body);font-size:14px;line-height:1.45;font-variant-numeric:tabular-nums}
 .wrap{max-width:1480px;margin:0 auto;padding-block:16px 48px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));display:flex;flex-direction:column;gap:14px}
@@ -85,7 +98,7 @@ input.num{text-align:right;width:100%;font-family:var(--mono);font-size:13px}
 .tl-scroll svg text{font-family:var(--mono);font-size:10px;fill:var(--muted)}
 .tl-scroll svg .t-ink{fill:var(--ink)} .tl-scroll svg .t-on{fill:var(--on-brand)} .tl-scroll svg .t-b{font-weight:600}
 [data-drag]{cursor:grab;touch-action:none} [data-drag]:hover{filter:brightness(1.15)}
-.tip{position:absolute;top:50px;z-index:3;pointer-events:none;background:var(--sunken);border:1px solid var(--accent);border-radius:4px;padding:9px 11px;font-size:12px;width:276px;box-shadow:0 8px 28px rgba(0,0,0,.55)}
+.tip{position:absolute;top:50px;z-index:3;pointer-events:none;background:var(--surface);border:1px solid var(--accent);border-radius:4px;padding:9px 11px;font-size:12px;width:276px;box-shadow:0 8px 28px rgba(0,0,0,.55)}
 .tip h4{margin:0 0 5px;font-size:12.5px} .tip dl{margin:0;display:grid;grid-template-columns:auto 1fr;gap:2px 10px} .tip dt{color:var(--muted)} .tip dd{margin:0;text-align:right;font-weight:500;font-family:var(--mono);font-size:11.5px}
 .tip ul{margin:6px 0 0;padding:6px 0 0;border-top:1px solid var(--line);list-style:none;display:flex;flex-direction:column;gap:2px}
 .tip li{display:flex;justify-content:space-between;gap:8px} .tip li span:last-child{white-space:nowrap;font-weight:500}
@@ -94,7 +107,7 @@ input.num{text-align:right;width:100%;font-family:var(--mono);font-size:13px}
 /* вкладки */
 .tabs{display:flex;gap:2px;overflow-x:auto;border-bottom:1px solid var(--line);padding:0 8px}
 .tabs button{border:0;background:transparent;padding:11px 12px;font-weight:500;color:var(--muted);border-bottom:2px solid transparent;white-space:nowrap}
-.tabs button[aria-selected="true"]{color:var(--accent);border-bottom-color:var(--accent)}
+.tabs button[aria-selected="true"]{color:var(--accent-ink);border-bottom-color:var(--accent)}
 .panel{padding:16px;display:flex;flex-direction:column;gap:16px;min-width:0}
 .panel h3{font-family:var(--mono);font-size:12.5px;font-weight:700;letter-spacing:.09em;text-transform:uppercase}
 .panel p{margin:0;color:var(--muted);max-width:75ch}
@@ -127,12 +140,14 @@ tfoot td{font-weight:600;border-bottom:0;white-space:nowrap}
 .rules h3{margin-bottom:6px} .rules ul,.rules ol{margin:0;padding-left:18px;display:flex;flex-direction:column;gap:5px;color:var(--ink)} .rules p{color:var(--ink)}
 .toast{font-weight:500;position:fixed;left:50%;transform:translateX(-50%);bottom:calc(18px + env(safe-area-inset-bottom,0px));background:var(--ink);color:var(--bg);padding:9px 14px;border-radius:9px;font-size:13px;z-index:20;max-width:calc(100% - 32px)}
 .namebox{display:flex;gap:6px;align-items:center}
+.scnlab{display:flex;align-items:center;gap:8px;font-family:var(--mono);font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)} .scnlab select{font-family:var(--body);font-size:14px;letter-spacing:0;text-transform:none;color:var(--ink)}
+.btn.icon{padding:7px 9px;display:inline-flex;align-items:center} .btn.icon svg{display:block}
 tr.cat td{background:var(--sunken);font-weight:600;font-size:12.5px;border-bottom:0;padding-top:7px;padding-bottom:7px}
 .in{display:flex;align-items:center;gap:6px;min-width:0} .in input,.in select{flex:1;min-width:0} .u{color:var(--muted);font-size:12px;white-space:nowrap}
 .grps{display:grid;grid-template-columns:repeat(auto-fit,minmax(330px,1fr));gap:14px;align-items:start}
 .grp{border:1px solid var(--line);border-radius:10px;padding:2px 14px 6px;min-width:0}
 .grp h4{margin:10px 0 6px;font-family:var(--mono);font-size:11px;letter-spacing:.07em;text-transform:uppercase;color:var(--muted);display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap}
-.grp h4 span{letter-spacing:0;text-transform:none;color:var(--accent);font-weight:600}
+.grp h4 span{letter-spacing:0;text-transform:none;color:var(--accent-ink);font-weight:600}
 .fr{display:grid;grid-template-columns:minmax(0,1fr) 168px;gap:12px;align-items:center;padding:7px 0;border-top:1px solid var(--line)}
 .fr label{font-weight:500;font-size:13px} .fr label small{display:block;font-weight:400;color:var(--muted);font-size:11.5px;line-height:1.3;margin-top:1px}
 .bcards{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:14px;align-items:stretch}
@@ -147,11 +162,11 @@ tr.cat td{background:var(--sunken);font-weight:600;font-size:12.5px;border-botto
 #tl-svg.scrollable svg{cursor:grab} #tl-svg.panning svg{cursor:grabbing} #tl-svg.panning{user-select:none}
 .col{display:flex;flex-direction:column;align-items:center;justify-content:flex-end;gap:3px}
 .colcap{font-size:10.5px;color:var(--muted)} .colbar{flex:1;width:34px;display:flex;flex-direction:column-reverse;border-radius:3px 3px 1px 1px;overflow:hidden;background:var(--sunken);border:1px solid var(--line);gap:1.5px}
-.colbar i{display:flex;align-items:center;justify-content:center;font-style:normal;min-height:0} .colbar em{font-style:normal;font-family:var(--mono);font-size:10.5px;font-weight:700;color:var(--on-brand);white-space:nowrap}
+.colbar i{display:flex;align-items:center;justify-content:center;font-style:normal;min-height:0} .colbar em{font-style:normal;font-family:var(--mono);font-size:10.5px;font-weight:700;color:#0B0E11;white-space:nowrap}
 .cols2{display:flex;gap:8px;align-items:flex-end}
 .bcard.solo{grid-template-columns:minmax(0,1fr)}
 .colchart{display:flex;flex-wrap:wrap;gap:8px 56px;align-items:flex-end;border:1px solid var(--line);border-radius:10px;padding:16px 24px 12px}
-.cc{display:flex;flex-direction:column;align-items:center;gap:4px} .cc .colbar{width:190px} .cc .colbar em{font-size:11.5px} .cc .colbar i:last-child em{color:var(--on-brand)}
+.cc{display:flex;flex-direction:column;align-items:center;gap:4px} .cc .colbar{width:190px} .cc .colbar em{font-size:11.5px} .cc .colbar i:last-child em{color:#0B0E11}
 .cctop{font-family:var(--display);font-weight:700;font-size:16px} .cc>b{font-family:var(--display);font-weight:500} .ccsub{font-size:12px;color:var(--muted)}
 .ccleg{flex-basis:100%;padding:6px 0 0}
 .chartbox{overflow-x:auto;border:1px solid var(--line);border-radius:6px;padding:8px;background:linear-gradient(var(--bg),var(--bg))}
@@ -174,13 +189,14 @@ svg.chart{display:block;width:100%;min-width:640px;height:auto} svg.chart text{f
   <header class="top">
     <div class="brand"><h1>АРКТИКА · завод воды</h1><span>Иваново · бизнес-игра на 26 месяцев: ноябрь 2026 — декабрь 2028</span></div>
     <div class="bar">
-      <select id="scn" aria-label="Сценарий"></select>
+      <label class="scnlab" for="scn">Сохранённые сценарии<select id="scn"></select></label>
       <span class="namebox" id="savebox" hidden><input id="scnname" placeholder="Название сценария" maxlength="40"><button class="btn sm pri" data-act="saveok">Сохранить</button><button class="btn sm" data-act="savecancel">Отмена</button></span>
       <button class="btn" data-act="save" id="b-save">Сохранить сценарий</button>
       <button class="btn" data-act="delscn" id="b-del">Удалить</button>
       <button class="btn" data-act="undo" id="b-undo">Отменить ход</button>
       <button class="btn" data-act="reset">Начать с базы</button>
       <button class="btn pri" data-act="xlsx" id="b-xlsx">Скачать Excel</button>
+      <button class="btn icon" data-act="theme" id="b-theme" aria-label="Переключить тему"></button>
     </div>
   </header>
   <section class="card score" id="score" aria-live="polite"></section>
@@ -869,6 +885,12 @@ svg.chart{display:block;width:100%;min-width:640px;height:auto} svg.chart text{f
   const clamp = (x, a, b) => Math.max(a, Math.min(b, x));
   const stamp = () => { const d = new Date(), z = n => String(n).padStart(2, '0'); return z(d.getDate()) + '.' + z(d.getMonth() + 1) + ' ' + z(d.getHours()) + ':' + z(d.getMinutes()); };
 
+  /* ---------- тема: тёмная по умолчанию, выбор запоминается в браузере ---------- */
+  const TKEY = 'vodaGame.theme'; let theme = 'dark';
+  try { const t = localStorage.getItem(TKEY); if (t === 'light' || t === 'dark') theme = t; } catch (e) { }
+  const ICON = { dark: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="4.2"/><path d="M12 2.5v2.4M12 19.1v2.4M2.5 12h2.4M19.1 12h2.4M5.3 5.3l1.7 1.7M17 17l1.7 1.7M5.3 18.7 7 17M17 7l1.7-1.7"/></svg>', light: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M20 14.2A8 8 0 0 1 9.8 4a8 8 0 1 0 10.2 10.2z"/></svg>' };
+  function applyTheme() { document.documentElement.setAttribute('data-theme', theme); const b = $('b-theme'); if (b) { b.innerHTML = ICON[theme]; b.setAttribute('aria-label', theme === 'dark' ? 'Включить светлую тему' : 'Включить тёмную тему'); b.title = theme === 'dark' ? 'Светлая тема' : 'Тёмная тема'; } }
+  applyTheme();
   /* ---------- состояние ---------- */
   const LS = 'vodaGame.v1', BASE_S = S.defaults(), BASE = S.sim(BASE_S);
   let st = { s: clone(BASE_S), journal: [], saved: {}, best: null, tab: 'charts', zoom: 'm', lev: {} }, undo = [];
@@ -900,7 +922,7 @@ svg.chart{display:block;width:100%;min-width:640px;height:auto} svg.chart text{f
   let toastT = 0; const toast = t => { const e = $('toast'); e.textContent = t; e.hidden = false; clearTimeout(toastT); toastT = setTimeout(() => { e.hidden = true; }, 3600); };
 
   /* ---------- цвета «тепловой карты»: зелёный → жёлтый → красный ---------- */
-  const HG = [22, 199, 132], HY = [240, 185, 11], HR = [234, 57, 67], HN = [38, 45, 56];
+  const HG = [22, 199, 132], HY = [240, 185, 11], HR = [234, 57, 67], HNeutral = () => theme === 'light' ? [212, 217, 225] : [38, 45, 56];
   const mix = (a, b, t) => a.map((x, i) => Math.round(x + (b[i] - x) * t)), rgb = c => 'rgb(' + c.join(',') + ')';
   const heatC = t => { t = clamp(t, 0, 1); return t < 0.5 ? mix(HG, HY, t * 2) : mix(HY, HR, (t - 0.5) * 2); }, heat = t => rgb(heatC(t));
   const inkOn = c => (0.299 * c[0] + 0.587 * c[1] + 0.114 * c[2]) > 120 ? '#0B0E11' : '#FFFFFF';
@@ -1135,7 +1157,7 @@ svg.chart{display:block;width:100%;min-width:640px;height:auto} svg.chart text{f
     const upto = (st.tmAll || !k.lastInvM) ? N : k.lastInvM, items = spend(upto, st.s, res), tot = items.reduce((a, b) => a + b[2], 0), delta = st.tmCol === 'delta';
     const base = {}; spend(upto, BASE_S, BASE).forEach(a => { base[a[0]] = a[2]; }); const baseTot = Object.keys(base).reduce((a, n) => a + base[n], 0);
     const dOf = a => base[a[0]] ? (a[2] - base[a[0]]) / base[a[0]] : 1;
-    const colOf = a => { if (!delta) return heatC(Math.log10(Math.max(1, a[2] / tot * 100)) / Math.log10(25)); const d = dOf(a); return Math.abs(d) < 0.0005 ? HN : mix(HN, d > 0 ? HR : HG, clamp(Math.abs(d) / 0.10, 0.25, 1)); };
+    const colOf = a => { if (!delta) return heatC(Math.log10(Math.max(1, a[2] / tot * 100)) / Math.log10(25)); const d = dOf(a); return Math.abs(d) < 0.0005 ? HNeutral() : mix(HNeutral(), d > 0 ? HR : HG, clamp(Math.abs(d) / 0.10, 0.25, 1)); };
     const boxes = squarify(items.map(a => ({ n: a[0], g: a[1], v: a[2], a })), 0, 0, 100, 46);
     const groups = {}; items.forEach(a => { groups[a[1]] = (groups[a[1]] || 0) + a[2]; });
     const sgn = d => Math.abs(d) < 0.0005 ? '0 %' : (d > 0 ? '+' : '−') + (Math.abs(d) * 100 < 10 ? (Math.abs(d) * 100).toFixed(1).replace('.', ',') : Math.round(Math.abs(d) * 100)) + ' %';
@@ -1144,12 +1166,12 @@ svg.chart{display:block;width:100%;min-width:640px;height:auto} svg.chart text{f
       <p>Линия показывает, сколько проект потратил и заработал с первого дня. Красная зона — проект должен инвестору; самая глубокая точка — максимум вложенного. Линия пересекла ноль — вложения вернулись. Столбики — денежный поток каждого месяца.</p>
       <div class="chartbox"><svg viewBox="0 0 ${W} ${H}" class="chart" role="img" aria-label="График окупаемости"><text x="${L - 8}" y="14" text-anchor="end">млн ₽</text>${g}</svg></div>
       <h3>Денежный поток по месяцам, млн ₽</h3>
-      <div class="chartbox"><div class="strip">${cf.map((v, i) => { const col = mix(HN, v >= 0 ? HG : HR, clamp(0.25 + 0.75 * Math.sqrt(Math.abs(v) / mx), 0, 1)); return `<div style="background:${rgb(col)};color:${inkOn(col)}" title="${mm_(i)}: ${v < 0 ? '−' : '+'}${mln(Math.abs(v))}"><b>${(v / 1e6).toFixed(Math.abs(v) >= 9.95e6 ? 0 : 1).replace('.', ',').replace('-', '−')}</b><span>${MONTHS[i].short}${MONTHS[i].m === 0 || i === 0 ? ' ' + String(MONTHS[i].y).slice(2) : ''}</span></div>`; }).join('')}</div></div>
+      <div class="chartbox"><div class="strip">${cf.map((v, i) => { const col = mix(HNeutral(), v >= 0 ? HG : HR, clamp(0.25 + 0.75 * Math.sqrt(Math.abs(v) / mx), 0, 1)); return `<div style="background:${rgb(col)};color:${inkOn(col)}" title="${mm_(i)}: ${v < 0 ? '−' : '+'}${mln(Math.abs(v))}"><b>${(v / 1e6).toFixed(Math.abs(v) >= 9.95e6 ? 0 : 1).replace('.', ',').replace('-', '−')}</b><span>${MONTHS[i].short}${MONTHS[i].m === 0 || i === 0 ? ' ' + String(MONTHS[i].y).slice(2) : ''}</span></div>`; }).join('')}</div></div>
       <h3>Куда уходят деньги</h3>
       <p>Площадь плитки — доля в общих тратах. ${delta ? 'Цвет — изменение к базовому сценарию: зелёная плитка стала дешевле, красная — дороже, серая не изменилась.' : 'Цвет — «жар»: чем больше денег съедает статья, тем краснее; мелкие статьи зелёные.'}</p>
       <div class="row"><div class="seg" role="group" aria-label="Период"><button data-act="tm:0" aria-pressed="${!st.tmAll}">Пока вносит инвестор: ${MONTHS[0].label} — ${mLabel(k.lastInvM || N)}</button><button data-act="tm:1" aria-pressed="${!!st.tmAll}">Все 26 месяцев</button></div>
         <div class="seg" role="group" aria-label="Цвет плиток"><button data-act="tmc:heat" aria-pressed="${!delta}">Цвет: размер траты</button><button data-act="tmc:delta" aria-pressed="${delta}">Цвет: изменение к базе</button></div>
-        <span class="heatleg">${delta ? 'дешевле' : 'мало'}<i style="background:linear-gradient(90deg,${rgb(HG)},${delta ? rgb(HN) : rgb(HY)},${rgb(HR)})"></i>${delta ? 'дороже' : 'много'}</span></div>
+        <span class="heatleg">${delta ? 'дешевле' : 'мало'}<i style="background:linear-gradient(90deg,${rgb(HG)},${delta ? rgb(HNeutral()) : rgb(HY)},${rgb(HR)})"></i>${delta ? 'дороже' : 'много'}</span></div>
       <p style="font-family:var(--mono);color:var(--ink)">ВСЕГО ЗА ПЕРИОД: ${mln(tot)}${delta && baseTot ? ' · к базе ' + sgn((tot - baseTot) / baseTot) + ' (' + ((tot - baseTot) >= 0 ? '+' : '−') + mln(Math.abs(tot - baseTot)) + ')' : ''}</p>
       <div class="treemap">` + boxes.map(b => { const big = b.w > 11 && b.h > 9, mid = b.w > 5.5 && b.h > 4.2, col = colOf(b.it.a), d = dOf(b.it.a);
         return `<div class="tm ${big ? 'big' : mid ? 'mid' : 'tiny'}" style="left:${b.x.toFixed(3)}%;top:${(b.y / 46 * 100).toFixed(3)}%;width:${Math.min(b.w, 100 - b.x).toFixed(3)}%;height:${(Math.min(b.h, 46 - b.y) / 46 * 100).toFixed(3)}%;background:${rgb(col)};color:${inkOn(col)}" title="${esc(b.it.n)} — ${mln(b.it.v)} · ${(b.it.v / tot * 100).toFixed(1)} % всех трат · к базе ${sgn(d)}">${big || mid ? `<b>${esc(b.it.n)}</b><em style="font-size:min(${big ? 30 : 13}px,${(b.w * 0.19).toFixed(2)}cqw)">${nf1.format(b.it.v / 1e6)} млн</em><span>${delta ? sgn(d) + ' к базе' : Math.round(b.it.v / tot * 100) + ' %'}</span>` : ''}</div>`; }).join('') + `</div>
@@ -1333,6 +1355,7 @@ svg.chart{display:block;width:100%;min-width:640px;height:auto} svg.chart text{f
       case 'tab': st.tab = a[1]; persist(); renderTabs(); break;
       case 'zoom': st.zoom = a[1]; stopPlay(); persist(); renderTimeline(); $('tl-scroll').scrollLeft = 0; break;
       case 'play': play(); break;
+      case 'theme': theme = theme === 'dark' ? 'light' : 'dark'; try { localStorage.setItem(TKEY, theme); } catch (x) { } applyTheme(); render(); break;
       case 'pan': { const sc = $('tl-scroll'); stopPlay(); sc.scrollBy({ left: +a[1] * sc.clientWidth * 0.8, behavior: 'smooth' }); break; }
       case 'undo': if (undo.length) { const o = JSON.parse(undo.pop()); st.s = o.s; st.journal = o.journal; res = S.sim(st.s); persist(); render(); toast('Ход отменён'); } break;
       case 'reset': loadScn('База'); break;

@@ -18,5 +18,5 @@ html=f'''<title>Завод воды АРКТИКА</title>
 print(len(html))
 
 # самостоятельная страница для GitHub Pages или открытия с диска
-full='<!doctype html>\n<html lang="ru">\n<head>\n<meta charset="utf-8">\n<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">\n<style>html{background:#0B0E11}body{margin:0;font:14px system-ui,sans-serif}img{max-width:100%}[hidden]{display:none!important}</style>\n</head>\n<body>\n'+html+'</body>\n</html>\n'
+full='<!doctype html>\n<html lang="ru">\n<head>\n<meta charset="utf-8">\n<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">\n<style>body{margin:0;font:14px system-ui,sans-serif}img{max-width:100%}[hidden]{display:none!important}</style>\n</head>\n<body>\n'+html+'</body>\n</html>\n'
 open('../index.html','w',encoding='utf-8').write(full)
