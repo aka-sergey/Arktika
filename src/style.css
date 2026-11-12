@@ -42,7 +42,8 @@ h1,h2,h3{margin:0;text-wrap:balance}
 .btn.sm{padding:4px 9px;font-size:12.5px}
 .btn:disabled{opacity:.45;cursor:default}
 select,input{border:1px solid var(--line);background:var(--surface);border-radius:7px;padding:6px 8px;min-width:0}
-input.num{text-align:right;width:100%;font-family:var(--mono);font-size:13px}
+input.num{text-align:right;width:100%;min-width:72px;font-family:var(--mono);font-size:13px}
+input[type=checkbox]{accent-color:var(--accent);width:16px;height:16px}
 .card{background:var(--surface);border:1px solid var(--line);border-radius:var(--r)}
 /* табло */
 .score{display:grid;grid-template-columns:minmax(260px,1.25fr) repeat(4,minmax(150px,1fr));gap:0;overflow:hidden}
