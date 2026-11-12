@@ -38,6 +38,10 @@
   }
   try { const o = JSON.parse(localStorage.getItem(LS) || 'null'); if (o && o.s && o.s.p && o.s.staff && o.s.capex && o.s.mats) { Object.assign(st, o); migrate(st.s); Object.keys(st.saved || {}).forEach(n => migrate(st.saved[n])); } } catch (e) { st.s = clone(BASE_S); }
   let res = S.sim(st.s);
+  /* что раскрыто на экране — хранится отдельно от сценариев */
+  const UKEY = 'vodaGame.ui'; let ui = { mat: false, staff: false, miss: false, hint: false, last: {} };
+  try { Object.assign(ui, JSON.parse(localStorage.getItem(UKEY) || '{}')); if (!ui.last || typeof ui.last !== 'object') ui.last = {}; } catch (e) { }
+  const saveUi = () => { try { localStorage.setItem(UKEY, JSON.stringify(ui)); } catch (e) { } };
   const persist = () => { try { localStorage.setItem(LS, JSON.stringify({ s: st.s, journal: st.journal.slice(0, 200), saved: st.saved, best: st.best, tab: st.tab, zoom: st.zoom, lev: st.lev })); } catch (e) { } };
   function act(text, fn) {
     const before = res.k; undo.push(JSON.stringify({ s: st.s, journal: st.journal })); if (undo.length > 60) undo.shift();
@@ -105,26 +109,33 @@
     const k = res.k, b = BASE.k;
     const dInv = k.invest - b.invest, dPb = (k.paybackEst && b.paybackEst) ? k.paybackEst - b.paybackEst : 0;
     const back = k.invest > 0 ? clamp((k.cashEnd + k.payout) / k.invest, 0, 1) : 1;
-    let status;
-    if (k.paybackM) status = 'Цель достигнута: проект окупается в ' + mLabel(k.paybackM) + ' — это месяц ' + k.paybackM + ' из ' + N + '. Теперь снижайте бюджет.';
-    else status = 'Пока не окупается: к декабрю 2028 не хватает ' + mln(-k.cumEnd) + (k.paybackEst ? '. По текущему темпу — ' + mLabel(k.paybackEst) + '.' : '. Проект не выходит в плюс.');
+    const status = k.paybackM ? 'Окупается в ' + mLabel(k.paybackM) + ', месяц ' + k.paybackM + ' из ' + N + ' · теперь снижайте бюджет'
+      : 'Не хватает ' + mln(-k.cumEnd) + (k.paybackEst ? ' · по текущему темпу — ' + mLabel(k.paybackEst) : ' · проект не выходит в плюс');
     const d = (v, good, txt) => `<span class="delta ${Math.abs(v) < 1e-9 ? '' : good ? 'good' : 'bad'}">${txt}</span>`;
     const md = dInv === 0 ? 'как в базе' : (dInv > 0 ? '+' : '−') + mln(Math.abs(dInv)).replace(' ₽', '') + ' к базе';
     const pd = !dPb ? (k.paybackEst ? 'как в базе' : '') : (dPb < 0 ? 'на ' + (-dPb) + ' мес. раньше базы' : 'на ' + dPb + ' мес. позже базы');
+    const verdict = k.paybackM ? 'Цель достигнута' : 'Не окупается', backT = 'Деньги на счёте в конце 2028 плюс выплаты инвестору — к сумме вложений' + (k.payout > 0 ? '. Инвестору выплачено ' + mln(k.payout) : '');
+    const dP = k.profit28 - b.profit28;
+    const tiles = [
+      ['Вносит инвестор', `${nf1.format(k.invest / 1e6)} <small>млн ₽</small>`, d(dInv, dInv < 0, md)],
+      ['Окупаемость', k.paybackM ? esc(mLabel(k.paybackM)) : k.paybackEst ? '≈ ' + esc(mLabel(k.paybackEst)) : 'нет', d(dPb, dPb < 0, pd || (k.paybackM ? '' : 'за пределами 26 месяцев'))],
+      ['Минимум на счёте', `${short(k.minCash)} <small>₽</small>`, d(k.minCash < 0 ? 1 : 0, false, esc(S.dateOf(k.minCashDay).text))],
+      ['Прибыль после налогов за 2028', `${nf1.format(k.profit28 / 1e6)} <small>млн ₽</small>`, d(dP, dP > 0, Math.abs(dP) < 1 ? 'как в базе' : (dP > 0 ? '+' : '−') + mln(Math.abs(dP)).replace(' ₽', '') + ' к базе')]];
     $('score').innerHTML = `
-      <div class="goal ${k.paybackM ? 'ok' : ''}"><span class="eyebrow">Цель игры</span><b>Окупиться до декабря 2028 с минимальным бюджетом</b><span class="verdict"><i class="led"></i>${k.paybackM ? 'Цель достигнута' : 'Не окупается'}</span><span class="status">${esc(status)}</span>
-        <div class="debt" title="Деньги на счёте в конце 2028 плюс выплаты инвестору — к сумме вложений"><i style="width:${(back * 100).toFixed(1)}%;background:${heat(1 - back)}"></i></div>
-        <span class="status">К концу 2028 проект возвращает ${Math.round(back * 100)} % вложенного${k.payout > 0 ? ' · инвестору выплачено ' + mln(k.payout) : ''}</span></div>
-      <div class="metric"><span class="lab">Вносит инвестор</span><span class="val">${nf1.format(k.invest / 1e6)} <small>млн ₽</small></span>${d(dInv, dInv < 0, md)}</div>
-      <div class="metric"><span class="lab">Окупаемость</span><span class="val">${k.paybackM ? esc(mLabel(k.paybackM)) : k.paybackEst ? '≈ ' + esc(mLabel(k.paybackEst)) : 'нет'}</span>${d(dPb, dPb < 0, pd || (k.paybackM ? '' : 'за пределами 26 месяцев'))}</div>
-      <div class="metric"><span class="lab">Минимум на счёте</span><span class="val">${short(k.minCash)} <small>₽</small></span>${d(k.minCash < 0 ? 1 : 0, false, esc(S.dateOf(k.minCashDay).text))}</div>
-      <div class="metric"><span class="lab">Прибыль за 2028</span><span class="val">${nf1.format(k.profit28 / 1e6)} <small>млн ₽</small></span>${d(k.profit28 - b.profit28, k.profit28 > b.profit28, Math.abs(k.profit28 - b.profit28) < 1 ? 'как в базе' : (k.profit28 > b.profit28 ? '+' : '−') + mln(Math.abs(k.profit28 - b.profit28)).replace(' ₽', '') + ' к базе')}</div>`;
+      <div class="goal ${k.paybackM ? 'ok' : ''}"><span class="verdict"><i class="led"></i>${verdict}</span><b>Окупиться до декабря 2028 с минимальным бюджетом</b><span class="status" title="${esc(status)}">${esc(status)}</span>
+        <div class="debtrow" title="${esc(backT)}"><div class="debt"><i style="width:${(back * 100).toFixed(1)}%;background:${heat(1 - back)}"></i></div><span>возврат ${Math.round(back * 100)} %</span></div></div>` +
+      tiles.map(t => `<div class="metric"><span class="lab">${t[0]}</span><span class="val">${t[1]}</span>${t[2]}</div>`).join('');
+    $('sbar-in').innerHTML = `<span class="sb-st ${k.paybackM ? 'ok' : ''}"><i class="led"></i><span>${verdict}</span></span>` +
+      tiles.map(t => `<span class="sb-c" title="${t[0]}"><small>${t[0]}</small><b>${t[1]}</b></span>`).join('') +
+      `<button class="btn sm" data-act="undo" id="b-undo2"${undo.length ? '' : ' disabled'} title="Отменить ход" aria-label="Отменить ход"><span aria-hidden="true">↶</span><span class="t">Отменить ход</span></button>`;
     const ms = [
       ['Окупиться за 26 месяцев', k.paybackM > 0], ['Бюджет ниже базового', k.invest < b.invest - 1], ['EBITDA в плюсе в первые 3 месяца продаж', k.ebitdaM > 0 && k.ebitdaM <= st.s.p.start_m + 2],
       ['Склад материалов без дефицита', !res.alerts.some(a => a.lvl === 'err' && /закончились/.test(a.text))], ['Без кассовых разрывов', k.minCash >= 0],
       ['Продано всё по плану', k.lostL <= 1], ['Линия успевает', k.maxUtil <= 1.0001], ['Инвестору возвращено всё вложенное', k.payout >= k.invest && k.invest > 0]];
-    $('missions').innerHTML = ms.map(a => `<span class="chip ${a[1] ? 'done' : ''}"><i>${a[1] ? '✓' : ''}</i>${esc(a[0])}</span>`).join('') +
-      (st.best ? `<span class="chip record"><i>★</i>Рекорд: ${mln(st.best.invest)} при окупаемости в ${esc(mLabel(st.best.pb))} («${esc(st.best.name)}»)</span>` : '');
+    const done = ms.filter(a => a[1]).length;
+    $('missions').innerHTML = `<div class="missrow"><button type="button" class="missbtn" data-act="ui:miss" aria-expanded="${!!ui.miss}"><span class="chev">${ui.miss ? '▾' : '▸'}</span>Задания: <b>${done} из ${ms.length}</b><span class="pips" aria-hidden="true">${ms.map(a => `<i class="${a[1] ? 'on' : ''}"></i>`).join('')}</span></button>` +
+      (st.best ? `<span class="chip record"><i>★</i>Рекорд: ${mln(st.best.invest)} при окупаемости в ${esc(mLabel(st.best.pb))} («${esc(st.best.name)}»)</span>` : '') + `</div>` +
+      (ui.miss ? `<div class="misslist">${ms.map(a => `<span class="chip ${a[1] ? 'done' : ''}"><i>${a[1] ? '✓' : ''}</i>${esc(a[0])}</span>`).join('')}</div>` : '');
     $('alerts').innerHTML = res.alerts.map(a => `<div class="alert ${a.lvl === 'err' ? 'err' : ''}"><b>${a.lvl === 'err' ? 'Ошибка' : 'Внимание'}</b><span>${esc(a.text)}</span></div>`).join('');
   }
 
@@ -142,10 +153,16 @@
     const sc = $('tl-scroll'), avail = sc.clientWidth || 900, s = st.s, m = res.m, d = res.d;
     PPD = st.zoom === 'm' ? Math.max(1.45, avail / DAYS) : st.zoom === 'w' ? 7 : 24;
     const W = Math.ceil(DAYS * PPD), X = x => x * PPD;
-    const lanes = [{ k: 'axis', h: 44 }, { k: 'cash', h: 104, t: 'Деньги на счёте', s: 'до ' + short(amax(d.cash)) + ' ₽' }, { k: 'pays', h: 56, t: 'Крупные платежи', s: 'техника и сырьё' }, { k: 'fg', h: 54, t: 'Готовая вода', s: 'до ' + short(amax(d.fg)) + ' бут.' }]
-      .concat(s.mats.map((mt, q) => ({ k: 'mat', mt, h: q < 3 ? 54 : 40, t: mt.name, s: 'до ' + short(amax(d[mt.key])) + ' ' + (mt.unit || 'шт') })),
-        [{ k: 'units', h: 52, t: 'Очистка воды', s: 'до ' + pcs(amax(m.startL.map((u, i) => u + m.newL[i]))) + ' л/сут' }, { k: 'staff', h: Math.max(40, s.staff.length * 15 + 8), t: 'Люди', s: 'до ' + res.k.headMax + ' чел.' }]);
-    let y = 0; lanes.forEach(l => { l.y = y; y += l.h + 12; }); const H = y; LAY = lanes;
+    const allZero = arr => { for (let i = 0; i < arr.length; i++) if (Math.abs(arr[i]) > 1e-9) return false; return true; };
+    const lanes = [{ k: 'axis', h: 40 }, { k: 'cash', h: 80, t: 'Деньги на счёте', s: 'до ' + short(amax(d.cash)) + ' ₽' }, { k: 'pays', h: 46, t: 'Крупные платежи', s: 'техника и сырьё' }];
+    if (!allZero(d.fg)) lanes.push({ k: 'fg', h: 46, t: 'Готовая вода', s: 'до ' + short(amax(d.fg)) + ' бут.' });
+    lanes.push({ k: 'units', h: 48, t: 'Очистка воды', s: 'до ' + pcs(amax(m.startL.map((u, i) => u + m.newL[i]))) + ' л/сут' });
+    if (ui.mat) { lanes.push({ k: 'hdr', h: 36, t: 'Склад материалов', s: 'остаток и партии в пути', tog: 'mat', open: true });
+      s.mats.forEach((mt, q) => { if (!(allZero(d[mt.key]) && allZero(d[mt.key + '_way']))) lanes.push({ k: 'mat', mt, h: q < 3 ? 54 : 40, t: mt.name, s: 'до ' + short(amax(d[mt.key])) + ' ' + (mt.unit || 'шт') }); }); }
+    else lanes.push({ k: 'matsum', h: 38, t: 'Склад материалов', s: 'приход партий, дефицит', tog: 'mat' });
+    if (ui.staff) lanes.push({ k: 'hdr', h: 36, t: 'Люди', s: 'до ' + res.k.headMax + ' чел.', tog: 'staff', open: true }, { k: 'staff', h: Math.max(40, s.staff.length * 15 + 8) });
+    else lanes.push({ k: 'staffsum', h: 36, t: 'Люди', s: 'до ' + res.k.headMax + ' чел.', tog: 'staff' });
+    let y = 0; lanes.forEach(l => { l.y = y; y += l.h + (l.k === 'hdr' ? 0 : 8); }); const H = y; LAY = lanes;
     const g = [];
     // сетка и ось
     MONTHS.forEach(mm => { const x = X(mm.d0).toFixed(1), yr = mm.m === 0 || mm.i === 1;
@@ -159,8 +176,15 @@
     evByDay = {}; res.ev.forEach(e => { (evByDay[e.day] = evByDay[e.day] || []).push(e); });
     res.arrivals.forEach(a => { (evByDay[a.day] = evByDay[a.day] || []).push({ kind: 'arr', label: a.name + ': пришла партия', qty: a.qty }); });
     lanes.forEach(l => {
-      const y0 = l.y, h = l.h; if (l.k === 'axis') return;
-      g.push(`<line x1="0" x2="${W}" y1="${y0 + h + 6}" y2="${y0 + h + 6}" stroke="var(--line)" stroke-width=".7"/>`);
+      const y0 = l.y, h = l.h; if (l.k === 'axis' || l.k === 'hdr') return;
+      g.push(`<line x1="0" x2="${W}" y1="${y0 + h + 4}" y2="${y0 + h + 4}" stroke="var(--line)" stroke-width=".7"/>`);
+      if (l.k === 'matsum') {
+        MONTHS.forEach(mm => { const bad = s.mats.filter(mt => { const arr = d[mt.key]; for (let x = mm.d0; x < mm.d0 + mm.nd; x++) if (arr[x] < -0.5) return true; return false; });
+          if (bad.length) g.push(`<rect x="${(X(mm.d0) + 1).toFixed(1)}" y="${y0 + 1}" width="${Math.max(3, X(mm.nd) - 2).toFixed(1)}" height="${h - 2}" rx="2" fill="var(--red-soft)" stroke="var(--red)" stroke-width="1"><title>Дефицит в ${esc(mm.label)}: ${esc(bad.map(mt => mt.name).join(', '))}</title></rect>`); });
+        s.mats.forEach((mt, q) => { const yy = y0 + 6 + q * 6.5; res.arrivals.forEach(ar => { if (ar.key === mt.key) g.push(`<circle cx="${(X(ar.day) + PPD / 2).toFixed(1)}" cy="${yy}" r="2.4" fill="var(--water)"><title>${esc(ar.name)}: пришло ${pcs(ar.qty)} ${mt.unit || 'шт'}</title></circle>`); }); });
+      }
+      if (l.k === 'staffsum') { const mx = Math.max(1, amax(m.headcount)), dd = new Float64Array(DAYS); MONTHS.forEach((mm, i) => dd.fill(m.headcount[i], mm.d0, mm.d0 + mm.nd));
+        g.push(`<path d="${stepPath(dd, y0 + 5, h - 6, 0, mx, true)}" fill="var(--office-soft)"/><path d="${stepPath(dd, y0 + 5, h - 6, 0, mx, false)}" fill="none" stroke="var(--office)" stroke-width="1.4"/>`); }
       if (l.k === 'cash') {
         const mx = Math.max(1, amax(d.cash)), mn = Math.min(0, amin(d.cash)), top = y0 + 18, hh = h - 18;
         g.push(`<path d="${stepPath(d.cash, top, hh, mn, mx, true)}" fill="var(--brand-soft)" stroke="none"/><path d="${stepPath(d.cash, top, hh, mn, mx, false)}" fill="none" stroke="var(--brand)" stroke-width="1.6"/>`);
@@ -173,7 +197,8 @@
         const big = res.ev.filter(e => e.kind === 'capex' || e.kind === 'buy'), mx = Math.max(1, ...big.map(e => -e.amt)), bw = clamp(PPD, 3, 10), seen = {};
         big.forEach(e => { const n = seen[e.day] = (seen[e.day] || 0) + 1, bh = Math.max(3, Math.sqrt(-e.amt / mx) * (h - 4)), x = X(e.day) + (PPD - bw) / 2 + (n - 1) * 3;
           const dr = e.kind === 'capex' && s.capex.some(c => c.id === e.ref) ? ` data-drag="capex:${e.ref}"` : '';
-          g.push(`<rect x="${x.toFixed(1)}" y="${(y0 + h - bh).toFixed(1)}" width="${bw}" height="${bh.toFixed(1)}" rx="1.5" fill="${e.kind === 'capex' ? 'var(--accent)' : 'var(--water)'}"${dr}><title>${esc(e.label)} — ${rub(-e.amt)}${dr ? ' · потяните, чтобы перенести оплату' : ''}</title></rect>`); });
+          g.push(`<rect x="${x.toFixed(1)}" y="${(y0 + h - bh).toFixed(1)}" width="${bw}" height="${bh.toFixed(1)}" rx="1.5" fill="${e.kind === 'capex' ? 'var(--accent)' : 'var(--water)'}"${dr}><title>${esc(e.label)} — ${rub(-e.amt)}${dr ? ' · потяните, чтобы перенести оплату' : ''}</title></rect>`);
+          if (dr) g.push(`<circle cx="${(x + bw / 2).toFixed(1)}" cy="${Math.max(y0 + 4.5, y0 + h - bh).toFixed(1)}" r="3.6" class="hdl" fill="var(--surface)" stroke="var(--accent)" stroke-width="1.6"${dr}><title>${esc(e.label)} — ${rub(-e.amt)} · потяните, чтобы перенести оплату</title></circle>`); });
       }
       if (l.k === 'fg') { const mx = Math.max(1, amax(d.fg)); g.push(`<path d="${stepPath(d.fg, y0 + 4, h - 4, 0, mx, true)}" fill="var(--water-soft)"/><path d="${stepPath(d.fg, y0 + 4, h - 4, 0, mx, false)}" fill="none" stroke="var(--water)" stroke-width="1.4"/>`); }
       if (l.k === 'mat') { const a = d[l.mt.key], wy = d[l.mt.key + '_way'], mx = Math.max(1, amax(a), amax(wy)), mn = Math.min(0, amin(a));
@@ -183,17 +208,21 @@
       if (l.k === 'units') { const v = m.startL.map((u, i) => u + m.newL[i]), mx = Math.max(1, amax(v)), dd = new Float64Array(DAYS); MONTHS.forEach((mm, i) => dd.fill(v[i], mm.d0, mm.d0 + mm.nd));
         g.push(`<path d="${stepPath(dd, y0 + 14, h - 14, 0, mx, true)}" fill="var(--brand-soft)"/><path d="${stepPath(dd, y0 + 14, h - 14, 0, mx, false)}" fill="none" stroke="var(--brand)" stroke-width="1.4"/>`);
         g.push(`<text x="${X(S.dayOf(s.p.start_m, 1)) + 4}" y="${y0 + h - 4}" class="t-ink">${esc(s.utypes.filter(u => u.start > 0).map(u => u.start + ' × ' + tShort(u)).join(' + ') || 'нет стартовых установок')}</text>`);
-        const seenB = {}; s.batches.forEach(b => { const u = tOf(s, b.type), n = seenB[b.month] = (seenB[b.month] || 0) + 1, x = X(S.dayOf(clamp(b.month, 1, N), 1)) + (n - 1) * 24; g.push(`<g data-drag="batch:${b.id}"><circle cx="${x}" cy="${y0 + 12}" r="11" fill="var(--brand)"/><text x="${x}" y="${y0 + 15.5}" text-anchor="middle" class="t-on t-b" style="pointer-events:none">+${b.qty}</text><text x="${x + 14}" y="${y0 + 15.5}" class="t-ink" style="font-size:9.5px;pointer-events:none">${esc(tShort(u))}</text><title>Партия ${esc(u.name)}: ${b.qty} шт по ${u.l} л, запуск ${mLabel(b.month)} · потяните, чтобы перенести</title></g>`); }); }
+        const seenB = {}; s.batches.forEach(b => { const u = tOf(s, b.type), n = seenB[b.month] = (seenB[b.month] || 0) + 1, x = X(S.dayOf(clamp(b.month, 1, N), 1)) + (n - 1) * 24; g.push(`<g data-drag="batch:${b.id}"><circle cx="${x}" cy="${y0 + 12}" r="10.5" fill="var(--brand)" stroke="var(--surface)" stroke-width="1.5"/><text x="${x}" y="${y0 + 15.5}" text-anchor="middle" class="t-on t-b" style="pointer-events:none">+${b.qty}</text><text x="${x + 14}" y="${y0 + 15.5}" class="t-ink" style="font-size:9.5px;pointer-events:none">${esc(tShort(u))}</text><title>Партия ${esc(u.name)}: ${b.qty} шт по ${u.l} л, запуск ${mLabel(b.month)} · потяните, чтобы перенести</title></g>`); }); }
       if (l.k === 'staff') s.staff.forEach((e, i) => { const x1 = X(MONTHS[clamp(e.from, 1, N) - 1].d0), mt = MONTHS[clamp(e.to, 1, N) - 1], x2 = X(mt.d0 + mt.nd), yy = y0 + 2 + i * 15, off = e.group === 'office';
         g.push(`<rect x="${x1}" y="${yy}" width="${Math.max(4, x2 - x1)}" height="11" rx="3" fill="${off ? 'var(--office-soft)' : 'var(--brand-soft)'}" stroke="${off ? 'var(--office)' : 'var(--brand)'}" stroke-width=".8" data-drag="staff:${e.id}:from"><title>${esc(e.name)} — ${rub(e.salary)} в месяц · потяните, чтобы сдвинуть выход</title></rect>`);
-        g.push(`<rect x="${x2 - 6}" y="${yy}" width="6" height="11" rx="2" fill="${off ? 'var(--office)' : 'var(--brand)'}" data-drag="staff:${e.id}:to" style="cursor:ew-resize"><title>Потяните, чтобы изменить последний месяц работы</title></rect>`);
-        g.push(`<text x="${x1 + 5}" y="${yy + 8.6}" class="t-ink" style="font-size:9.5px;pointer-events:none">${esc(e.name)}</text>`); });
+        g.push(`<circle cx="${x1 + 5}" cy="${yy + 5.5}" r="4.2" class="hdl" fill="var(--surface)" stroke="${off ? 'var(--office)' : 'var(--brand)'}" stroke-width="1.6" data-drag="staff:${e.id}:from"><title>Потяните, чтобы сдвинуть выход на работу</title></circle>`);
+        g.push(`<circle cx="${x2 - 5}" cy="${yy + 5.5}" r="4.2" class="hdl" fill="${off ? 'var(--office)' : 'var(--brand)'}" stroke="var(--surface)" stroke-width="1.2" data-drag="staff:${e.id}:to" style="cursor:ew-resize"><title>Потяните, чтобы изменить последний месяц работы</title></circle>`);
+        g.push(`<text x="${x1 + 13}" y="${yy + 8.6}" class="t-ink" style="font-size:9.5px;pointer-events:none">${esc(e.name)}</text>`); });
     });
     g.push(`<line id="cur" x1="0" x2="0" y1="18" y2="${H}" stroke="var(--ink)" stroke-width="1" opacity="0" style="pointer-events:none"/>`);
     $('tl-svg').innerHTML = `<svg width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" role="img" aria-label="Лента времени: деньги, склад, мощность и люди по дням">${g.join('')}</svg>`;
     $('tl-labels').style.height = H + 'px';
-    $('tl-labels').innerHTML = lanes.filter(l => l.t).map(l => `<div style="top:${l.y + 2}px"><b>${esc(l.t)}</b><span>${esc(l.s)}</span></div>`).join('');
-    $('legend').innerHTML = [['var(--brand)', 'деньги, мощность, производство'], ['var(--accent)', 'платежи за оборудование'], ['var(--water)', 'вода и материалы на складе, оплата партий'], ['var(--office)', 'офис'], ['var(--amber)', '◆ старт продаж'], ['var(--brand)', '◆ EBITDA в плюсе'], ['var(--gold)', '◆ окупаемость, ▼ возврат инвестору']].map(a => `<span><i style="background:${a[0]}"></i>${a[1]}</span>`).join('') + '<span>▲ взнос инвестора, млн ₽ · пунктир — материалы в пути · всё с подсказкой можно тянуть мышью</span>';
+    $('tl-labels').innerHTML = lanes.filter(l => l.t).map(l => l.tog
+      ? `<button type="button" class="lanebtn" style="top:${l.y + 2}px" data-act="ui:${l.tog}" aria-expanded="${!!l.open}" title="${l.open ? 'Свернуть в одну дорожку' : 'Раскрыть подробно'}"><b><span class="chev">${l.open ? '▾' : '▸'}</span>${esc(l.t)}</b><span>${esc(l.s)}</span></button>`
+      : `<div style="top:${l.y + 2}px"><b>${esc(l.t)}</b><span>${esc(l.s)}</span></div>`).join('');
+    $('draghint').hidden = !!ui.hint;
+    $('legend').innerHTML = [['var(--brand)', 'деньги и мощность'], ['var(--accent)', 'оплата оборудования'], ['var(--water)', 'материалы и оплата партий'], ['var(--office)', ui.staff ? 'офис' : 'люди'], ['var(--amber)', '◆ старт продаж'], ['var(--brand)', '◆ EBITDA в плюсе'], ['var(--gold)', '◆ окупаемость'], ['var(--gold)', '▼ возврат инвестору']].map(a => `<span><i style="background:${a[0]}"></i>${a[1]}</span>`).join('') + '<span>▲ взнос инвестора, млн ₽</span>' + (!ui.mat && s.mats.some(mt => amin(d[mt.key]) < -0.5) ? '<span><i style="background:var(--red)"></i>месяц с дефицитом</span>' : '') + (ui.mat ? '<span>пунктир — материалы в пути</span>' : '');
     ['m', 'w', 'd'].forEach(z => $('z-' + z).setAttribute('aria-pressed', String(st.zoom === z)));
     const canScroll = W > avail + 2; $('b-left').hidden = $('b-right').hidden = !canScroll; $('tl-svg').classList.toggle('scrollable', canScroll);
     if (curDay != null) showTip(curDay);
@@ -582,8 +611,12 @@
     <div><h3>Тревоги</h3><ul><li><b>Материал закончился</b> — заказ сделан поздно или партия мала.</li><li><b>Кассовый разрыв</b> — в середине месяца на счёте минус, хотя в конце плюс. Увеличьте неснижаемый остаток.</li><li><b>Линия не успевает</b> — нужна вторая смена.</li><li><b>План выше производства</b> — не хватает воды или линии.</li><li><b>Лимиты УСН</b> — доход за год вышел за порог, налоги будут выше.</li></ul></div>
     <div><h3>Excel и допущения</h3><ul><li>«Скачать Excel» выгружает текущий сценарий: «Кейс» с формулами, «Персонал», «Вложения», «Установки» (типы и партии), «Продажи», подневные остатки, журнал и справку. Итоги в файле и на экране совпадают.</li><li>Обратно из Excel сценарий не загружается — правьте здесь, выгружайте заново.</li><li>Оклады по ролям, размеры бутылок, цены паллет и стрейч-плёнки — оценки; пресс-формы бутылок и транспорт крышек стоят нулями.</li><li>Амортизации нет: игра считает деньги, а не бухгалтерскую прибыль.</li></ul></div></div>`;
 
+  const GROUPS = [['total', 'Итог', ['summary', 'charts', 'levers']], ['prod', 'Производство', ['capex', 'units', 'stock', 'people']], ['sales', 'Продажи', ['sales', 'bottle']], ['fin', 'Финансы', ['costs', 'money']], ['model', 'Моделирование', ['scn', 'journal', 'rules']]];
+  const TABN = {}; TABS.forEach(a => { TABN[a[0]] = a[1]; }); const grpOf = t => GROUPS.find(g => g[2].includes(t)) || GROUPS[0];
   function renderTabs() {
-    $('tabs').innerHTML = TABS.map(a => `<button role="tab" id="tab-${a[0]}" aria-selected="${st.tab === a[0]}" data-act="tab:${a[0]}">${a[1]}</button>`).join('');
+    if (!TABN[st.tab]) st.tab = 'charts'; const g = grpOf(st.tab);
+    $('tabs').innerHTML = `<div class="mg" role="tablist" aria-label="Разделы">${GROUPS.map(x => `<button role="tab" id="grp-${x[0]}" aria-selected="${x === g}" data-act="grp:${x[0]}">${x[1]}</button>`).join('')}</div>` +
+      `<div class="mt" role="tablist" aria-label="${g[1]}">${g[2].map(t => `<button role="tab" id="tab-${t}" aria-selected="${st.tab === t}" data-act="tab:${t}">${TABN[t]}</button>`).join('')}</div>`;
     $('panel').innerHTML = panel();
   }
   const hasAuthor = x => x.author && x.author !== 'Без имени';
@@ -594,7 +627,7 @@
       (pub.length ? `<optgroup label="Общие — видят все">${pub.map(n => `<option value="pub:${esc(n)}"${isPub && n === cur ? ' selected' : ''}>${esc(n)}</option>`).join('')}</optgroup>` : '') +
       (names.length ? `<optgroup label="Мои — только в этом браузере">${names.map(n => `<option value="my:${esc(n)}"${mine && n === cur ? ' selected' : ''}>${esc(n)}</option>`).join('')}</optgroup>` : '') +
       (known ? '' : `<option value="cur" selected>${esc(cur)} (не сохранён)</option>`);
-    $('b-undo').disabled = !undo.length; $('b-del').disabled = !mine;
+    $('b-undo').disabled = !undo.length; $('b-del').disabled = !mine; const u2 = $('b-undo2'); if (u2) u2.disabled = !undo.length;
   }
   function render() { renderHeader(); renderScore(); renderTimeline(); renderTabs(); }
 
@@ -634,10 +667,15 @@
     } catch (err) { toast(err && err.code === 'declined' ? 'Сохранение отменено' : 'Не удалось сохранить файл' + (err && err.code ? ': ' + err.code : '')); }
     finally { btn.disabled = false; }
   }
+  /* после смены вкладки при прилипшем меню — к началу вкладки */
+  function tabTop() { const sb = $('sbar'), off = sb.hidden ? 0 : sb.offsetHeight, r = $('tabcard').getBoundingClientRect(); if (r.top < off) window.scrollBy(0, r.top - off); }
   document.addEventListener('click', e => {
+    const mo = $('more'); if (mo.open && !e.target.closest('#more summary')) mo.open = false;
     const t = e.target.closest('[data-act]'); if (!t) return; const a = t.dataset.act.split(':'), s = st.s, p = s.p;
     switch (a[0]) {
-      case 'tab': st.tab = a[1]; persist(); renderTabs(); break;
+      case 'tab': st.tab = a[1]; ui.last[grpOf(a[1])[0]] = a[1]; saveUi(); persist(); renderTabs(); tabTop(); break;
+      case 'grp': { const g = GROUPS.find(x => x[0] === a[1]); if (!g) break; st.tab = g[2].includes(ui.last[g[0]]) ? ui.last[g[0]] : g[2][0]; persist(); renderTabs(); tabTop(); break; }
+      case 'ui': if (a[1] === 'miss') { ui.miss = !ui.miss; saveUi(); renderScore(); } else if (a[1] === 'hint') { ui.hint = true; saveUi(); $('draghint').hidden = true; } else { ui[a[1]] = !ui[a[1]]; saveUi(); renderTimeline(); } break;
       case 'zoom': st.zoom = a[1]; stopPlay(); persist(); renderTimeline(); $('tl-scroll').scrollLeft = 0; break;
       case 'play': play(); break;
       case 'theme': theme = theme === 'dark' ? 'light' : 'dark'; try { localStorage.setItem(TKEY, theme); } catch (x) { } applyTheme(); render(); break;
@@ -692,5 +730,7 @@
   });
   document.addEventListener('keydown', e => { if (e.key === 'Enter' && e.target.matches && e.target.matches('input[data-bind]')) e.target.blur(); if (e.key === 'Enter' && e.target.id === 'scnname') document.querySelector('[data-act="saveok"]').click(); });
   initTimelineEvents(); render(); loadShared(); loadRemote(); openFromHash();
+  /* липкая строка итогов: видна, когда табло ушло за верхний край */
+  if (window.IntersectionObserver) new IntersectionObserver(es => { const en = es[es.length - 1]; $('sbar').hidden = en.isIntersecting || en.boundingClientRect.top >= 0; }, { threshold: 0 }).observe($('score'));
   if (document.fonts && document.fonts.ready) document.fonts.ready.then(renderTimeline);
 })();
