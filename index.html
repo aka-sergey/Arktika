@@ -139,7 +139,7 @@ tfoot td{font-weight:600;border-bottom:0;white-space:nowrap}
 .rules{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:18px 28px}
 .rules h3{margin-bottom:6px} .rules ul,.rules ol{margin:0;padding-left:18px;display:flex;flex-direction:column;gap:5px;color:var(--ink)} .rules p{color:var(--ink)}
 .toast{font-weight:500;position:fixed;left:50%;transform:translateX(-50%);bottom:calc(18px + env(safe-area-inset-bottom,0px));background:var(--ink);color:var(--bg);padding:9px 14px;border-radius:9px;font-size:13px;z-index:20;max-width:calc(100% - 32px)}
-.namebox{display:flex;gap:6px;align-items:center}
+.namebox{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
 .scnlab{display:flex;align-items:center;gap:8px;font-family:var(--mono);font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)} .scnlab select{font-family:var(--body);font-size:14px;letter-spacing:0;text-transform:none;color:var(--ink)}
 .btn.icon{padding:7px 9px;display:inline-flex;align-items:center} .btn.icon svg{display:block}
 tr.cat td{background:var(--sunken);font-weight:600;font-size:12.5px;border-bottom:0;padding-top:7px;padding-bottom:7px}
@@ -194,10 +194,9 @@ svg.chart{display:block;width:100%;min-width:640px;height:auto} svg.chart text{f
     <div class="brand"><h1>АРКТИКА · завод воды</h1><span>Иваново · бизнес-игра на 26 месяцев: ноябрь 2026 — декабрь 2028</span></div>
     <div class="bar">
       <label class="scnlab" for="scn">Сохранённые сценарии<select id="scn"></select></label>
-      <span class="namebox" id="savebox" hidden><input id="scnname" placeholder="Название сценария" maxlength="40"><button class="btn sm pri" data-act="saveok">Сохранить</button><button class="btn sm" data-act="savecancel">Отмена</button></span>
+      <span class="namebox" id="savebox" hidden><input id="scnname" placeholder="Название сценария" maxlength="60"><input id="scncode" type="password" autocomplete="off" placeholder="Код команды" aria-label="Код команды" style="width:130px" hidden><button class="btn sm pri" data-act="saveok">Сохранить</button><button class="btn sm" data-act="savepub" id="b-savepub" hidden>Опубликовать на сайте</button><button class="btn sm" data-act="savecancel">Отмена</button></span>
       <button class="btn" data-act="save" id="b-save">Сохранить сценарий</button>
       <button class="btn" data-act="delscn" id="b-del">Удалить</button>
-      <button class="btn" data-act="gopub" id="b-pub" hidden>Опубликовать на сайте</button>
       <button class="btn" data-act="undo" id="b-undo">Отменить ход</button>
       <button class="btn" data-act="reset">Начать с базы</button>
       <button class="btn pri" data-act="xlsx" id="b-xlsx">Скачать Excel</button>
@@ -947,17 +946,16 @@ svg.chart{display:block;width:100%;min-width:640px;height:auto} svg.chart text{f
   const API = '/api/scenarios'; let remote = { on: false, needCode: false, canHide: false, items: [] }, pubUrl = '';
   const lsGet = k => { try { return localStorage.getItem(k) || ''; } catch (e) { return ''; } }, lsSet = (k, v) => { try { if (v) localStorage.setItem(k, v); else localStorage.removeItem(k); } catch (e) { } };
   function loadRemote(then) { if (IN_CLAUDE || location.protocol === 'file:') return;
-    fetch(API, { headers: { accept: 'application/json' } }).then(r => (r.ok && /json/.test(r.headers.get('content-type') || '')) ? r.json() : null).then(j => { if (!j || !j.ok) return; remote = { on: true, needCode: !!j.needCode, canHide: !!j.canHide, items: j.items || [] }; $('b-pub').hidden = false; renderHeader(); if (st.tab === 'scn') renderTabs(); if (then) then(); }).catch(() => { }); }
+    fetch(API, { headers: { accept: 'application/json' } }).then(r => (r.ok && /json/.test(r.headers.get('content-type') || '')) ? r.json() : null).then(j => { if (!j || !j.ok) return; remote = { on: true, needCode: !!j.needCode, canHide: !!j.canHide, items: j.items || [] }; renderHeader(); if (st.tab === 'scn') renderTabs(); if (then) then(); }).catch(() => { }); }
   function openWeb(id) { fetch(API + '?id=' + encodeURIComponent(id)).then(r => r.ok ? r.json() : null).then(j => { if (!(j && j.scenario && j.scenario.p)) { toast('Этот сценарий не найден на сайте'); return; }
     undo.push(JSON.stringify({ s: st.s, journal: st.journal })); st.s = migrate(j.scenario); st.s.web = id; st.journal = []; res = S.sim(st.s); afterChange(); toast('Открыт сценарий с сайта: «' + st.s.name + '»'); }).catch(() => toast('Нет связи с сайтом')); }
-  function webPublish(btn) { const name = ($('wp-name').value || '').trim(), author = ($('wp-author').value || '').trim(), code = $('wp-code') ? $('wp-code').value.trim() : '';
-    if (!name) { toast('Дайте сценарию название'); return; } if (!author) { toast('Подпишитесь: впишите своё имя'); return; }
-    lsSet('vodaGame.author', author); if (code) lsSet('vodaGame.team', code); btn.disabled = true;
+  function webPublish(name, code, btn) { if (code) lsSet('vodaGame.team', code); btn.disabled = true;
     const sc = clone(st.s); sc.name = name; delete sc.web;
-    fetch(API, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ name, author, code, scenario: sc, kpi: { invest: res.k.invest, pb: res.k.paybackM, est: res.k.paybackEst, profit28: res.k.profit28 } }) })
+    fetch(API, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ name, author: '', code, scenario: sc, kpi: { invest: res.k.invest, pb: res.k.paybackM, est: res.k.paybackEst, profit28: res.k.profit28 } }) })
       .then(r => r.json().then(j => [r.status, j])).then(a => { btn.disabled = false; const j = a[1];
         if (!j.ok) { toast(j.error === 'bad_code' ? 'Неверный код команды' : j.error === 'too_large' ? 'Сценарий слишком большой' : 'Не удалось опубликовать (' + (j.error || a[0]) + ')'); return; }
-        st.s.name = name; st.s.web = j.id; pubUrl = location.origin + location.pathname + '#id=' + j.id; persist(); loadRemote(() => { render(); const i = $('puburl'); if (i) { i.focus(); i.select(); } }); toast('Опубликовано. Сценарий «' + name + '» теперь видят все.'); })
+        st.s.web = j.id; pubUrl = location.origin + location.pathname + '#id=' + j.id; st.tab = 'scn'; persist(); $('savebox').hidden = true; $('b-save').hidden = false;
+        loadRemote(() => { render(); const i = $('puburl'); if (i) { i.scrollIntoView({ block: 'center' }); i.focus(); i.select(); } }); toast('Опубликовано. Сценарий «' + name + '» теперь видят все.'); })
       .catch(() => { btn.disabled = false; toast('Нет связи с сайтом'); }); }
   function webHide(id, btn) { const adm = lsGet('vodaGame.admin'); if (!adm) { toast('Впишите код владельца ниже'); return; } btn.disabled = true;
     fetch(API + '?id=' + encodeURIComponent(id), { method: 'DELETE', headers: { 'x-admin-code': encodeURIComponent(adm) } }).then(r => r.json()).then(j => { if (j.ok) { loadRemote(); toast('Сценарий убран с сайта'); } else { btn.disabled = false; toast('Код владельца не подошёл'); } }).catch(() => { btn.disabled = false; toast('Нет связи с сайтом'); }); }
@@ -1332,12 +1330,12 @@ svg.chart{display:block;width:100%;min-width:640px;height:auto} svg.chart text{f
       const head = '<thead><tr><th>Сценарий</th><th class="r">Вносит инвестор</th><th>Окупаемость</th><th class="r">Прибыль 2028</th><th class="r">Минимум на счёте</th><th class="r">Людей</th><th></th></tr></thead>';
       const pub = Object.keys(shared), mine = Object.keys(st.saved), tok = getTok();
       const pbT = x => x.pb ? esc(mLabel(x.pb)) : x.est ? '≈ ' + esc(mLabel(x.est)) : 'нет', adm = lsGet('vodaGame.admin');
+      const anyAuthor = remote.items.some(hasAuthor);
       const web = !remote.on ? '' : `<h3>Сценарии участников — сохранены на сайте, видят все</h3>
-      <p>Опубликуйте сценарий с экрана — он появится в этом списке у каждого, кто открыл сайт. Чужой сценарий можно открыть и играть от него; изменить или удалить его нельзя, можно опубликовать свой вариант рядом.</p>
-      <div class="pubform"><label>Название<input id="wp-name" maxlength="60" value="${esc(s.name === 'База' ? '' : s.name)}" placeholder="Например: 10 установок с августа"></label><label>Ваше имя<input id="wp-author" maxlength="40" value="${esc(lsGet('vodaGame.author'))}" placeholder="Кто публикует"></label>${remote.needCode ? `<label>Код команды<input id="wp-code" type="password" autocomplete="off" value="${esc(lsGet('vodaGame.team'))}"></label>` : ''}<button class="btn pri" data-act="webpub">Опубликовать сценарий с экрана</button></div>
+      <p>Чтобы опубликовать свой: «Сохранить сценарий» наверху → впишите название → «Опубликовать на сайте». Чужой сценарий можно открыть и играть от него; изменить или удалить его нельзя, можно опубликовать свой вариант рядом.</p>
       ${pubUrl ? `<div class="row"><input id="puburl" readonly value="${esc(pubUrl)}" style="flex:1;min-width:0;font-family:var(--mono);font-size:12px" aria-label="Ссылка на опубликованный сценарий"><button class="btn sm" data-act="copypub">Скопировать ссылку</button></div>` : ''}
-      <div class="tbl"><table><thead><tr><th>Сценарий</th><th>Автор</th><th>Когда</th><th class="r">Вносит инвестор</th><th>Окупаемость</th><th class="r">Прибыль 2028</th><th></th></tr></thead><tbody>` +
-        (remote.items.length ? remote.items.map(x => `<tr><td>${esc(x.name)}</td><td>${esc(x.author || '')}</td><td class="calc">${esc(new Date(x.created).toLocaleString('ru-RU', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }))}</td><td class="r">${mln(x.invest || 0)}</td><td>${pbT(x)}</td><td class="r">${mln(x.profit28 || 0)}</td><td style="white-space:nowrap"><button class="btn sm" data-act="open:web:${esc(x.id)}">Открыть</button>${remote.canHide && adm ? ` <button class="btn sm" data-act="webdel:${esc(x.id)}">Убрать</button>` : ''}</td></tr>`).join('') : '<tr><td colspan="7" class="calc">Пока никто ничего не опубликовал. Будьте первым.</td></tr>') + `</tbody></table></div>
+      <div class="tbl"><table><thead><tr><th>Сценарий</th>${anyAuthor ? '<th>Автор</th>' : ''}<th>Когда</th><th class="r">Вносит инвестор</th><th>Окупаемость</th><th class="r">Прибыль 2028</th><th></th></tr></thead><tbody>` +
+        (remote.items.length ? remote.items.map(x => `<tr><td>${esc(x.name)}</td>${anyAuthor ? `<td>${hasAuthor(x) ? esc(x.author) : ''}</td>` : ''}<td class="calc">${esc(new Date(x.created).toLocaleString('ru-RU', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }))}</td><td class="r">${mln(x.invest || 0)}</td><td>${pbT(x)}</td><td class="r">${mln(x.profit28 || 0)}</td><td style="white-space:nowrap"><button class="btn sm" data-act="open:web:${esc(x.id)}">Открыть</button>${remote.canHide && adm ? ` <button class="btn sm" data-act="webdel:${esc(x.id)}">Убрать</button>` : ''}</td></tr>`).join('') : `<tr><td colspan="${anyAuthor ? 7 : 6}" class="calc">Пока никто ничего не опубликовал. Будьте первым.</td></tr>`) + `</tbody></table></div>
       ${remote.canHide ? `<div class="row"><input id="admcode" type="password" autocomplete="off" placeholder="Код владельца — чтобы убирать сценарии" style="max-width:320px;flex:1" value="${esc(adm)}" aria-label="Код владельца"><button class="btn sm" data-act="admsave">Запомнить</button></div>` : ''}`;
       const fileBlock = (remote.on && !pub.length) ? '' : `<h3>Общие сценарии из файла — видят все, кто открыл ссылку</h3>
       <p>Лежат в файле <code>scenarios.json</code> рядом со страницей. Любой посетитель может открыть общий сценарий и играть от него; его правки остаются только у него.${sharedAt ? ' Обновлено: ' + esc(new Date(sharedAt).toLocaleString('ru-RU')) + '.' : ''}</p>
@@ -1372,10 +1370,11 @@ svg.chart{display:block;width:100%;min-width:640px;height:auto} svg.chart text{f
     $('tabs').innerHTML = TABS.map(a => `<button role="tab" id="tab-${a[0]}" aria-selected="${st.tab === a[0]}" data-act="tab:${a[0]}">${a[1]}</button>`).join('');
     $('panel').innerHTML = panel();
   }
+  const hasAuthor = x => x.author && x.author !== 'Без имени';
   function renderHeader() {
     const names = Object.keys(st.saved), pub = Object.keys(shared), cur = st.s.name, mine = names.includes(cur), isPub = !mine && pub.includes(cur), webIt = remote.items.find(x => x.id === st.s.web && x.name === cur), isWeb = !mine && !isPub && !!webIt, known = cur === 'База' || mine || isPub || isWeb;
     $('scn').innerHTML = `<option value="База"${cur === 'База' ? ' selected' : ''}>База (исходные цифры)</option>` +
-      (remote.items.length ? `<optgroup label="На сайте — видят все">${remote.items.map(x => `<option value="web:${esc(x.id)}"${isWeb && x.id === st.s.web ? ' selected' : ''}>${esc(x.name)} — ${esc(x.author || '')}</option>`).join('')}</optgroup>` : '') +
+      (remote.items.length ? `<optgroup label="На сайте — видят все">${remote.items.map(x => `<option value="web:${esc(x.id)}"${isWeb && x.id === st.s.web ? ' selected' : ''}>${esc(x.name)}${hasAuthor(x) ? ' — ' + esc(x.author) : ''}</option>`).join('')}</optgroup>` : '') +
       (pub.length ? `<optgroup label="Общие — видят все">${pub.map(n => `<option value="pub:${esc(n)}"${isPub && n === cur ? ' selected' : ''}>${esc(n)}</option>`).join('')}</optgroup>` : '') +
       (names.length ? `<optgroup label="Мои — только в этом браузере">${names.map(n => `<option value="my:${esc(n)}"${mine && n === cur ? ' selected' : ''}>${esc(n)}</option>`).join('')}</optgroup>` : '') +
       (known ? '' : `<option value="cur" selected>${esc(cur)} (не сохранён)</option>`);
@@ -1430,9 +1429,13 @@ svg.chart{display:block;width:100%;min-width:640px;height:auto} svg.chart text{f
       case 'undo': if (undo.length) { const o = JSON.parse(undo.pop()); st.s = o.s; st.journal = o.journal; res = S.sim(st.s); persist(); render(); toast('Ход отменён'); } break;
       case 'reset': loadScn('База'); break;
       case 'open': loadScn(a.slice(1).join(':')); break;
-      case 'save': $('savebox').hidden = false; $('b-save').hidden = true; $('scnname').value = s.name === 'База' ? '' : s.name; $('scnname').focus(); break;
+      case 'save': $('savebox').hidden = false; $('b-save').hidden = true; $('scnname').value = s.name === 'База' ? '' : s.name; $('b-savepub').hidden = !remote.on; $('scncode').hidden = !(remote.on && remote.needCode); $('scncode').value = lsGet('vodaGame.team'); $('scnname').focus(); break;
       case 'savecancel': $('savebox').hidden = true; $('b-save').hidden = false; break;
-      case 'saveok': { const n = $('scnname').value.trim(); if (!n || n === 'База') { toast('Дайте сценарию своё название'); break; } s.name = n; st.saved[n] = clone(s); $('savebox').hidden = true; $('b-save').hidden = false; if (st.best && res.k.paybackM && Math.abs(st.best.invest - res.k.invest) < 1) st.best.name = n; persist(); render(); toast('Сценарий «' + n + '» сохранён'); break; }
+      case 'saveok': case 'savepub': { const n = $('scnname').value.trim(); if (!n || n === 'База') { toast('Дайте сценарию своё название'); break; }
+        const code = $('scncode').hidden ? '' : $('scncode').value.trim(); if (a[0] === 'savepub' && remote.needCode && !code) { toast('Впишите код команды'); break; }
+        s.name = n; st.saved[n] = clone(s); if (st.best && res.k.paybackM && Math.abs(st.best.invest - res.k.invest) < 1) st.best.name = n; persist();
+        if (a[0] === 'savepub') { render(); $('savebox').hidden = false; $('b-save').hidden = true; webPublish(n, code, $('b-savepub')); break; }
+        $('savebox').hidden = true; $('b-save').hidden = false; render(); toast('Сценарий «' + n + '» сохранён'); break; }
       case 'delscn': if (st.saved[s.name]) { const n = s.name; delete st.saved[n]; persist(); render(); toast('Сценарий «' + n + '» удалён из сохранённых'); } break;
       case 'xlsx': xlsx(); break;
       case 'clearj': st.journal = []; persist(); renderTabs(); break;
@@ -1444,23 +1447,9 @@ svg.chart{display:block;width:100%;min-width:640px;height:auto} svg.chart text{f
       case 'unpub': { const n = a.slice(1).join(':'), map = Object.assign({}, shared); delete map[n]; t.disabled = true; publish(map, 'Убран общий сценарий: ' + n).then(ok => { if (ok) { render(); toast('«' + n + '» убран из общих'); } else t.disabled = false; }); break; }
       case 'expscn': { const map = Object.assign({}, st.saved); if (!Object.keys(map).length) { toast('Сначала сохраните хотя бы один сценарий'); break; } saveFile('scenarios.json', new Blob([scnFile(map)], { type: 'application/json' })).then(ok => { if (ok) toast('Файл со сценариями сохранён'); }).catch(() => toast('Сохранение отменено')); break; }
       case 'impscn': $('imp').click(); break;
-      case 'webpub': webPublish(t); break;
       case 'webdel': webHide(a.slice(1).join(':'), t); break;
       case 'admsave': lsSet('vodaGame.admin', ($('admcode').value || '').trim()); renderTabs(); toast('Код владельца сохранён в этом браузере'); break;
       case 'copypub': { const i = $('puburl'); i.focus(); i.select(); if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(pubUrl).then(() => toast('Ссылка скопирована'), () => toast('Выделите ссылку и скопируйте')); break; }
-      case 'gopub': st.tab = 'scn'; persist(); renderTabs(); { const i = $('wp-name'); if (i) { i.scrollIntoView({ block: 'center' }); i.focus(); } } break;
-      case 'sharelink': pack(st.s).then(code => { shareUrl = location.origin + location.pathname + '#s=' + code; renderTabs(); const inp = $('shareurl'); if (inp) { inp.focus(); inp.select(); } if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(shareUrl).then(() => toast('Ссылка скопирована'), () => toast('Ссылка в поле ниже — скопируйте её')); else toast('Ссылка в поле ниже — скопируйте её'); }); break;
-      case 'lever': { const i = +a[1], v = levVal(i); if (!v) { toast('Впишите значение рычага'); break; } act('Рычаг: ' + levText(i, s), z => LEVERS[i].f(z, v)); break; }
-      case 'plancap': { const b = s.batches.find(x => x.id === a[1]); if (!b) break; const mo = Math.max(b.month, p.start_m), cap = Math.round(capAt(s, mo)); act(`План продаж с ${mLabel(mo)} поднят до мощности: ${pcs(cap)} л в месяц`, () => { const ex = s.plan.find(q => q.month === mo); if (ex) ex.liters = cap; else s.plan.push({ id: newId(), month: mo, liters: cap }); }); break; }
-      case 'add':
-        if (a[1] === 'staff') act('Добавлен сотрудник: Новый сотрудник, 60 000 ₽', () => { s.staff.push({ id: newId(), name: 'Новый сотрудник', group: 'prod', salary: 60000, from: Math.max(1, p.start_m - 1), to: N }); });
-        if (a[1] === 'capex') act('Добавлена строка вложений (сумма пока 0)', () => { s.capex.push({ id: newId(), cat: 'Прочее', name: 'Новая строка', amount: 0, month: 2, day: 10, reserve: true, auto: null }); });
-        if (a[1] === 'batch') { const u = tOf(s, a[2]); act('Добавлена партия: 10 × ' + u.name + ', запуск ' + mLabel(10), () => { s.batches.push({ id: newId(), type: a[2], qty: 10, month: 10 }); }); }
-        if (a[1] === 'plan') { const last = s.plan.slice().sort((x, y) => y.month - x.month)[0], mo = Math.min(N, last.month + 6); act('Добавлен уровень плана продаж с ' + mLabel(mo), () => { s.plan.push({ id: newId(), month: mo, liters: last.liters }); }); }
-        break;
-      case 'del': { const arr = s[LIST[a[1]]], it = arr.find(x => x.id === a[2]); if (!it) break;
-        const txt = a[1] === 'staff' ? 'Убран сотрудник: ' + it.name + ', ' + rub(it.salary) : a[1] === 'capex' ? 'Убрана покупка «' + it.name + '», ' + rub(it.amount) : a[1] === 'batch' ? 'Убрана партия ' + tOf(s, it.type).name + ' ×' + it.qty + ' (' + mLabel(it.month) + ')' : 'Убран уровень плана продаж с ' + mLabel(it.month);
-        act(txt, () => { arr.splice(arr.indexOf(it), 1); }); break; }
     }
   });
   document.addEventListener('keydown', e => { if (e.key === 'Enter' && e.target.matches && e.target.matches('input[data-bind]')) e.target.blur(); if (e.key === 'Enter' && e.target.id === 'scnname') document.querySelector('[data-act="saveok"]').click(); });

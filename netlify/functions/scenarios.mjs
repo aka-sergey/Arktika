@@ -33,7 +33,7 @@ export async function handle(req, store, env) {
       if (teamCode && String(body.code || '') !== teamCode) return json({ error: 'bad_code' }, 403);
       const s = body.scenario;
       if (!(s && typeof s.p === 'object' && Array.isArray(s.staff) && Array.isArray(s.capex) && Array.isArray(s.mats))) return json({ error: 'bad_scenario' }, 400);
-      const name = clean(body.name, 60), author = clean(body.author, 40) || 'Без имени';
+      const name = clean(body.name, 60), author = clean(body.author, 40);
       if (!name) return json({ error: 'no_name' }, 400);
       const k = body.kpi || {}, newId = Date.now().toString(36).padStart(9, '0') + Math.random().toString(36).slice(2, 7);
       s.name = name;
