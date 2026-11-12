@@ -1,4 +1,6 @@
 node_modules/
+dist/
+.netlify/
 x_*.xlsx
 x_reg.json
 *.png

@@ -1,0 +1,22 @@
+// Проверка функции общих сценариев на подставном хранилище (без Netlify)
+import { handle } from '../netlify/functions/scenarios.mjs';
+const mem = new Map();
+const store = { async get(k) { return mem.has(k) ? JSON.parse(mem.get(k).v) : null; }, async getMetadata(k) { return mem.has(k) ? { metadata: mem.get(k).m } : null; }, async list() { return { blobs: [...mem.keys()].sort().map(key => ({ key })) }; }, async setJSON(k, v, o) { mem.set(k, { v: JSON.stringify(v), m: o.metadata }); }, async delete(k) { mem.delete(k); } };
+const call = async (method, path, body, headers, env = {}) => { const r = await handle(new Request('https://x.netlify.app' + path, { method, body: body ? JSON.stringify(body) : undefined, headers: headers || {} }), store, env); return [r.status, await r.json()]; };
+const scn = { name: 'x', p: { a: 1 }, staff: [], capex: [], mats: [] };
+const out = [];
+out.push(['пустой список', await call('GET', '/api/scenarios')]);
+out.push(['публикация без кода, когда код не задан', await call('POST', '/api/scenarios', { name: ' Мой  сценарий ', author: 'Сергей', scenario: scn, kpi: { invest: 57e6, pb: 19 } })]);
+out.push(['публикация с неверным кодом', await call('POST', '/api/scenarios', { name: 'A', scenario: scn, code: 'нет' }, null, { TEAM_CODE: 'арктика' })]);
+out.push(['публикация с верным кодом', await call('POST', '/api/scenarios', { name: 'B', author: '', scenario: scn, code: 'арктика' }, null, { TEAM_CODE: 'арктика' })]);
+out.push(['мусор вместо сценария', await call('POST', '/api/scenarios', { name: 'C', scenario: { p: 1 } })]);
+out.push(['без названия', await call('POST', '/api/scenarios', { name: '  ', scenario: scn })]);
+const list = await call('GET', '/api/scenarios', null, null, { TEAM_CODE: 'арктика', ADMIN_CODE: 'босс' }); out.push(['список', [list[0], { needCode: list[1].needCode, canHide: list[1].canHide, items: list[1].items.map(i => i.name + ' / ' + i.author + ' / ' + i.invest) }]]);
+const id = list[1].items[0].id;
+out.push(['чтение одного', await call('GET', '/api/scenarios?id=' + id).then(r => [r[0], r[1].scenario && r[1].scenario.name])]);
+out.push(['чтение несуществующего', await call('GET', '/api/scenarios?id=zzz')]);
+out.push(['удаление без кода', await call('DELETE', '/api/scenarios?id=' + id, null, {}, { ADMIN_CODE: 'босс' })]);
+out.push(['удаление с кодом', await call('DELETE', '/api/scenarios?id=' + id, null, { 'x-admin-code': encodeURIComponent('босс') }, { ADMIN_CODE: 'босс' })]);
+out.push(['удаление, когда код владельца не задан', await call('DELETE', '/api/scenarios?id=' + id, null, { 'x-admin-code': '' }, {})]);
+out.push(['осталось записей', mem.size]);
+for (const [n, r] of out) console.log(n.padEnd(42), JSON.stringify(r));

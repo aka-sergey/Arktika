@@ -69,12 +69,30 @@
       shared = readScnFile({ scenarios: map }); sharedAt = new Date().toISOString(); return true;
     } catch (e) { toast('Нет связи с GitHub'); return false; }
   }
+  /* ---------- сценарии участников: сервер сайта (Netlify) хранит их для всех ---------- */
+  const API = '/api/scenarios'; let remote = { on: false, needCode: false, canHide: false, items: [] }, pubUrl = '';
+  const lsGet = k => { try { return localStorage.getItem(k) || ''; } catch (e) { return ''; } }, lsSet = (k, v) => { try { if (v) localStorage.setItem(k, v); else localStorage.removeItem(k); } catch (e) { } };
+  function loadRemote(then) { if (IN_CLAUDE || location.protocol === 'file:') return;
+    fetch(API, { headers: { accept: 'application/json' } }).then(r => (r.ok && /json/.test(r.headers.get('content-type') || '')) ? r.json() : null).then(j => { if (!j || !j.ok) return; remote = { on: true, needCode: !!j.needCode, canHide: !!j.canHide, items: j.items || [] }; $('b-pub').hidden = false; renderHeader(); if (st.tab === 'scn') renderTabs(); if (then) then(); }).catch(() => { }); }
+  function openWeb(id) { fetch(API + '?id=' + encodeURIComponent(id)).then(r => r.ok ? r.json() : null).then(j => { if (!(j && j.scenario && j.scenario.p)) { toast('Этот сценарий не найден на сайте'); return; }
+    undo.push(JSON.stringify({ s: st.s, journal: st.journal })); st.s = migrate(j.scenario); st.s.web = id; st.journal = []; res = S.sim(st.s); afterChange(); toast('Открыт сценарий с сайта: «' + st.s.name + '»'); }).catch(() => toast('Нет связи с сайтом')); }
+  function webPublish(btn) { const name = ($('wp-name').value || '').trim(), author = ($('wp-author').value || '').trim(), code = $('wp-code') ? $('wp-code').value.trim() : '';
+    if (!name) { toast('Дайте сценарию название'); return; } if (!author) { toast('Подпишитесь: впишите своё имя'); return; }
+    lsSet('vodaGame.author', author); if (code) lsSet('vodaGame.team', code); btn.disabled = true;
+    const sc = clone(st.s); sc.name = name; delete sc.web;
+    fetch(API, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ name, author, code, scenario: sc, kpi: { invest: res.k.invest, pb: res.k.paybackM, est: res.k.paybackEst, profit28: res.k.profit28 } }) })
+      .then(r => r.json().then(j => [r.status, j])).then(a => { btn.disabled = false; const j = a[1];
+        if (!j.ok) { toast(j.error === 'bad_code' ? 'Неверный код команды' : j.error === 'too_large' ? 'Сценарий слишком большой' : 'Не удалось опубликовать (' + (j.error || a[0]) + ')'); return; }
+        st.s.name = name; st.s.web = j.id; pubUrl = location.origin + location.pathname + '#id=' + j.id; persist(); loadRemote(() => { render(); const i = $('puburl'); if (i) { i.focus(); i.select(); } }); toast('Опубликовано. Сценарий «' + name + '» теперь видят все.'); })
+      .catch(() => { btn.disabled = false; toast('Нет связи с сайтом'); }); }
+  function webHide(id, btn) { const adm = lsGet('vodaGame.admin'); if (!adm) { toast('Впишите код владельца ниже'); return; } btn.disabled = true;
+    fetch(API + '?id=' + encodeURIComponent(id), { method: 'DELETE', headers: { 'x-admin-code': encodeURIComponent(adm) } }).then(r => r.json()).then(j => { if (j.ok) { loadRemote(); toast('Сценарий убран с сайта'); } else { btn.disabled = false; toast('Код владельца не подошёл'); } }).catch(() => { btn.disabled = false; toast('Нет связи с сайтом'); }); }
   async function pack(s) { const bytes = new TextEncoder().encode(JSON.stringify(s)); if (window.CompressionStream) { const z = new Uint8Array(await new Response(new Blob([bytes]).stream().pipeThrough(new CompressionStream('deflate-raw'))).arrayBuffer()); return 'z' + b64(z).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, ''); } return 'j' + b64(bytes).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, ''); }
   async function unpack(t) { const bytes = unb64(t.slice(1).replace(/-/g, '+').replace(/_/g, '/')); if (t[0] === 'z') return JSON.parse(new TextDecoder().decode(await new Response(new Blob([bytes]).stream().pipeThrough(new DecompressionStream('deflate-raw'))).arrayBuffer())); return JSON.parse(new TextDecoder().decode(bytes)); }
   async function saveFile(filename, blob) { // вне Claude — обычное скачивание, внутри — через разрешение на сохранение
     if (!IN_CLAUDE) { const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = filename; document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 4000); return true; }
     const dl = await window.claude.use('downloads'); if (!dl) { toast('Скачивание недоступно в этом окне'); return false; } await dl.save({ filename, data: blob }); return true; }
-  function openFromHash() { const h = location.hash || ''; if (h.indexOf('#s=') !== 0) return; unpack(h.slice(3)).then(s => { if (!(s && s.p && s.staff && s.capex && s.mats)) throw 0; undo.push(JSON.stringify({ s: st.s, journal: st.journal })); st.s = migrate(s); st.journal = []; res = S.sim(st.s); try { history.replaceState(null, '', location.pathname + location.search); } catch (e) { } afterChange(); toast('Открыт сценарий из ссылки: «' + st.s.name + '». Чтобы оставить его у себя — «Сохранить сценарий».'); }).catch(() => toast('Ссылка на сценарий повреждена')); }
+  function openFromHash() { const h = location.hash || ''; if (h.indexOf('#id=') === 0) { const id = h.slice(4); try { history.replaceState(null, '', location.pathname + location.search); } catch (e) { } openWeb(id); return; } if (h.indexOf('#s=') !== 0) return; unpack(h.slice(3)).then(s => { if (!(s && s.p && s.staff && s.capex && s.mats)) throw 0; undo.push(JSON.stringify({ s: st.s, journal: st.journal })); st.s = migrate(s); st.journal = []; res = S.sim(st.s); try { history.replaceState(null, '', location.pathname + location.search); } catch (e) { } afterChange(); toast('Открыт сценарий из ссылки: «' + st.s.name + '». Чтобы оставить его у себя — «Сохранить сценарий».'); }).catch(() => toast('Ссылка на сценарий повреждена')); }
   let toastT = 0; const toast = t => { const e = $('toast'); e.textContent = t; e.hidden = false; clearTimeout(toastT); toastT = setTimeout(() => { e.hidden = true; }, 3600); };
 
   /* ---------- цвета «тепловой карты»: зелёный → жёлтый → красный ---------- */
@@ -439,14 +457,22 @@
       const row = (n, kk, btns) => `<tr><td>${esc(n)}</td><td class="r">${mln(kk.invest)}</td><td>${kk.paybackM ? esc(mLabel(kk.paybackM)) : kk.paybackEst ? '≈ ' + esc(mLabel(kk.paybackEst)) : 'нет'}</td><td class="r">${mln(kk.profit28)}</td><td class="r">${short(kk.minCash)} ₽</td><td class="r">${kk.headMax}</td><td style="white-space:nowrap">${btns}</td></tr>`;
       const head = '<thead><tr><th>Сценарий</th><th class="r">Вносит инвестор</th><th>Окупаемость</th><th class="r">Прибыль 2028</th><th class="r">Минимум на счёте</th><th class="r">Людей</th><th></th></tr></thead>';
       const pub = Object.keys(shared), mine = Object.keys(st.saved), tok = getTok();
-      return `<h3>Общие сценарии — видят все, кто открыл ссылку</h3>
+      const pbT = x => x.pb ? esc(mLabel(x.pb)) : x.est ? '≈ ' + esc(mLabel(x.est)) : 'нет', adm = lsGet('vodaGame.admin');
+      const web = !remote.on ? '' : `<h3>Сценарии участников — сохранены на сайте, видят все</h3>
+      <p>Опубликуйте сценарий с экрана — он появится в этом списке у каждого, кто открыл сайт. Чужой сценарий можно открыть и играть от него; изменить или удалить его нельзя, можно опубликовать свой вариант рядом.</p>
+      <div class="pubform"><label>Название<input id="wp-name" maxlength="60" value="${esc(s.name === 'База' ? '' : s.name)}" placeholder="Например: 10 установок с августа"></label><label>Ваше имя<input id="wp-author" maxlength="40" value="${esc(lsGet('vodaGame.author'))}" placeholder="Кто публикует"></label>${remote.needCode ? `<label>Код команды<input id="wp-code" type="password" autocomplete="off" value="${esc(lsGet('vodaGame.team'))}"></label>` : ''}<button class="btn pri" data-act="webpub">Опубликовать сценарий с экрана</button></div>
+      ${pubUrl ? `<div class="row"><input id="puburl" readonly value="${esc(pubUrl)}" style="flex:1;min-width:0;font-family:var(--mono);font-size:12px" aria-label="Ссылка на опубликованный сценарий"><button class="btn sm" data-act="copypub">Скопировать ссылку</button></div>` : ''}
+      <div class="tbl"><table><thead><tr><th>Сценарий</th><th>Автор</th><th>Когда</th><th class="r">Вносит инвестор</th><th>Окупаемость</th><th class="r">Прибыль 2028</th><th></th></tr></thead><tbody>` +
+        (remote.items.length ? remote.items.map(x => `<tr><td>${esc(x.name)}</td><td>${esc(x.author || '')}</td><td class="calc">${esc(new Date(x.created).toLocaleString('ru-RU', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }))}</td><td class="r">${mln(x.invest || 0)}</td><td>${pbT(x)}</td><td class="r">${mln(x.profit28 || 0)}</td><td style="white-space:nowrap"><button class="btn sm" data-act="open:web:${esc(x.id)}">Открыть</button>${remote.canHide && adm ? ` <button class="btn sm" data-act="webdel:${esc(x.id)}">Убрать</button>` : ''}</td></tr>`).join('') : '<tr><td colspan="7" class="calc">Пока никто ничего не опубликовал. Будьте первым.</td></tr>') + `</tbody></table></div>
+      ${remote.canHide ? `<div class="row"><input id="admcode" type="password" autocomplete="off" placeholder="Код владельца — чтобы убирать сценарии" style="max-width:320px;flex:1" value="${esc(adm)}" aria-label="Код владельца"><button class="btn sm" data-act="admsave">Запомнить</button></div>` : ''}`;
+      const fileBlock = (remote.on && !pub.length) ? '' : `<h3>Общие сценарии из файла — видят все, кто открыл ссылку</h3>
       <p>Лежат в файле <code>scenarios.json</code> рядом со страницей. Любой посетитель может открыть общий сценарий и играть от него; его правки остаются только у него.${sharedAt ? ' Обновлено: ' + esc(new Date(sharedAt).toLocaleString('ru-RU')) + '.' : ''}</p>
-      <div class="tbl"><table>${head}<tbody>` + (pub.length ? pub.map(n => row(n, S.sim(shared[n]).k, `<button class="btn sm" data-act="open:pub:${esc(n)}">Открыть</button>${!IN_CLAUDE && tok ? ` <button class="btn sm" data-act="unpub:${esc(n)}">Убрать из общих</button>` : ''}`)).join('') : '<tr><td colspan="7" class="calc">Общих сценариев пока нет.</td></tr>') + `</tbody></table></div>
-      <h3>Мои сценарии — только в этом браузере</h3>
-      <div class="tbl"><table>${head}<tbody>${row('База (исходные цифры)', BASE.k, '<button class="btn sm" data-act="open:База">Открыть</button>')}${row('Сейчас на экране: ' + s.name, k, '')}` + mine.map(n => row(n, S.sim(st.saved[n]).k, `<button class="btn sm" data-act="open:my:${esc(n)}">Открыть</button>${!IN_CLAUDE ? ` <button class="btn sm" data-act="pub1:${esc(n)}">Сделать общим</button>` : ''}`)).join('') + `</tbody></table></div>
+      <div class="tbl"><table>${head}<tbody>` + (pub.length ? pub.map(n => row(n, S.sim(shared[n]).k, `<button class="btn sm" data-act="open:pub:${esc(n)}">Открыть</button>${!IN_CLAUDE && tok ? ` <button class="btn sm" data-act="unpub:${esc(n)}">Убрать из общих</button>` : ''}`)).join('') : '<tr><td colspan="7" class="calc">Общих сценариев пока нет.</td></tr>') + `</tbody></table></div>`;
+      return web + fileBlock + `<h3>Мои сценарии — только в этом браузере</h3>
+      <div class="tbl"><table>${head}<tbody>${row('База (исходные цифры)', BASE.k, '<button class="btn sm" data-act="open:База">Открыть</button>')}${row('Сейчас на экране: ' + s.name, k, '')}` + mine.map(n => row(n, S.sim(st.saved[n]).k, `<button class="btn sm" data-act="open:my:${esc(n)}">Открыть</button>${!IN_CLAUDE && !remote.on ? ` <button class="btn sm" data-act="pub1:${esc(n)}">Сделать общим</button>` : ''}`)).join('') + `</tbody></table></div>
       <div class="row"><button class="btn" data-act="expscn">Скачать мои сценарии файлом</button><button class="btn" data-act="impscn">Загрузить сценарии из файла</button><input type="file" id="imp" accept=".json,application/json" hidden>${IN_CLAUDE ? '' : '<button class="btn" data-act="sharelink">Ссылка на сценарий с экрана</button>'}</div>
       ${shareUrl ? `<div class="row"><input id="shareurl" readonly value="${esc(shareUrl)}" style="flex:1;min-width:0;font-family:var(--mono);font-size:12px" aria-label="Ссылка на сценарий"><span style="color:var(--muted)">Отправьте ссылку — у получателя откроется этот сценарий.</span></div>` : ''}
-      ` + (IN_CLAUDE ? '<p>Публиковать общие сценарии можно со страницы на GitHub Pages. Здесь, внутри Claude, доступны просмотр общих, скачивание и загрузка файлом.</p>' : `<h3>Публикация общих сценариев — только для владельца</h3>
+      ` + (remote.on ? '' : IN_CLAUDE ? '<p>Публиковать общие сценарии можно со страницы на сайте. Здесь, внутри Claude, доступны просмотр общих, скачивание и загрузка файлом.</p>' : `<h3>Публикация общих сценариев — только для владельца</h3>
       <p>Кнопка «Сделать общим» записывает сценарий в <code>scenarios.json</code> репозитория <b>${esc(GH.owner)}/${esc(GH.repo)}</b>. Для этого нужен токен GitHub с правом записи в этот репозиторий. Токен хранится только в этом браузере и никуда, кроме GitHub, не отправляется. После публикации сайт обновляется за одну-две минуты.</p>
       <div class="row"><input id="ghtok" type="password" autocomplete="off" placeholder="Токен GitHub (github_pat_…)" style="flex:1;min-width:220px;max-width:460px" aria-label="Токен GitHub"><button class="btn" data-act="tok">Запомнить</button>${tok ? '<button class="btn" data-act="tokdel">Забыть токен</button><span class="delta good">токен сохранён в этом браузере</span>' : '<span class="delta">токена нет — публикация недоступна</span>'}</div>
       <p>Без токена тоже можно: «Скачать мои сценарии файлом», переименовать файл в <code>scenarios.json</code> и загрузить в репозиторий через «Add file → Upload files».</p>`);
@@ -473,8 +499,9 @@
     $('panel').innerHTML = panel();
   }
   function renderHeader() {
-    const names = Object.keys(st.saved), pub = Object.keys(shared), cur = st.s.name, mine = names.includes(cur), isPub = !mine && pub.includes(cur), known = cur === 'База' || mine || isPub;
+    const names = Object.keys(st.saved), pub = Object.keys(shared), cur = st.s.name, mine = names.includes(cur), isPub = !mine && pub.includes(cur), webIt = remote.items.find(x => x.id === st.s.web && x.name === cur), isWeb = !mine && !isPub && !!webIt, known = cur === 'База' || mine || isPub || isWeb;
     $('scn').innerHTML = `<option value="База"${cur === 'База' ? ' selected' : ''}>База (исходные цифры)</option>` +
+      (remote.items.length ? `<optgroup label="На сайте — видят все">${remote.items.map(x => `<option value="web:${esc(x.id)}"${isWeb && x.id === st.s.web ? ' selected' : ''}>${esc(x.name)} — ${esc(x.author || '')}</option>`).join('')}</optgroup>` : '') +
       (pub.length ? `<optgroup label="Общие — видят все">${pub.map(n => `<option value="pub:${esc(n)}"${isPub && n === cur ? ' selected' : ''}>${esc(n)}</option>`).join('')}</optgroup>` : '') +
       (names.length ? `<optgroup label="Мои — только в этом браузере">${names.map(n => `<option value="my:${esc(n)}"${mine && n === cur ? ' selected' : ''}>${esc(n)}</option>`).join('')}</optgroup>` : '') +
       (known ? '' : `<option value="cur" selected>${esc(cur)} (не сохранён)</option>`);
@@ -503,7 +530,7 @@
     const who = kind === 'staff' ? (it.name || 'Сотрудник') : kind === 'capex' ? '«' + it.name + '»' : kind === 'batch' ? 'Партия ' + tOf(s, it.type).name + ' ×' + it.qty : 'План продаж с ' + mLabel(it.month), dz = x => field === 'type' ? tOf(s, x).name : disp(x, f);
     act(field === 'name' ? `Переименовано: ${old} → ${v}` : `${who}, ${FLD[field]}: ${dz(old)} → ${dz(v)}`, () => { it[field] = v; });
   });
-  function loadScn(val) { const pub = val.indexOf('pub:') === 0, name = val.replace(/^(pub|my):/, ''), src = name === 'База' && !pub && val === 'База' ? BASE_S : pub ? shared[name] : st.saved[name]; if (!src) return;
+  function loadScn(val) { if (val.indexOf('web:') === 0) { openWeb(val.slice(4)); return; } const pub = val.indexOf('pub:') === 0, name = val.replace(/^(pub|my):/, ''), src = name === 'База' && !pub && val === 'База' ? BASE_S : pub ? shared[name] : st.saved[name]; if (!src) return;
     undo.push(JSON.stringify({ s: st.s, journal: st.journal })); st.s = migrate(clone(src)); st.s.name = name; st.journal = []; res = S.sim(st.s); afterChange(); toast('Открыт сценарий «' + name + '»' + (pub ? ' из общих' : '')); }
   function importFile(inp) { const f = inp.files && inp.files[0]; if (!f) return; const rd = new FileReader();
     rd.onload = () => { try { const map = readScnFile(JSON.parse(rd.result)), n = Object.keys(map); if (!n.length) throw 0; n.forEach(k => { st.saved[k] = map[k]; }); persist(); render(); toast('Загружено сценариев: ' + n.length + '. Они в списке «Мои».'); } catch (e) { toast('В файле нет сценариев этой игры'); } inp.value = ''; };
@@ -543,6 +570,11 @@
       case 'unpub': { const n = a.slice(1).join(':'), map = Object.assign({}, shared); delete map[n]; t.disabled = true; publish(map, 'Убран общий сценарий: ' + n).then(ok => { if (ok) { render(); toast('«' + n + '» убран из общих'); } else t.disabled = false; }); break; }
       case 'expscn': { const map = Object.assign({}, st.saved); if (!Object.keys(map).length) { toast('Сначала сохраните хотя бы один сценарий'); break; } saveFile('scenarios.json', new Blob([scnFile(map)], { type: 'application/json' })).then(ok => { if (ok) toast('Файл со сценариями сохранён'); }).catch(() => toast('Сохранение отменено')); break; }
       case 'impscn': $('imp').click(); break;
+      case 'webpub': webPublish(t); break;
+      case 'webdel': webHide(a.slice(1).join(':'), t); break;
+      case 'admsave': lsSet('vodaGame.admin', ($('admcode').value || '').trim()); renderTabs(); toast('Код владельца сохранён в этом браузере'); break;
+      case 'copypub': { const i = $('puburl'); i.focus(); i.select(); if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(pubUrl).then(() => toast('Ссылка скопирована'), () => toast('Выделите ссылку и скопируйте')); break; }
+      case 'gopub': st.tab = 'scn'; persist(); renderTabs(); { const i = $('wp-name'); if (i) { i.scrollIntoView({ block: 'center' }); i.focus(); } } break;
       case 'sharelink': pack(st.s).then(code => { shareUrl = location.origin + location.pathname + '#s=' + code; renderTabs(); const inp = $('shareurl'); if (inp) { inp.focus(); inp.select(); } if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(shareUrl).then(() => toast('Ссылка скопирована'), () => toast('Ссылка в поле ниже — скопируйте её')); else toast('Ссылка в поле ниже — скопируйте её'); }); break;
       case 'lever': { const i = +a[1], v = levVal(i); if (!v) { toast('Впишите значение рычага'); break; } act('Рычаг: ' + levText(i, s), z => LEVERS[i].f(z, v)); break; }
       case 'plancap': { const b = s.batches.find(x => x.id === a[1]); if (!b) break; const mo = Math.max(b.month, p.start_m), cap = Math.round(capAt(s, mo)); act(`План продаж с ${mLabel(mo)} поднят до мощности: ${pcs(cap)} л в месяц`, () => { const ex = s.plan.find(q => q.month === mo); if (ex) ex.liters = cap; else s.plan.push({ id: newId(), month: mo, liters: cap }); }); break; }
@@ -558,6 +590,6 @@
     }
   });
   document.addEventListener('keydown', e => { if (e.key === 'Enter' && e.target.matches && e.target.matches('input[data-bind]')) e.target.blur(); if (e.key === 'Enter' && e.target.id === 'scnname') document.querySelector('[data-act="saveok"]').click(); });
-  initTimelineEvents(); render(); loadShared(); openFromHash();
+  initTimelineEvents(); render(); loadShared(); loadRemote(); openFromHash();
   if (document.fonts && document.fonts.ready) document.fonts.ready.then(renderTimeline);
 })();

@@ -1,0 +1,8 @@
+# Netlify: публикуем только страницу игры и файл общих сценариев; функция /api/scenarios хранит сценарии посетителей
+[build]
+  command = "mkdir -p dist && cp index.html scenarios.json dist/"
+  publish = "dist"
+
+[functions]
+  directory = "netlify/functions"
+  node_bundler = "esbuild"

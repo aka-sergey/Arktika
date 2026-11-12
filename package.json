@@ -1,0 +1,8 @@
+{
+  "name": "arktika-zavod-vody",
+  "private": true,
+  "description": "АРКТИКА · завод воды — бизнес-игра",
+  "dependencies": {
+    "@netlify/blobs": "^11.1.9"
+  }
+}
