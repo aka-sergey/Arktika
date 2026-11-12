@@ -45,10 +45,16 @@
   const persist = () => { try { localStorage.setItem(LS, JSON.stringify({ s: st.s, journal: st.journal.slice(0, 200), saved: st.saved, best: st.best, tab: st.tab, zoom: st.zoom, lev: st.lev })); } catch (e) { } };
   function act(text, fn) {
     const before = res.k; undo.push(JSON.stringify({ s: st.s, journal: st.journal })); if (undo.length > 60) undo.shift();
-    fn(st.s); res = S.sim(st.s);
+    fn(st.s); res = S.sim(st.s); mv = { t: Date.now(), from: before };
     st.journal.unshift({ t: stamp(), text, dInv: res.k.invest - before.invest, dPb: (res.k.paybackEst && before.paybackEst) ? res.k.paybackEst - before.paybackEst : 0, pbNow: res.k.paybackEst, pbWas: before.paybackEst });
     afterChange();
   }
+  /* ---------- движение: всё выключается системной настройкой «уменьшить движение» ---------- */
+  const RM = () => !!(window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches), rafs = {};
+  function tween(key, ms, draw, done, pw) { cancelAnimationFrame(rafs[key]); if (RM()) { done(); return; } const t0 = performance.now(); const step = now => { const t = Math.min(1, (now - t0) / ms); if (t < 1) { draw(1 - Math.pow(1 - t, pw || 3)); rafs[key] = requestAnimationFrame(step); } else done(); }; rafs[key] = requestAnimationFrame(step); }
+  function closeThen(els, fn) { els = Array.prototype.filter.call(els || [], Boolean); if (!els.length || RM()) { fn(); return; } els.forEach(x => x.classList.add('closing')); setTimeout(fn, 180); }
+  const dMoney = v => (v > 0 ? '+' : '−') + (Math.abs(v) >= 950000 ? nf1.format(Math.abs(v) / 1e6) + ' млн' : nf0.format(Math.abs(v) / 1e3) + ' тыс.');
+  let shown = null, mv = null, mvT = 0, lastOk = null, reveal = null, FV = null, FVtab = '', CHn = null, CHp = null;
   function afterChange() {
     if (res.k.paybackM > 0 && res.alerts.every(a => a.lvl !== 'err') && (!st.best || res.k.invest < st.best.invest - 1)) st.best = { invest: res.k.invest, name: st.s.name, pb: res.k.paybackM };
     persist(); setTimeout(rerender, 0);
@@ -118,18 +124,32 @@
     const pd = !dPb ? (k.paybackEst ? 'как в базе' : '') : (dPb < 0 ? 'на ' + (-dPb) + ' мес. раньше базы' : 'на ' + dPb + ' мес. позже базы');
     const verdict = k.paybackM ? 'Цель достигнута' : 'Не окупается', backT = 'Деньги на счёте в конце 2028 плюс выплаты инвестору — к сумме вложений' + (k.payout > 0 ? '. Инвестору выплачено ' + mln(k.payout) : '');
     const dP = k.profit28 - b.profit28;
+    const pbN = k.paybackM || k.paybackEst || 0, vals = [k.invest, pbN, k.minCash, k.profit28];
+    const fm = [v => `${nf1.format(v / 1e6)} <small>млн ₽</small>`, v => v ? (k.paybackM ? '' : '≈ ') + esc(mLabel(Math.round(v))) : 'нет', v => `${short(v)} <small>₽</small>`, v => `${nf1.format(v / 1e6)} <small>млн ₽</small>`];
     const tiles = [
-      ['Вносит инвестор', `${nf1.format(k.invest / 1e6)} <small>млн ₽</small>`, d(dInv, dInv < 0, md)],
-      ['Окупаемость', k.paybackM ? esc(mLabel(k.paybackM)) : k.paybackEst ? '≈ ' + esc(mLabel(k.paybackEst)) : 'нет', d(dPb, dPb < 0, pd || (k.paybackM ? '' : 'за пределами 26 месяцев'))],
-      ['Минимум на счёте', `${short(k.minCash)} <small>₽</small>`, d(k.minCash < 0 ? 1 : 0, false, esc(S.dateOf(k.minCashDay).text))],
-      ['Прибыль после налогов за 2028', `${nf1.format(k.profit28 / 1e6)} <small>млн ₽</small>`, d(dP, dP > 0, Math.abs(dP) < 1 ? 'как в базе' : (dP > 0 ? '+' : '−') + mln(Math.abs(dP)).replace(' ₽', '') + ' к базе')]];
+      ['Вносит инвестор', fm[0](vals[0]), d(dInv, dInv < 0, md)],
+      ['Окупаемость', fm[1](vals[1]), d(dPb, dPb < 0, pd || (k.paybackM ? '' : 'за пределами 26 месяцев'))],
+      ['Минимум на счёте', fm[2](vals[2]), d(k.minCash < 0 ? 1 : 0, false, esc(S.dateOf(k.minCashDay).text))],
+      ['Прибыль после налогов за 2028', fm[3](vals[3]), d(dP, dP > 0, Math.abs(dP) < 1 ? 'как в базе' : (dP > 0 ? '+' : '−') + mln(Math.abs(dP)).replace(' ₽', '') + ' к базе')]];
+    const chips = ['', '', '', ''];
+    if (mv && Date.now() - mv.t < 1500) { const f = mv.from, fpb = f.paybackM || f.paybackEst || 0, chip = (txt, good) => `<span class="mv ${good ? 'good' : 'bad'}">${txt}</span>`;
+      const dI = k.invest - f.invest, dM = (pbN && fpb) ? pbN - fpb : 0, dC = k.minCash - f.minCash, dR = k.profit28 - f.profit28;
+      if (Math.abs(dI) >= 500) chips[0] = chip(dMoney(dI), dI < 0);
+      if (dM) chips[1] = chip((dM > 0 ? '+' : '−') + Math.abs(dM) + ' мес.', dM < 0); else if (!!pbN !== !!fpb) chips[1] = chip(pbN ? 'окупается' : 'не окупается', !!pbN);
+      if (Math.abs(dC) >= 500) chips[2] = chip(dMoney(dC), dC > 0);
+      if (Math.abs(dR) >= 500) chips[3] = chip(dMoney(dR), dR > 0);
+      clearTimeout(mvT); mvT = setTimeout(() => { mv = null; document.querySelectorAll('.mv').forEach(x => x.remove()); document.querySelectorAll('.sb-c.moved').forEach(x => x.classList.remove('moved')); }, Math.max(30, 1500 - (Date.now() - mv.t))); }
+    const okNow = !!k.paybackM, flip = lastOk !== null && lastOk !== okNow; lastOk = okNow;
     $('score').innerHTML = `
-      <div class="goal ${k.paybackM ? 'ok' : ''}"><span class="verdict"><i class="led"></i>${verdict}</span><b>Окупиться до декабря 2028 с минимальным бюджетом</b><span class="status" title="${esc(status)}">${esc(status)}</span>
+      <div class="goal ${k.paybackM ? 'ok' : ''}${flip ? ' flip' : ''}"><span class="verdict"><i class="led"></i>${verdict}</span><b>Окупиться до декабря 2028 с минимальным бюджетом</b><span class="status" title="${esc(status)}">${esc(status)}</span>
         <div class="debtrow" title="${esc(backT)}"><div class="debt"><i style="width:${(back * 100).toFixed(1)}%;background:${heat(1 - back)}"></i></div><span>возврат ${Math.round(back * 100)} %</span></div></div>` +
-      tiles.map(t => `<div class="metric"><span class="lab">${t[0]}</span><span class="val">${t[1]}</span>${t[2]}</div>`).join('');
+      tiles.map((t, i) => `<div class="metric"><span class="lab">${t[0]}</span><span class="val">${t[1]}</span>${t[2]}${chips[i]}</div>`).join('');
     $('sbar-in').innerHTML = `<span class="sb-st ${k.paybackM ? 'ok' : ''}"><i class="led"></i><span>${verdict}</span></span>` +
-      tiles.map(t => `<span class="sb-c" title="${t[0]}"><small>${t[0]}</small><b>${t[1]}</b></span>`).join('') +
+      tiles.map((t, i) => `<span class="sb-c${chips[i] ? ' moved' : ''}" title="${t[0]}"><small><span class="l">${t[0]}</span>${chips[i]}</small><b>${t[1]}</b></span>`).join('') +
       `<button class="btn sm" data-act="undo" id="b-undo2"${undo.length ? '' : ' disabled'} title="Отменить ход" aria-label="Отменить ход"><span aria-hidden="true">↶</span><span class="t">Отменить ход</span></button>`;
+    if (shown && shown.some((v, i) => v !== vals[i])) { const from = shown, M = document.querySelectorAll('#score .metric .val'), B = document.querySelectorAll('#sbar-in .sb-c b'), put = (i, h) => { if (M[i]) M[i].innerHTML = h; if (B[i]) B[i].innerHTML = h; };
+      tween('score', 380, e => vals.forEach((v, i) => { if (from[i] !== v && !(i === 1 && !(from[i] && v))) put(i, fm[i](from[i] + (v - from[i]) * e)); }), () => vals.forEach((v, i) => put(i, fm[i](v))), 1.5); }
+    shown = vals;
     const ms = [
       ['Окупиться за 26 месяцев', k.paybackM > 0], ['Бюджет ниже базового', k.invest < b.invest - 1], ['EBITDA в плюсе в первые 3 месяца продаж', k.ebitdaM > 0 && k.ebitdaM <= st.s.p.start_m + 2],
       ['Склад материалов без дефицита', !res.alerts.some(a => a.lvl === 'err' && /закончились/.test(a.text))], ['Без кассовых разрывов', k.minCash >= 0],
@@ -137,7 +157,7 @@
     const done = ms.filter(a => a[1]).length;
     $('missions').innerHTML = `<div class="missrow"><button type="button" class="missbtn" data-act="ui:miss" aria-expanded="${!!ui.miss}"><span class="chev">${ui.miss ? '▾' : '▸'}</span>Задания: <b>${done} из ${ms.length}</b><span class="pips" aria-hidden="true">${ms.map(a => `<i class="${a[1] ? 'on' : ''}"></i>`).join('')}</span></button>` +
       (st.best ? `<span class="chip record"><i>★</i>Рекорд: ${mln(st.best.invest)} при окупаемости в ${esc(mLabel(st.best.pb))} («${esc(st.best.name)}»)</span>` : '') + `</div>` +
-      (ui.miss ? `<div class="misslist">${ms.map(a => `<span class="chip ${a[1] ? 'done' : ''}"><i>${a[1] ? '✓' : ''}</i>${esc(a[0])}</span>`).join('')}</div>` : '');
+      (ui.miss ? `<div class="misslist${reveal === 'miss' ? ' rv' : ''}">${ms.map(a => `<span class="chip ${a[1] ? 'done' : ''}"><i>${a[1] ? '✓' : ''}</i>${esc(a[0])}</span>`).join('')}</div>` : '');
     $('alerts').innerHTML = res.alerts.map(a => `<div class="alert ${a.lvl === 'err' ? 'err' : ''}"><b>${a.lvl === 'err' ? 'Ошибка' : 'Внимание'}</b><span>${esc(a.text)}</span></div>`).join('');
   }
 
@@ -220,7 +240,7 @@
     });
     g.push(`<line id="cur" x1="0" x2="0" y1="18" y2="${H}" stroke="var(--ink)" stroke-width="1" opacity="0" style="pointer-events:none"/>`);
     $('tl-svg').innerHTML = `<svg width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" role="img" aria-label="Лента времени: деньги, склад, мощность и люди по дням">${g.join('')}</svg>`;
-    $('tl-labels').style.height = H + 'px';
+    $('tl-labels').style.height = H + 'px'; $('tl-svg').style.height = H + 'px';
     $('tl-labels').innerHTML = lanes.filter(l => l.t).map(l => l.tog
       ? `<button type="button" class="lanebtn" style="top:${l.y + 2}px" data-act="ui:${l.tog}" aria-expanded="${!!l.open}" title="${l.open ? 'Свернуть в одну дорожку' : 'Раскрыть подробно'}"><b><span class="chev">${l.open ? '▾' : '▸'}</span>${esc(l.t)}</b><span>${esc(l.s)}</span></button>`
       : `<div style="top:${l.y + 2}px"><b>${esc(l.t)}</b><span>${esc(l.s)}</span></div>`).join('');
@@ -302,7 +322,7 @@
   const num = (id, bind, v, f) => wrapM(bind, f, `<input class="num" id="${id}" data-bind="${bind}" data-fmt="${f}" inputmode="decimal" autocomplete="off" value="${esc(show(v, f))}">`);
   /* вводная строка вкладки: одна строка, остальное по «Подробнее» (держится, пока открыта страница) */
   const infoOpen = new Set(), cxOpen = new Set();
-  const intro = (lead, more) => { const on = infoOpen.has(st.tab); return `<div class="intro"><p>${lead}${more ? ` <button type="button" class="lnk" data-act="info" aria-expanded="${on}">${on ? 'Свернуть' : 'Подробнее'}</button>` : ''}</p>${more && on ? `<div class="more">${more}</div>` : ''}</div>`; };
+  const intro = (lead, more) => { const on = infoOpen.has(st.tab); return `<div class="intro"><p>${lead}${more ? ` <button type="button" class="lnk" data-act="info" aria-expanded="${on}">${on ? 'Свернуть' : 'Подробнее'}</button>` : ''}</p>${more && on ? `<div class="more${reveal === 'info' ? ' rv' : ''}">${more}</div>` : ''}</div>`; };
   const plur = (n, a, b, c3) => { const d = n % 10, h = n % 100; return d === 1 && h !== 11 ? a : d >= 2 && d <= 4 && (h < 12 || h > 14) ? b : c3; };
   const capCats = s => CATS.concat(s.capex.map(x => x.cat || 'Прочее').filter(x => !CATS.includes(x)).filter((x, i, a) => a.indexOf(x) === i));
   const removedChip = L => (DIFF && DIFF.removed[L].length) ? `<span class="rmchip">${dot('revdel:' + L, 'Вернуть убранные строки базы: ' + DIFF.removed[L].map(b => b.name || mLabel(b.month)).join('; '))}убрано ${DIFF.removed[L].length}</span>` : '';
@@ -441,13 +461,14 @@
     let g = ''; for (let v = Math.ceil(lo / stepv) * stepv; v <= hi + 1; v += stepv) g += `<line x1="${L}" x2="${W - R}" y1="${Y(v)}" y2="${Y(v)}" stroke="${Math.abs(v) < 1 ? 'var(--muted)' : 'var(--line)'}" stroke-width="${Math.abs(v) < 1 ? 1 : 0.8}" stroke-dasharray="${Math.abs(v) < 1 ? '' : '2 5'}"/><text x="${L - 8}" y="${Y(v) + 4}" text-anchor="end">${nf0.format(v / 1e6)}</text>`;
     MONTHS.forEach((mm, i) => { if (i % 2 === 0 || mm.m === 0) g += `<text x="${X(i)}" y="${H - 12}" text-anchor="middle" class="${mm.m === 0 || i === 0 ? 't-ink t-b' : ''}">${mm.short}${mm.m === 0 || i === 0 ? ' ' + String(mm.y).slice(2) : ''}</text>`; });
     const pts = cum.map((v, i) => X(i).toFixed(1) + ',' + Y(v).toFixed(1)), line = 'M' + pts.join('L'), area = line + `L${X(N - 1)},${y0}L${X(0)},${y0}Z`;
+    CHn = { pts: cum.map((v, i) => [X(i), Y(v)]), y0, x0: X(0), x1: X(N - 1) };
     g += `<defs><clipPath id="cpos"><rect x="0" y="0" width="${W}" height="${y0}"/></clipPath><clipPath id="cneg"><rect x="0" y="${y0}" width="${W}" height="${H}"/></clipPath>
       <linearGradient id="gneg" gradientUnits="userSpaceOnUse" x1="0" y1="${y0}" x2="0" y2="${T + ph}"><stop offset="0" stop-color="#F6465D" stop-opacity=".05"/><stop offset="1" stop-color="#F6465D" stop-opacity=".42"/></linearGradient>
       <linearGradient id="gpos" gradientUnits="userSpaceOnUse" x1="0" y1="${y0}" x2="0" y2="${T}"><stop offset="0" stop-color="#16C784" stop-opacity=".05"/><stop offset="1" stop-color="#16C784" stop-opacity=".42"/></linearGradient>
       <filter id="glow" x="-10%" y="-30%" width="120%" height="160%"><feGaussianBlur stdDeviation="3.2" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter></defs>`;
-    g += `<path d="${area}" fill="url(#gpos)" clip-path="url(#cpos)"/><path d="${area}" fill="url(#gneg)" clip-path="url(#cneg)"/>`;
+    g += `<path class="pa" d="${area}" fill="url(#gpos)" clip-path="url(#cpos)"/><path class="pa" d="${area}" fill="url(#gneg)" clip-path="url(#cneg)"/>`;
     cf.forEach((v, i) => { g += `<rect x="${X(i) - bw / 2}" y="${Math.min(Y(v), y0)}" width="${bw}" height="${Math.max(1, Math.abs(Y(v) - y0))}" fill="${v >= 0 ? 'var(--brand)' : 'var(--red)'}" opacity=".5"/>`; });
-    g += `<g filter="url(#glow)"><path d="${line}" fill="none" stroke="var(--brand)" stroke-width="2.4" stroke-linejoin="round" clip-path="url(#cpos)"/><path d="${line}" fill="none" stroke="var(--red)" stroke-width="2.4" stroke-linejoin="round" clip-path="url(#cneg)"/></g>`;
+    g += `<g filter="url(#glow)"><path class="pl" d="${line}" fill="none" stroke="var(--brand)" stroke-width="2.4" stroke-linejoin="round" clip-path="url(#cpos)"/><path class="pl" d="${line}" fill="none" stroke="var(--red)" stroke-width="2.4" stroke-linejoin="round" clip-path="url(#cneg)"/></g>`;
     const pi = cum.indexOf(Math.min(...cum)); if (cum[pi] < 0) g += `<circle cx="${X(pi)}" cy="${Y(cum[pi])}" r="5" fill="var(--red)"/><text x="${X(pi) + 12}" y="${Y(cum[pi]) - 12}" class="t-ink t-b">Дно: −${mln(-cum[pi])}, ${mLabel(pi + 1)}</text>`;
     if (k.paybackM) { const i = k.paybackM - 1; g += `<path d="${star(X(i), y0, 11)}" fill="var(--brand)" stroke="var(--ink)" stroke-width="1.2"/><text x="${X(i)}" y="${y0 - 16}" text-anchor="middle" class="t-ink t-b">Окупаемость: ${mLabel(k.paybackM)}</text>`; }
     else g += `<text x="${W - R - 4}" y="${Y(cum[N - 1]) - 10}" text-anchor="end" class="t-ink t-b">Дек. 2028: −${mln(-cum[N - 1])}${k.paybackEst ? ' · по темпу окупится ≈ ' + mLabel(k.paybackEst) : ''}</text>`;
@@ -495,7 +516,7 @@
       const startCost = s.utypes.reduce((a, x) => a + x.start * x.price, 0), amt = x => x.auto ? startCost * 0.5 : (+x.amount || 0);
       const cats = capCats(s), rowsOf = cat => s.capex.filter(x => (x.cat || 'Прочее') === cat), used = cats.filter(cat => rowsOf(cat).length);
       const diffN = x => ['name', 'amount', 'month', 'day', 'reserve', 'cat'].filter(f => markFor('capex:' + x.id + ':' + f, 'txt')).length;
-      const line = x => `<tr class="sub"><td class="name">${wrapM('capex:' + x.id + ':name', 'txt', `<input class="ttl" id="cx-${x.id}-name" data-bind="capex:${x.id}:name" value="${esc(x.name)}" title="${esc(x.name)}" maxlength="110" aria-label="Название статьи">`)}</td><td class="n">${x.auto ? `<span class="calc" title="Считается: штук на старте × цена типа × 50 % (вкладка «Установки и линия»)">${nf0.format(amt(x))}</span>` : num('cx-' + x.id + '-amount', 'capex:' + x.id + ':amount', x.amount, 'money')}</td><td class="mo">${monthSel('cx-' + x.id + '-month', 'capex:' + x.id + ':month', x.month)}</td><td class="n day">${num('cx-' + x.id + '-day', 'capex:' + x.id + ':day', x.day || 10, 'int')}</td><td>${wrapM('capex:' + x.id + ':reserve', 'bool', `<input type="checkbox" id="cx-${x.id}-reserve" data-bind="capex:${x.id}:reserve" data-fmt="bool"${x.reserve ? ' checked' : ''} aria-label="Добавить резерв на непредвиденное">`)}</td>` +
+      const line = x => `<tr class="sub${reveal === 'cxall' || reveal === 'cx:' + (x.cat || 'Прочее') ? ' rv' : ''}"><td class="name">${wrapM('capex:' + x.id + ':name', 'txt', `<input class="ttl" id="cx-${x.id}-name" data-bind="capex:${x.id}:name" value="${esc(x.name)}" title="${esc(x.name)}" maxlength="110" aria-label="Название статьи">`)}</td><td class="n">${x.auto ? `<span class="calc" title="Считается: штук на старте × цена типа × 50 % (вкладка «Установки и линия»)">${nf0.format(amt(x))}</span>` : num('cx-' + x.id + '-amount', 'capex:' + x.id + ':amount', x.amount, 'money')}</td><td class="mo">${monthSel('cx-' + x.id + '-month', 'capex:' + x.id + ':month', x.month)}</td><td class="n day">${num('cx-' + x.id + '-day', 'capex:' + x.id + ':day', x.day || 10, 'int')}</td><td>${wrapM('capex:' + x.id + ':reserve', 'bool', `<input type="checkbox" id="cx-${x.id}-reserve" data-bind="capex:${x.id}:reserve" data-fmt="bool"${x.reserve ? ' checked' : ''} aria-label="Добавить резерв на непредвиденное">`)}</td>` +
         `<td class="act">${wrapM('capex:' + x.id + ':cat', 'txt', `<span class="rowmenu" title="Перенести в другой раздел"><select id="cx-${x.id}-cat" data-bind="capex:${x.id}:cat" data-fmt="txt" aria-label="Перенести строку в другой раздел"><optgroup label="Перенести в раздел">${cats.map(z => `<option${z === (x.cat || 'Прочее') ? ' selected' : ''}>${esc(z)}</option>`).join('')}</optgroup></select></span>`)}${x.auto ? '' : `<button class="x" data-act="del:capex:${x.id}" aria-label="Удалить строку" title="Удалить строку">×</button>`}</td></tr>`;
       return intro('Каждая строка — отдельный платёж. Щёлкните по разделу, чтобы раскрыть его строки.',
         `<p>Сумма, месяц и день оплаты задаются в строке; название меняется щелчком по нему. Столбики с кружком на дорожке «Крупные платежи» можно перетаскивать по месяцам. Строки с нулём — заготовки: впишите сумму, когда узнаете цену. Кнопка «⋯» в строке переносит её в другой раздел.</p>
@@ -629,7 +650,12 @@
     if (!TABN[st.tab]) st.tab = 'charts'; const g = grpOf(st.tab);
     $('tabs').innerHTML = `<div class="mg" role="tablist" aria-label="Разделы">${GROUPS.map(x => `<button role="tab" id="grp-${x[0]}" aria-selected="${x === g}" data-act="grp:${x[0]}">${x[1]}</button>`).join('')}</div>` +
       `<div class="mt" role="tablist" aria-label="${g[1]}">${g[2].map(t => `<button role="tab" id="tab-${t}" aria-selected="${st.tab === t}" data-act="tab:${t}">${TABN[t]}</button>`).join('')}</div>`;
-    $('panel').innerHTML = panel();
+    CHn = null; const P = $('panel'); P.innerHTML = panel();
+    const fv = {}; P.querySelectorAll('[data-bind]').forEach(x => { fv[x.dataset.bind] = x.type === 'checkbox' ? String(x.checked) : x.value; });
+    if (FV && FVtab === st.tab) Object.keys(fv).forEach(bd => { if (bd in FV && FV[bd] !== fv[bd]) { const x = P.querySelector('[data-bind="' + bd + '"]'); if (x) (x.closest('.rowmenu') || x).classList.add('flash'); } });
+    FV = fv; FVtab = st.tab;
+    if (st.tab === 'charts' && CHn) { const cur = CHn, from = CHp && CHp.pts, mk = e => { const pts = cur.pts.map((p, i) => p[0].toFixed(1) + ',' + (e >= 1 ? p[1] : from[i][1] + (p[1] - from[i][1]) * e).toFixed(1)), line = 'M' + pts.join('L'); P.querySelectorAll('path.pl').forEach(x => x.setAttribute('d', line)); P.querySelectorAll('path.pa').forEach(x => x.setAttribute('d', line + `L${cur.x1},${cur.y0}L${cur.x0},${cur.y0}Z`)); };
+      if (from && from.some((p, i) => Math.abs(p[1] - cur.pts[i][1]) > 0.5)) tween('chart', 250, mk, () => mk(1)); CHp = cur; } else CHp = null;
   }
   const hasAuthor = x => x.author && x.author !== 'Без имени';
   function renderHeader() {
@@ -688,12 +714,12 @@
     switch (a[0]) {
       case 'tab': st.tab = a[1]; ui.last[grpOf(a[1])[0]] = a[1]; saveUi(); persist(); renderTabs(); tabTop(); break;
       case 'grp': { const g = GROUPS.find(x => x[0] === a[1]); if (!g) break; st.tab = g[2].includes(ui.last[g[0]]) ? ui.last[g[0]] : g[2][0]; persist(); renderTabs(); tabTop(); break; }
-      case 'ui': if (a[1] === 'miss') { ui.miss = !ui.miss; saveUi(); renderScore(); } else if (a[1] === 'hint') { ui.hint = true; saveUi(); $('draghint').hidden = true; } else { ui[a[1]] = !ui[a[1]]; saveUi(); renderTimeline(); } break;
+      case 'ui': if (a[1] === 'miss') { if (ui.miss) closeThen([$('missions').querySelector('.misslist')], () => { ui.miss = false; saveUi(); renderScore(); }); else { ui.miss = true; saveUi(); reveal = 'miss'; renderScore(); reveal = null; } } else if (a[1] === 'hint') { ui.hint = true; saveUi(); $('draghint').hidden = true; } else { ui[a[1]] = !ui[a[1]]; saveUi(); renderTimeline(); } break;
       case 'zoom': st.zoom = a[1]; stopPlay(); persist(); renderTimeline(); $('tl-scroll').scrollLeft = 0; break;
       case 'play': play(); break;
       case 'theme': theme = theme === 'dark' ? 'light' : 'dark'; try { localStorage.setItem(TKEY, theme); } catch (x) { } applyTheme(); render(); break;
       case 'pan': { const sc = $('tl-scroll'); stopPlay(); sc.scrollBy({ left: +a[1] * sc.clientWidth * 0.8, behavior: 'smooth' }); break; }
-      case 'undo': if (undo.length) { const o = JSON.parse(undo.pop()); st.s = o.s; st.journal = o.journal; res = S.sim(st.s); persist(); render(); toast('Ход отменён'); } break;
+      case 'undo': if (undo.length) { const o = JSON.parse(undo.pop()), was = res.k; st.s = o.s; st.journal = o.journal; res = S.sim(st.s); mv = { t: Date.now(), from: was }; persist(); render(); toast('Ход отменён'); } break;
       case 'reset': loadScn('База'); break;
       case 'open': loadScn(a.slice(1).join(':')); break;
       case 'save': $('savebox').hidden = false; $('b-save').hidden = true; $('scnname').value = s.name === 'База' ? '' : s.name; $('b-savepub').hidden = !remote.on; $('scncode').hidden = !(remote.on && remote.needCode); $('scncode').value = lsGet('vodaGame.team'); $('scnname').focus(); break;
@@ -708,9 +734,11 @@
       case 'clearj': st.journal = []; persist(); renderTabs(); break;
       case 'tm': st.tmAll = a[1] === '1'; renderTabs(); break;
       case 'tmtbl': st.tmTbl = !st.tmTbl; renderTabs(); break;
-      case 'info': if (infoOpen.has(st.tab)) infoOpen.delete(st.tab); else infoOpen.add(st.tab); renderTabs(); break;
-      case 'cx': { const cat = capCats(s)[+a[1]]; if (!cat || e.target.closest('input,select')) break; if (cxOpen.has(cat)) cxOpen.delete(cat); else cxOpen.add(cat); renderTabs(); break; }
-      case 'cxall': { const used = capCats(s).filter(cat => s.capex.some(x => (x.cat || 'Прочее') === cat)), all = used.every(cat => cxOpen.has(cat)); used.forEach(cat => { if (all) cxOpen.delete(cat); else cxOpen.add(cat); }); renderTabs(); break; }
+      case 'info': { const tb = st.tab; if (infoOpen.has(tb)) closeThen($('panel').querySelectorAll('.intro .more'), () => { infoOpen.delete(tb); if (st.tab === tb) renderTabs(); }); else { infoOpen.add(tb); reveal = 'info'; renderTabs(); reveal = null; } break; }
+      case 'cx': { const cat = capCats(s)[+a[1]]; if (!cat || e.target.closest('input,select')) break;
+        if (cxOpen.has(cat)) closeThen(t.parentNode.querySelectorAll('tr.sub'), () => { cxOpen.delete(cat); if (st.tab === 'capex') renderTabs(); }); else { cxOpen.add(cat); reveal = 'cx:' + cat; renderTabs(); reveal = null; } break; }
+      case 'cxall': { const used = capCats(s).filter(cat => s.capex.some(x => (x.cat || 'Прочее') === cat)), all = used.every(cat => cxOpen.has(cat));
+        if (all) closeThen($('panel').querySelectorAll('tr.sub'), () => { used.forEach(cat => cxOpen.delete(cat)); if (st.tab === 'capex') renderTabs(); }); else { used.forEach(cat => cxOpen.add(cat)); reveal = 'cxall'; renderTabs(); reveal = null; } break; }
       case 'tmc': st.tmCol = a[1]; renderTabs(); break;
       case 'rev': { const kind = a[1], id = a[2], field = a[3], r = baseOf(kind, id, field); if (!r || r.added) break; const f = kind === 'p' ? Meta.by[id].fmt : ({ salary: 'money', amount: 'money', ship: 'money', price: 'money', from: 'month', to: 'month', month: 'month', first: 'month', group: 'group', reserve: 'bool' }[field] || 'int');
         const sh = v => kind === 'p' ? dvP(id, v) : (field === 'name' || field === 'cat') ? v : field === 'type' ? tOf(BASE_S, v).name : disp(v, f);
