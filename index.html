@@ -257,6 +257,7 @@ tr.cat td{background:var(--sunken);font-weight:600;font-size:12.5px;border-botto
 details.alld{border:1px solid var(--line);border-radius:6px;padding:0 12px} details.alld summary{cursor:pointer;padding:10px 0;font-family:var(--mono);font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)} details.alld[open] summary{border-bottom:1px solid var(--line);margin-bottom:6px}
 table.invt td small{display:block;font-weight:400;color:var(--muted);font-size:12px;margin-top:1px}
 table.invt tr.l0 td{font-weight:700;background:var(--sunken);font-size:15px} table.invt tr.l1 td{font-weight:600;border-top:1px solid var(--field-line)} table.invt tr.l2 td:first-child{padding-left:30px} table.invt tr.l2 td{color:var(--ink)}
+table.yrt{max-width:1040px} table.yrt td.r{font-family:var(--mono);white-space:nowrap} table.yrt td small{color:var(--brand);font-weight:600;margin-left:6px} table.yrt tr.pb td{background:var(--sunken)}
 table.invt td.r,table.kpit td.r{font-family:var(--mono);white-space:nowrap} table.kpit{max-width:860px} table.invt{max-width:1040px}
 @media(max-width:640px){table.invt th:nth-child(3),table.invt td:nth-child(3){display:none} table.invt tr.l2 td:first-child{padding-left:18px}}
 .tops{margin:0;padding-left:22px;display:flex;flex-direction:column;gap:6px;max-width:1000px} .tops li{padding-left:4px} .tops li span{margin-right:10px} .tops li b{white-space:nowrap;font-size:12.5px}
@@ -297,7 +298,7 @@ svg.chart{display:block;width:100%;min-width:640px;height:auto} svg.chart text{f
 <div class="sbar" id="sbar" hidden><div class="sbar-in" id="sbar-in" aria-label="Итоги сценария"></div></div>
 <div class="wrap">
   <header class="top">
-    <div class="brand"><h1>АРКТИКА · завод воды</h1><span>Иваново · бизнес-игра · ноя 2026 — дек 2028</span></div>
+    <div class="brand"><h1>АРКТИКА · завод воды</h1><span>Иваново · бизнес-игра · ноя 2026 — окт 2031 · 5 лет</span></div>
     <div class="bar">
       <label class="scnlab" for="scn"><span>Сохранённые сценарии</span><select id="scn"></select></label>
       <span class="namebox" id="savebox" hidden><input id="scnname" placeholder="Название сценария" maxlength="60"><input id="scncode" type="password" autocomplete="off" placeholder="Код команды" aria-label="Код команды" style="width:130px" hidden><button class="btn sm pri" data-act="saveok">Сохранить</button><button class="btn sm" data-act="savepub" id="b-savepub" hidden>Опубликовать на сайте</button><button class="btn sm" data-act="savecancel">Отмена</button></span>
@@ -332,10 +333,11 @@ svg.chart{display:block;width:100%;min-width:640px;height:auto} svg.chart text{f
 <div class="toast" id="toast" hidden></div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.4.0/exceljs.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <script>
 /* ===== РАСЧЁТНОЕ ЯДРО: сценарий -> помесячный расчёт (как в Excel) + подневная раскладка ===== */
 (function (g) {
-  const N = 26, Y0 = 2026, M0 = 10;
+  const N = 60, Y0 = 2026, M0 = 10; // горизонт расчёта — 5 лет: ноя 2026 — окт 2031
   const MON = ['янв', 'фев', 'мар', 'апр', 'май', 'июн', 'июл', 'авг', 'сен', 'окт', 'ноя', 'дек'];
   const MONTHS = [];
   { let d0 = 0;
@@ -351,7 +353,7 @@ svg.chart{display:block;width:100%;min-width:640px;height:auto} svg.chart text{f
 
   function defaults() {
     return {
-      name: 'База',
+      name: 'База', h: N, // h — горизонт, на котором сценарий создан (старые, на 26 месяцев, переводятся при открытии)
       p: {
         k_use: 0.95, days: 30, lead: 2,
         bph: 1000, hours: 8, shifts: 1, wdays: 21, eff: 0.85,
@@ -361,7 +363,7 @@ svg.chart{display:block;width:100%;min-width:640px;height:auto} svg.chart text{f
         waste: 0.02, energy: 9, logist: 0.08, returns: 0.005, mkt_pct: 0.03, mkt_launch: 1500000, mkt_start: 2, mkt_n: 3,
         pilots: 120000, pilots_m: 4,
         tax_k: 1.13, rent: 350000, rent_start: 1, maint: 250000, maint_start: 3, other: 133000,
-        idx_m: 15, cost_idx: 0.08, price_idx: 0.05, contingency: 0.10,
+        idx_m: 15, idx_rep: 0, cost_idx: 0.08, price_idx: 0.05, contingency: 0.10,
         vat_thr: 20000000, vat_rate: 0.05, usn_rate: 0.05, usn_min: 0.01, vat7_thr: 250000000, usn_lim: 450000000,
         reserve_m: 1, payout_on: 0, payout_keep: 3,
         pal_w: 800, pal_h: 1600, pal_kg: 1000, d03: 60, h03: 170, pk03: 12, d05: 65, h05: 215, pk05: 12, d10: 82, h10: 270, pk10: 6,
@@ -458,7 +460,9 @@ svg.chart{display:block;width:100%;min-width:640px;height:auto} svg.chart text{f
     });
   }
 
-  const IRR_M = 60; // горизонт IRR, месяцев
+  /* индексация: с месяца idx_m цены и затраты растут на заданный процент; idx_rep = 1 — так же каждый следующий год */
+  const idxN = (p, i) => i < p.idx_m ? 0 : (+p.idx_rep ? 1 + Math.floor((i - p.idx_m) / 12) : 1);
+  const idxC = (p, i) => Math.pow(1 + p.cost_idx, idxN(p, i)), idxP = (p, i) => Math.pow(1 + p.price_idx, idxN(p, i));
   function irrOf(f) { // месячная ставка, при которой приведённая сумма потоков равна нулю; null — если такой нет
     const npv = r => { let s = 0, q = 1; for (let i = 0; i < f.length; i++) { q *= 1 + r; s += f[i] / q; } return s; };
     let lo = -0.9, hi = 1; if (!(npv(lo) > 0 && npv(hi) < 0)) return null;
@@ -473,7 +477,7 @@ svg.chart{display:block;width:100%;min-width:640px;height:auto} svg.chart text{f
       'capex_sched', 'new_pay', 'contingency', 'capex', 'wc_pay', 'wc_use', 'wc', 'wc_cum', 'cf', 'cum_cf', 'contrib', 'reserve', 'fixed', 'need', 'payout', 'cash', 'inv_cum', 'headcount'];
     const m = {}; keys.forEach(k => m[k] = Z());
     const yr = i => MONTHS[i - 1].y;
-    const idxc = i => i >= p.idx_m ? 1 + p.cost_idx : 1, idxp = i => i >= p.idx_m ? 1 + p.price_idx : 1;
+    const idxc = i => idxC(p, i), idxp = i => idxP(p, i);
     const lineCapB = p.bph * p.hours * p.shifts * p.wdays * p.eff, lineCapL = bpl ? lineCapB / bpl : 0;
     const plan = s.plan.slice().sort((a, b) => a.month - b.month);
     const UT = {}; s.utypes.forEach(t => { UT[t.id] = t; });
@@ -601,17 +605,19 @@ svg.chart{display:block;width:100%;min-width:640px;height:auto} svg.chart text{f
     const sum = a => a.reduce((x, y) => x + y, 0), sumY = (a, y) => a.reduce((x, v, k) => x + (MONTHS[k].y === y ? v : 0), 0);
     let minCash = Infinity, minCashDay = 0; for (let x = 0; x < DAYS; x++) if (d.cash[x] < minCash) { minCash = d.cash[x]; minCashDay = x; }
     const invest = sum(m.need) + sum(m.contrib);
-    // IRR проекта за 5 лет: 26 месяцев по модели, дальше — средний поток последних 12 месяцев
-    const flows = m.cf.slice(); for (let q = N; q < IRR_M; q++) flows.push(avg12);
-    const irrM = irrOf(flows), ebitda27 = sumY(m.ebitda, 2027), ebitda28 = sumY(m.ebitda, 2028), revN28 = sumY(m.rev_net, 2028);
+    // IRR проекта за 5 лет — по денежному потоку всех 60 месяцев модели
+    const irrM = irrOf(m.cf);
+    const years = []; MONTHS.forEach((mm, q) => { let y = years[years.length - 1]; if (!y || y.y !== mm.y) { y = { y: mm.y, n: 0, rev: 0, ebitda: 0, profit: 0, cf: 0, rec: 0 }; years.push(y); }
+      y.n++; y.rev += m.rev_net[q]; y.ebitda += m.ebitda[q]; y.profit += m.profit[q]; y.cf += m.cf[q]; y.rec += m.receipts[q]; });
+    years.forEach(y => { y.ebm = y.rev > 0 ? y.ebitda / y.rev : 0; });
+    const revTotal = sum(m.rev_net), ebitdaTotal = sum(m.ebitda);
     const k = {
       invest, peak: -Math.min(0, Math.min.apply(null, m.cum_cf)), ebitdaM, paybackM, paybackEst, minCash, minCashDay,
-      irr: irrM === null ? null : Math.pow(1 + irrM, 12) - 1, irrM, avg12, ebitda27, ebitda28, ebm28: revN28 > 0 ? ebitda28 / revN28 : 0,
+      irr: irrM === null ? null : Math.pow(1 + irrM, 12) - 1, irrM, avg12, years, revTotal, ebitdaTotal, profitTotal: sum(m.profit), ebm: revTotal > 0 ? ebitdaTotal / revTotal : 0,
       lastInvM: (() => { let r = 0; for (let q = 0; q < N; q++) if (m.need[q] + m.contrib[q] > 0) r = q + 1; return r; })(),
-      rev27: sumY(m.rev_net, 2027), rev28: sumY(m.rev_net, 2028), profit27: sumY(m.profit, 2027), profit28: sumY(m.profit, 2028),
       cumEnd: m.cum_cf[N - 1], cashEnd: m.cash[N - 1], payout: sum(m.payout), maxUtil: Math.max.apply(null, m.line_util), wcMax: Math.max.apply(null, m.wc_cum),
       opexTotal: sum(m.opex), capexTotal: sum(m.capex), fotTotal: sum(m.staff), headMax: Math.max.apply(null, m.headcount),
-      lostL: sum(m.lost_l), rec27: recYear[2027] || 0, rec28: recYear[2028] || 0, sharesOk: Math.abs(p.sh03 + p.sh05 + p.sh10 - 1) < 1e-4,
+      lostL: sum(m.lost_l), sharesOk: Math.abs(p.sh03 + p.sh05 + p.sh10 - 1) < 1e-4,
       cost: pr, lineCapB
     };
     const al = [];
@@ -621,7 +627,7 @@ svg.chart{display:block;width:100%;min-width:640px;height:auto} svg.chart text{f
     { const q = firstIdx(z => m.lost_l[z] > 1 && z + 1 > p.start_m); if (q) al.push({ lvl: 'warn', day: dayOf(q, 1), text: 'С ' + MONTHS[q - 1].label + ' план продаж выше производства — недопродано ' + Math.round(k.lostL).toLocaleString('ru-RU') + ' л за период' }); }
     { const q = firstIdx(z => m.fg_l[z] > 2 * Math.max(1, m.plan_l[z]) && m.plan_l[z] > 0); if (q) al.push({ lvl: 'warn', day: dayOf(q, 1), text: 'Склад готовой воды больше двух месяцев продаж с ' + MONTHS[q - 1].label }); }
     if (minCash < -1) al.push({ lvl: 'warn', day: minCashDay, text: 'Кассовый разрыв внутри месяца: ' + dateOf(minCashDay).text + ' на счёте ' + Math.round(minCash / 1000).toLocaleString('ru-RU') + ' тыс. ₽ — увеличьте неснижаемый остаток' });
-    const recMax = Math.max(k.rec27, k.rec28);
+    const recMax = Math.max.apply(null, years.map(y => y.rec));
     if (recMax > p.usn_lim) al.push({ lvl: 'err', day: 0, text: 'Доход за год выше лимита УСН — налоги в расчёте занижены' });
     else if (recMax > p.vat7_thr) al.push({ lvl: 'warn', day: 0, text: 'Доход за год выше порога — НДС будет 7 %, поменяйте ставку' });
     s.capex.forEach(c => { if (!(c.month >= 1 && c.month <= N)) al.push({ lvl: 'err', day: 0, text: 'Вложение «' + c.name + '»: месяц оплаты вне периода' }); });
@@ -642,7 +648,7 @@ svg.chart{display:block;width:100%;min-width:640px;height:auto} svg.chart text{f
     const rec = sumT(m.receipts), pay = sumT(m.payout), cash = m.cash[T - 1], opx = tara + fot + oth - rec;
     return { T, cap, capT, np, tara, fot, oth, rec, opx, cash, pay, capAfter: all(m.capex) - capT, check: capT + opx + cash + pay - k.invest };
   }
-  g.Sim = { investSplit, CAP_MAIN, N, MONTHS, DAYS, MON, dayOf, dateOf, defaults, sim, prices, pallet, PACK, id, matOn, tara, irrOf, IRR_M };
+  g.Sim = { investSplit, CAP_MAIN, N, MONTHS, DAYS, MON, dayOf, dateOf, defaults, sim, prices, pallet, PACK, id, matOn, tara, irrOf, idxC, idxP };
 })(typeof window !== 'undefined' ? window : globalThis);
 
 /* ===== СПРАВОЧНИК ПАРАМЕТРОВ: подписи, единицы, формат, подсказки (общий для экрана и Excel) ===== */
@@ -709,6 +715,7 @@ svg.chart{display:block;width:100%;min-width:640px;height:auto} svg.chart text{f
       ['maint_start', 'Обслуживание с месяца', 'месяц', 'month', ''],
       ['other', 'Прочие расходы', '₽/мес', 'money', 'Банк, 1С, связь, охрана, юрист'],
       ['idx_m', 'Индексация с месяца', 'месяц', 'month', ''],
+      ['idx_rep', 'Повторять индексацию', '0 — один раз, 1 — каждый год', 'opt', 'Один раз — цены и затраты растут в указанном месяце и дальше не меняются. Каждый год — так же растут через каждые 12 месяцев'],
       ['cost_idx', 'Индексация затрат', 'на', 'pct', ''],
       ['price_idx', 'Индексация отпускных цен', 'на', 'pct', ''],
       ['contingency', 'Резерв на непредвиденное к вложениям', 'доля', 'pct', 'К строкам вложений с отметкой «резерв»']] },
@@ -736,9 +743,9 @@ svg.chart{display:block;width:100%;min-width:640px;height:auto} svg.chart text{f
       ['gd05', 'Стекло. Бутылка 0,5 л: диаметр', 'мм', 'int', ''], ['gh05', 'Стекло. Бутылка 0,5 л: высота', 'мм', 'int', ''], ['gpk05', 'Стекло. Бутылка 0,5 л: штук в упаковке', '', 'opt', ''],
       ['gd10', 'Стекло. Бутылка 1,0 л: диаметр', 'мм', 'int', ''], ['gh10', 'Стекло. Бутылка 1,0 л: высота', 'мм', 'int', ''], ['gpk10', 'Стекло. Бутылка 1,0 л: штук в упаковке', '', 'opt', '']] }
   ];
-  const SUB = {"k_use": "Установки очистки", "days": "Установки очистки", "lead": "Установки очистки", "bph": "Линия розлива", "hours": "Линия розлива", "shifts": "Линия розлива", "wdays": "Линия розлива", "eff": "Линия розлива", "start_m": "Старт и разгон", "first_share": "Старт и разгон", "ramp1": "Старт и разгон", "ramp2": "Старт и разгон", "ramp3": "Старт и разгон", "caution": "План и деньги от покупателей", "defer": "План и деньги от покупателей", "fg_days": "План и деньги от покупателей", "sh03": "Бутылки", "sh05": "Бутылки", "sh10": "Бутылки", "p03": "Бутылки", "p05": "Бутылки", "p10": "Бутылки", "w03": "Бутылки", "w05": "Бутылки", "w10": "Бутылки", "usd": "Крышка", "cap_usd": "Крышка", "cap_vat": "Крышка", "pf_kg": "Преформа, этикетка, упаковка", "label": "Преформа, этикетка, упаковка", "pack": "Преформа, этикетка, упаковка", "waste": "Преформа, этикетка, упаковка", "energy": "Зависят от объёма и выручки", "logist": "Зависят от объёма и выручки", "returns": "Зависят от объёма и выручки", "mkt_pct": "Зависят от объёма и выручки", "mkt_launch": "Запуск", "mkt_start": "Запуск", "mkt_n": "Запуск", "pilots": "Запуск", "pilots_m": "Запуск", "rent": "Постоянные каждый месяц", "rent_start": "Постоянные каждый месяц", "maint": "Постоянные каждый месяц", "maint_start": "Постоянные каждый месяц", "other": "Постоянные каждый месяц", "tax_k": "Постоянные каждый месяц", "idx_m": "Индексация и резерв", "cost_idx": "Индексация и резерв", "price_idx": "Индексация и резерв", "contingency": "Индексация и резерв", "vat_thr": "Налоги", "vat_rate": "Налоги", "usn_rate": "Налоги", "usn_min": "Налоги", "vat7_thr": "Налоги", "usn_lim": "Налоги", "reserve_m": "Деньги инвестора", "payout_on": "Деньги инвестора", "payout_keep": "Деньги инвестора"};
+  const SUB = {"k_use": "Установки очистки", "days": "Установки очистки", "lead": "Установки очистки", "bph": "Линия розлива", "hours": "Линия розлива", "shifts": "Линия розлива", "wdays": "Линия розлива", "eff": "Линия розлива", "start_m": "Старт и разгон", "first_share": "Старт и разгон", "ramp1": "Старт и разгон", "ramp2": "Старт и разгон", "ramp3": "Старт и разгон", "caution": "План и деньги от покупателей", "defer": "План и деньги от покупателей", "fg_days": "План и деньги от покупателей", "sh03": "Бутылки", "sh05": "Бутылки", "sh10": "Бутылки", "p03": "Бутылки", "p05": "Бутылки", "p10": "Бутылки", "w03": "Бутылки", "w05": "Бутылки", "w10": "Бутылки", "usd": "Крышка", "cap_usd": "Крышка", "cap_vat": "Крышка", "pf_kg": "Преформа, этикетка, упаковка", "label": "Преформа, этикетка, упаковка", "pack": "Преформа, этикетка, упаковка", "waste": "Преформа, этикетка, упаковка", "energy": "Зависят от объёма и выручки", "logist": "Зависят от объёма и выручки", "returns": "Зависят от объёма и выручки", "mkt_pct": "Зависят от объёма и выручки", "mkt_launch": "Запуск", "mkt_start": "Запуск", "mkt_n": "Запуск", "pilots": "Запуск", "pilots_m": "Запуск", "rent": "Постоянные каждый месяц", "rent_start": "Постоянные каждый месяц", "maint": "Постоянные каждый месяц", "maint_start": "Постоянные каждый месяц", "other": "Постоянные каждый месяц", "tax_k": "Постоянные каждый месяц", "idx_m": "Индексация и резерв", "idx_rep": "Индексация и резерв", "cost_idx": "Индексация и резерв", "price_idx": "Индексация и резерв", "contingency": "Индексация и резерв", "vat_thr": "Налоги", "vat_rate": "Налоги", "usn_rate": "Налоги", "usn_min": "Налоги", "vat7_thr": "Налоги", "usn_lim": "Налоги", "reserve_m": "Деньги инвестора", "payout_on": "Деньги инвестора", "payout_keep": "Деньги инвестора"};
   const PK = [[6, '6 (3 × 2)'], [8, '8 (4 × 2)'], [12, '12 (4 × 3)'], [20, '20 (5 × 4)'], [24, '24 (6 × 4)']];
-  const OPTS = { pal_w: [[800, 'Евро 1200 × 800'], [1000, 'Американская / финская 1200 × 1000']], pk03: PK, pk05: PK, pk10: PK, gpk03: PK, gpk05: PK, gpk10: PK, glass: [[0, 'ПЭТ-бутылка'], [1, 'Стеклянная бутылка']] };
+  const OPTS = { pal_w: [[800, 'Евро 1200 × 800'], [1000, 'Американская / финская 1200 × 1000']], pk03: PK, pk05: PK, pk10: PK, gpk03: PK, gpk05: PK, gpk10: PK, glass: [[0, 'ПЭТ-бутылка'], [1, 'Стеклянная бутылка']], idx_rep: [[0, 'Один раз'], [1, 'Каждый год']] };
   /* к какой таре относится параметр: на экране показываются только параметры выбранной тары */
   const TARA = {}; ['usd', 'cap_usd', 'cap_vat', 'w03', 'w05', 'w10', 'pf_kg', 'd03', 'h03', 'pk03', 'd05', 'h05', 'pk05', 'd10', 'h10', 'pk10'].forEach(k => { TARA[k] = 'pet'; });
   ['gb03', 'gb05', 'gb10', 'gw03', 'gw05', 'gw10', 'gcap', 'gd03', 'gh03', 'gpk03', 'gd05', 'gh05', 'gpk05', 'gd10', 'gh10', 'gpk10'].forEach(k => { TARA[k] = 'glass'; });
@@ -776,7 +783,7 @@ svg.chart{display:block;width:100%;min-width:640px;height:auto} svg.chart text{f
     // Персонал: A должность, B группа, C оклад, D с месяца, E по месяц, F.. месяцы
     const wsS = wb.addWorksheet('Персонал', { views: [{ showGridLines: false, state: 'frozen', xSplit: 5, ySplit: 4 }] });
     put(wsS, 'A1', 'Персонал — оклады до налогов (gross) и месяцы работы', { bold: true, size: 14, color: C.pri });
-    put(wsS, 'A2', 'Жёлтое — ввод. Месяц — номер от 1 (ноя 2026) до ' + N + ' (дек 2028). Новых людей вписывайте в пустые жёлтые строки.', { kind: 'note' });
+    put(wsS, 'A2', 'Жёлтое — ввод. Месяц — номер от 1 (' + S.MONTHS[0].label + ') до ' + N + ' (' + S.MONTHS[N - 1].label + '). Новых людей вписывайте в пустые жёлтые строки.', { kind: 'note' });
     ['Должность', 'Группа', 'Оклад, ₽/мес', 'С месяца №', 'По месяц №'].forEach((t, k) => put(wsS, L(k + 1) + 4, t, { kind: 'head' }));
     put(wsS, 'A3', '№ месяца', { kind: 'note' });
     S.MONTHS.forEach(mm => { put(wsS, L(5 + mm.i) + 3, mm.i, { fmt: 'int', kind: 'note' }); put(wsS, L(5 + mm.i) + 4, mm.label, { kind: 'head', h: 'center' }); });
@@ -837,7 +844,7 @@ svg.chart{display:block;width:100%;min-width:640px;height:auto} svg.chart text{f
     const C0 = 5, col = i => L(C0 + i - 1), CF = col(1), CL = col(N);
     ws.getColumn(1).width = 2; ws.getColumn(2).width = 58; ws.getColumn(3).width = 12; ws.getColumn(4).width = 16; for (let i = 1; i <= N; i++) ws.getColumn(C0 + i - 1).width = 12;
     put(ws, 'B1', 'АРКТИКА · завод воды, Иваново — сценарий «' + s.name + '»', { bold: true, size: 16, color: C.pri });
-    put(ws, 'B2', 'Выгружено из бизнес-игры. Жёлтое — ввод, белое — формулы. Списки людей, вложений, установок и плана продаж — на соседних листах. Месяц 1 = ноябрь 2026.', { kind: 'note' });
+    put(ws, 'B2', 'Выгружено из бизнес-игры. Жёлтое — ввод, белое — формулы. Списки людей, вложений, установок и плана продаж — на соседних листах. Месяц 1 = ноябрь 2026, расчёт на ' + N + ' месяцев — по ' + S.MONTHS[N - 1].label + '.', { kind: 'note' });
     const P = {}; let r = 4;
     const param = (key, label, unit, val, fmt, hint, calc) => { put(ws, 'B' + r, label); put(ws, 'C' + r, unit, { kind: 'note', h: 'center' }); put(ws, 'D' + r, val, { fmt, kind: calc ? null : 'input' }); if (hint) put(ws, 'E' + r, hint, { kind: 'note' }); P[key] = '$D$' + r; r++; };
     Meta.groups.forEach(gr => {
@@ -891,7 +898,8 @@ svg.chart{display:block;width:100%;min-width:640px;height:auto} svg.chart text{f
     const MROW = T0, YROW = T0 + 2; r = T0 + 3;
     ws.views = [{ showGridLines: false, state: 'frozen', xSplit: 4, ySplit: 0 }]; // закреплены только столбцы A–D; строки не закрепляем — лист должен свободно листаться вниз
     const R = {}, M = c => `${c}$${MROW}`, Y = c => `${c}$${YROW}`, MR = `$${CF}$${MROW}:$${CL}$${MROW}`;
-    const idc = c => `IF(${M(c)}>=${P.idx_m},1+${P.cost_idx},1)`, idp = c => `IF(${M(c)}>=${P.idx_m},1+${P.price_idx},1)`;
+    const idn = c => `IF(${M(c)}<${P.idx_m},0,IF(${P.idx_rep}=1,1+INT((${M(c)}-${P.idx_m})/12),1))`; // сколько раз применена индексация к этому месяцу
+    const idc = c => `(1+${P.cost_idx})^${idn(c)}`, idp = c => `(1+${P.price_idx})^${idn(c)}`;
     const row = (key, label, unit, fn, fmt, kind, total) => { R[key] = r; put(ws, 'B' + r, label, { kind: kind === 'total' ? 'total' : null }); put(ws, 'C' + r, unit, { kind: kind === 'total' ? 'total' : 'note', h: 'center' });
       for (let i = 1; i <= N; i++) { const c = col(i), pc = i > 1 ? col(i - 1) : null; put(ws, c + r, fn(i, c, pc), { fmt: fmt || 'money', kind }); }
       const t = total === undefined ? 'SUM' : total; if (t) put(ws, 'D' + r, t === 'LAST' ? `=${CL}${r}` : `=${t}(${CF}${r}:${CL}${r})`, { fmt: fmt || 'money', kind: 'total' }); r++; };
@@ -971,43 +979,73 @@ svg.chart{display:block;width:100%;min-width:640px;height:auto} svg.chart text{f
     row('inv_cum', 'Внесено инвестором накопленно (факт + план)', '₽', (i, c) => `=SUM($${CF}${R.contrib}:${c}${R.contrib})+SUM($${CF}${R.need}:${c}${R.need})`, 'money', null, 'LAST');
     row('pb_flag', 'Окупились: накопленный поток впервые ≥ 0 (служебная)', '', (i, c, pc) => pc ? `=IF(AND(${X(c, 'cum_cf')}>=0,${X(pc, 'cum_cf')}<0),1,0)` : '=0', '0', null, null);
     row('eb_flag', 'EBITDA впервые > 0 (служебная)', '', (i, c, pc) => `=IF(AND(${X(c, 'ebitda')}>0,${X(c, 'rev')}>0,${pc ? X(pc, 'ebitda') + '<=0' : 'TRUE'}),1,0)`, '0', null, null);
-    // поток для IRR: 26 месяцев модели и дальше до 60-го месяца — среднее последних 12
-    r++; const IR = r, IRN = S.IRR_M; put(ws, 'B' + IR, 'Поток для IRR за 5 лет: 26 месяцев по модели, дальше — среднее последних 12 месяцев (служебная)', { kind: 'note' }); put(ws, 'C' + IR, '₽', { kind: 'note', h: 'center' });
-    for (let i = 1; i <= IRN; i++) put(ws, L(C0 + i - 1) + IR, i <= N ? `=${col(i)}${R.cf}` : `=AVERAGE($${col(N - 11)}$${R.cf}:$${CL}$${R.cf})`, { fmt: 'money' });
     r++;
     const TEND = r;
     // итоги и проверки справа от пульта
-    const rng = k => `$${CF}$${R[k]}:$${CL}$${R[k]}`, labels = `$${CF}$${T0 + 1}:$${CL}$${T0 + 1}`, years = `$${CF}$${YROW}:$${CL}$${YROW}`;
-    band(ws, 4, 'Итоги сценария', 16, 25);
+    const rng = k => `$${CF}$${R[k]}:$${CL}$${R[k]}`, labels = `$${CF}$${T0 + 1}:$${CL}$${T0 + 1}`, years = `$${CF}$${YROW}:$${CL}$${YROW}`, ENDL = S.MONTHS[N - 1].label;
+    band(ws, 4, 'Итоги сценария за ' + N + ' месяцев (' + S.MONTHS[0].label + ' — ' + ENDL + ')', 16, 25);
     const kp = [
-      ['ОБЩАЯ СУММА ВЛОЖЕНИЙ ИНВЕСТОРА, ₽', `=SUM(${rng('contrib')})+SUM(${rng('need')})`, 'money'],
-      ['Пиковая потребность в деньгах, ₽', `=-MIN(0,MIN(${rng('cum_cf')}))`, 'money'],
-      ['EBITDA в плюс с', `=IFERROR(INDEX(${labels},MATCH(1,${rng('eb_flag')},0)),"не в горизонте")`, 'txt'],
-      ['Окупаемость (накопленный поток ≥ 0)', `=IFERROR(INDEX(${labels},MATCH(1,${rng('pb_flag')},0)),"за горизонтом")`, 'txt'],
-      ['Накопленный поток на конец 2028, ₽', `=${CL}${R.cum_cf}`, 'money'],
-      ['Возвращено инвестору, ₽', `=SUM(${rng('payout')})`, 'money'],
-      ['Прибыль после налогов 2027, ₽', `=SUMIF(${years},2027,${rng('profit')})`, 'money'],
-      ['Прибыль после налогов 2028, ₽', `=SUMIF(${years},2028,${rng('profit')})`, 'money'],
-      ['Максимальная загрузка линии', `=MAX(${rng('line_util')})`, 'pct'],
-      ['Деньги на счёте на конец 2028, ₽', `=${CL}${R.cash}`, 'money'],
-      ['EBITDA за 2027, ₽', `=SUMIF(${years},2027,${rng('ebitda')})`, 'money'],
-      ['EBITDA за 2028, ₽', `=SUMIF(${years},2028,${rng('ebitda')})`, 'money'],
-      ['Маржинальность по EBITDA за 2028', `=IF(SUMIF(${years},2028,${rng('rev_net')})>0,SUMIF(${years},2028,${rng('ebitda')})/SUMIF(${years},2028,${rng('rev_net')}),0)`, 'pct1'],
-      ['IRR проекта за 5 лет, годовых', `=IFERROR((1+IRR($${CF}$${IR}:$${L(C0 + IRN - 1)}$${IR},0.02))^12-1,"нет")`, 'pct1']];
-    kp.forEach((a, k) => { put(ws, 'P' + (5 + k), a[0]); ws.mergeCells(`P${5 + k}:U${5 + k}`); put(ws, 'V' + (5 + k), a[1], { fmt: a[2], bold: true, color: C.pri, h: 'right' }); ws.mergeCells(`V${5 + k}:Y${5 + k}`); });
-    const H0 = 5 + kp.length + 1; band(ws, H0, 'Проверки — во всех строках должно быть OK', 16, 25);
-    const rec = y => `SUMIF(${years},${y},${rng('receipts')})`;
+      ['invest', 'ОБЩАЯ СУММА ВЛОЖЕНИЙ ИНВЕСТОРА, ₽', `=SUM(${rng('contrib')})+SUM(${rng('need')})`, 'money'],
+      ['peak', 'Пиковая потребность в деньгах, ₽', `=-MIN(0,MIN(${rng('cum_cf')}))`, 'money'],
+      ['eb_m', 'EBITDA в плюс с', `=IFERROR(INDEX(${labels},MATCH(1,${rng('eb_flag')},0)),"не в горизонте")`, 'txt'],
+      ['pb', 'Окупаемость (накопленный поток ≥ 0)', `=IFERROR(INDEX(${labels},MATCH(1,${rng('pb_flag')},0)),"за горизонтом")`, 'txt'],
+      ['pb_n', 'Окупаемость, на каком месяце', `=IFERROR(MATCH(1,${rng('pb_flag')},0),"за горизонтом")`, 'int'],
+      ['cum', 'Накопленный поток за ' + N + ' месяцев (на конец ' + ENDL + '), ₽', `=${CL}${R.cum_cf}`, 'money'],
+      ['payout', 'Возвращено инвестору, ₽', `=SUM(${rng('payout')})`, 'money'],
+      ['profit', 'Прибыль после налогов за ' + N + ' месяцев, ₽', `=SUM(${rng('profit')})`, 'money'],
+      ['ebitda', 'EBITDA за ' + N + ' месяцев, ₽', `=SUM(${rng('ebitda')})`, 'money'],
+      ['ebm', 'Маржинальность по EBITDA за ' + N + ' месяцев', `=IF(SUM(${rng('rev_net')})>0,SUM(${rng('ebitda')})/SUM(${rng('rev_net')}),0)`, 'pct1'],
+      ['util', 'Максимальная загрузка линии', `=MAX(${rng('line_util')})`, 'pct'],
+      ['cash', 'Деньги на счёте на конец ' + ENDL + ', ₽', `=${CL}${R.cash}`, 'money'],
+      ['irr', 'IRR проекта за 5 лет, годовых', `=IFERROR((1+IRR(${rng('cf')},0.02))^12-1,"нет")`, 'pct1']];
+    const K = {};
+    kp.forEach((a, k) => { put(ws, 'P' + (5 + k), a[1]); ws.mergeCells(`P${5 + k}:U${5 + k}`); put(ws, 'V' + (5 + k), a[2], { fmt: a[3], bold: true, color: C.pri, h: 'right' }); ws.mergeCells(`V${5 + k}:Y${5 + k}`); K[a[0]] = 'V' + (5 + k); });
+    // по годам
+    const YH = 5 + kp.length + 1, YS = []; S.MONTHS.forEach(mm => { if (YS.indexOf(mm.y) < 0) YS.push(mm.y); });
+    band(ws, YH, 'По годам', 16, 25);
+    ['Год', 'Месяцев', 'Выручка без НДС, ₽', 'EBITDA, ₽', 'Маржа EBITDA', 'Прибыль после налогов, ₽', 'Денежный поток, ₽', 'Накопленный поток, ₽'].forEach((t, k) => put(ws, L(16 + k) + (YH + 1), t, { bold: true, wrap: true, h: 'center' }));
+    ws.getRow(YH + 1).height = 40;
+    const sy = (y, k) => `SUMIF(${years},${y},${rng(k)})`;
+    YS.forEach((y, k) => { const rr = YH + 2 + k;
+      put(ws, 'P' + rr, y, { fmt: '0', bold: true }); put(ws, 'Q' + rr, `=COUNTIF(${years},${y})`, { fmt: 'int' });
+      put(ws, 'R' + rr, `=${sy(y, 'rev_net')}`, { fmt: 'money' }); put(ws, 'S' + rr, `=${sy(y, 'ebitda')}`, { fmt: 'money' }); put(ws, 'T' + rr, `=IF(R${rr}>0,S${rr}/R${rr},0)`, { fmt: 'pct1' });
+      put(ws, 'U' + rr, `=${sy(y, 'profit')}`, { fmt: 'money' }); put(ws, 'V' + rr, `=${sy(y, 'cf')}`, { fmt: 'money' }); put(ws, 'W' + rr, `=SUM($V$${YH + 2}:V${rr})`, { fmt: 'money' }); });
+    const YT = YH + 2 + YS.length;
+    put(ws, 'P' + YT, 'Итого', { kind: 'total' }); put(ws, 'Q' + YT, `=SUM(Q${YH + 2}:Q${YT - 1})`, { kind: 'total', fmt: 'int' });
+    ['R', 'S', 'U', 'V'].forEach(c => put(ws, c + YT, `=SUM(${c}${YH + 2}:${c}${YT - 1})`, { kind: 'total', fmt: 'money' })); put(ws, 'T' + YT, `=IF(R${YT}>0,S${YT}/R${YT},0)`, { kind: 'total', fmt: 'pct1' }); put(ws, 'W' + YT, `=W${YT - 1}`, { kind: 'total', fmt: 'money' });
+    const H0 = YT + 2; band(ws, H0, 'Проверки — во всех строках должно быть OK', 16, 25);
+    const recMax = `MAX(${YS.map(y => `SUMIF(${years},${y},${rng('receipts')})`).join(',')})`;
     const ch = [
       ['Доли бутылок в сумме 100 %', `=IF(ABS(${P.sh03}+${P.sh05}+${P.sh10}-1)<0.0001,"OK","ОШИБКА: сумма долей не 100 %")`],
       ['Все вложения попали в график оплат', `=IF(ABS(SUM(${rng('capex_sched')})-SUM(${V('C')}))<1,"OK","ОШИБКА: месяц оплаты пустой или вне 1–${N}")`],
       ...s.mats.map(mt => [mt.name + ': запас не уходит в минус', `=IF(MIN(${rng(mt.key + '_stock')})<-0.5,"ОШИБКА: не хватает — партия или месяц 1-го заказа","OK")`]),
       ['Линия розлива успевает', `=IF(MAX(${rng('line_util')})>1.0001,"ВНИМАНИЕ: линия не успевает","OK")`],
       ['План продаж обеспечен производством', `=IF(SUM(${rng('lost_l')})>1,"ВНИМАНИЕ: план выше производства","OK")`],
-      ['Доход за год в пределах УСН и НДС 5 %', `=IF(MAX(${rec(2027)},${rec(2028)})>${P.usn_lim},"ВНИМАНИЕ: выше лимита УСН",IF(MAX(${rec(2027)},${rec(2028)})>${P.vat7_thr},"ВНИМАНИЕ: НДС будет 7 %","OK"))`]];
+      ['Доход за год в пределах УСН и НДС 5 %', `=IF(${recMax}>${P.usn_lim},"ВНИМАНИЕ: выше лимита УСН",IF(${recMax}>${P.vat7_thr},"ВНИМАНИЕ: НДС будет 7 %","OK"))`]];
     ch.forEach((a, k) => { put(ws, 'P' + (H0 + 1 + k), a[0]); ws.mergeCells(`P${H0 + 1 + k}:U${H0 + 1 + k}`); put(ws, 'V' + (H0 + 1 + k), a[1], { bold: true, h: 'left' }); ws.mergeCells(`V${H0 + 1 + k}:Y${H0 + 1 + k}`); });
     ws.addConditionalFormatting({ ref: `V${H0 + 1}:V${H0 + ch.length}`, rules: [{ type: 'cellIs', operator: 'notEqual', formulae: ['"OK"'], priority: 1, style: { fill: { type: 'pattern', pattern: 'solid', bgColor: { argb: C.err } }, font: { color: { argb: 'FFB00020' }, bold: true } } }] });
     ws.addConditionalFormatting({ ref: `${CF}${R.need}:${CL}${R.need}`, rules: [{ type: 'cellIs', operator: 'greaterThan', formulae: [0], priority: 2, style: { fill: { type: 'pattern', pattern: 'solid', bgColor: { argb: 'FFC6E0B4' } }, font: { bold: true } } }] });
     ws.addConditionalFormatting({ ref: `${CF}${R.line_util}:${CL}${R.line_util}`, rules: [{ type: 'cellIs', operator: 'greaterThan', formulae: [1], priority: 3, style: { fill: { type: 'pattern', pattern: 'solid', bgColor: { argb: 'FFFFE699' } } } }] });
+
+    /* ---------- графики: сами диаграммы вставляются в файл после записи (addCharts), здесь — лист и описание ---------- */
+    const wsG = wb.addWorksheet('Графики', { views: [{ showGridLines: false }] });
+    put(wsG, 'A1', 'Графики сценария «' + s.name + '»', { bold: true, size: 14, color: C.pri });
+    put(wsG, 'A2', 'Диаграммы построены по листу «Кейс» и пересчитываются вместе с ним: поменяйте жёлтую ячейку — графики обновятся.', { kind: 'note' });
+    put(wsG, 'A3', 'Окупаемость:', { bold: true }); put(wsG, 'C3', `=${q('Кейс')}${K.pb}`, { bold: true, color: C.pri, h: 'left' });
+    put(wsG, 'E3', 'на месяце №', {}); put(wsG, 'G3', `=${q('Кейс')}${K.pb_n}`, { bold: true, color: C.pri, h: 'left', fmt: 'int' });
+    put(wsG, 'I3', 'Вносит инвестор, ₽:', {}); put(wsG, 'L3', `=${q('Кейс')}${K.invest}`, { bold: true, color: C.pri, h: 'left', fmt: 'money' });
+    for (let c = 1; c <= 18; c++) wsG.getColumn(c).width = 12;
+    wsG.pageSetup = { orientation: 'landscape', fitToPage: true, fitToWidth: 1, fitToHeight: 0, paperSize: 9 }; // печать: вся ширина листа на одну страницу
+    const KS = q('Кейс'), cref = k => `${KS}$${CF}$${R[k]}:$${CL}$${R[k]}`, mcats = `${KS}$${CF}$${T0 + 1}:$${CL}$${T0 + 1}`, yref = c => `${KS}$${c}$${YH + 2}:$${c}$${YT - 1}`;
+    const charts = { sheet: 'Графики', items: [
+      { title: 'Окупаемость: накопленный денежный поток без денег инвестора, млн ₽', at: [0, 4, 15, 26], cats: mcats, skip: 3,
+        bars: [{ name: 'Денежный поток за месяц', ref: cref('cf'), color: 'A9C4D4' }], lines: [{ name: 'Накопленный денежный поток', ref: cref('cum_cf'), color: '00533E' }] },
+      { title: 'Деньги на счёте и взносы инвестора, млн ₽', at: [0, 27, 15, 49], cats: mcats, skip: 3,
+        bars: [], lines: [{ name: 'Внесено инвестором накопленно', ref: cref('inv_cum'), color: 'C0392B' }, { name: 'Деньги на счёте на конец месяца', ref: cref('cash'), color: '2E75B6' }] },
+      { title: 'Выручка без НДС, операционные расходы и EBITDA по месяцам, млн ₽', at: [0, 50, 15, 72], cats: mcats, skip: 3,
+        bars: [{ name: 'EBITDA', ref: cref('ebitda'), color: 'A9D18E' }], lines: [{ name: 'Выручка без НДС', ref: cref('rev_net'), color: '00533E' }, { name: 'Операционные расходы', ref: cref('opex'), color: 'C0392B' }] },
+      { title: 'По годам: EBITDA, прибыль после налогов и денежный поток, млн ₽', at: [0, 73, 15, 95], cats: yref('P'), catNum: true, skip: 1,
+        bars: [{ name: 'EBITDA', ref: yref('S'), color: 'A9D18E' }, { name: 'Прибыль после налогов', ref: yref('U'), color: '00533E' }, { name: 'Денежный поток', ref: yref('V'), color: '2E75B6' }], lines: [] }] };
 
     /* ---------- по дням (значения) ---------- */
     if (res) {
@@ -1033,9 +1071,12 @@ svg.chart{display:block;width:100%;min-width:640px;height:auto} svg.chart text{f
       if (inv.length) { ['На что идут деньги инвестора', 'Сумма, ₽', 'Доля взносов'].forEach((t, k) => put(wsR, L(k + 1) + rr, t, { kind: 'head' })); const top = rr + 1;
         inv.forEach(r => { rr++; put(wsR, 'A' + rr, (r[2] === 2 ? '      ' : r[2] === 1 ? '   ' : '') + r[0], { kind: r[2] === 0 ? 'total' : null, bold: r[2] === 1 }); put(wsR, 'B' + rr, Math.round(r[1]), { fmt: 'money', h: 'right', kind: r[2] === 0 ? 'total' : null, bold: r[2] === 1 }); put(wsR, 'C' + rr, `=IF($B$${top}=0,0,B${rr}/$B$${top})`, { fmt: '0.0%', h: 'right', kind: r[2] === 0 ? 'total' : null }); if (r[3]) put(wsR, 'D' + rr, r[3], { kind: 'note' }); });
         rr += 2; }
+      if ((summary.years || []).length) { ['По годам', 'Месяцев', 'Выручка без НДС, ₽', 'EBITDA, ₽', 'Маржа EBITDA', 'Прибыль после налогов, ₽', 'Денежный поток, ₽', 'Накопленный поток, ₽'].forEach((t, k) => put(wsR, L(k + 1) + rr, t, { kind: 'head', wrap: true })); wsR.getRow(rr).height = 30;
+        summary.years.forEach(y => { rr++; put(wsR, 'A' + rr, y[0], { fmt: '0', bold: true, h: 'left' }); put(wsR, 'B' + rr, y[1], { fmt: 'int', h: 'right' }); [2, 3, 5, 6, 7].forEach(q => put(wsR, L(q + 1) + rr, Math.round(y[q]), { fmt: 'money', h: 'right' })); put(wsR, 'E' + rr, y[4], { fmt: '0.0%', h: 'right' }); });
+        rr += 2; }
       ['Показатель', 'Значение'].forEach((t, k) => put(wsR, L(k + 1) + rr, t, { kind: 'head' }));
       summary.kpi.forEach(r => { rr++; const pct = r[2] === 'pct', v = r[1] === null ? 'нет' : (typeof r[1] === 'number' && !pct) ? Math.round(r[1]) : r[1]; put(wsR, 'A' + rr, r[0]); put(wsR, 'B' + rr, v, { fmt: pct ? '0.0%' : 'money', h: 'right', bold: true }); });
-      wsR.getColumn(1).width = 74; wsR.getColumn(2).width = 22; wsR.getColumn(3).width = 16; wsR.getColumn(4).width = 80;
+      wsR.getColumn(1).width = 74; wsR.getColumn(2).width = 22; [3, 4, 5, 6, 7, 8].forEach(q => { wsR.getColumn(q).width = 20; });
     }
     /* ---------- журнал и справка ---------- */
     const wsJ = wb.addWorksheet('Журнал', { views: [{ showGridLines: false }] });
@@ -1047,15 +1088,15 @@ svg.chart{display:block;width:100%;min-width:640px;height:auto} svg.chart text{f
     put(wsH, 'A1', 'Как читать этот файл', { bold: true, size: 14, color: C.pri });
     (g.DOC_XLSX || []).forEach((t, k) => { put(wsH, 'A' + (3 + k), t, { wrap: true, bold: /^[А-ЯЁ0-9 «»—,.]+$/.test(t) && t.length < 60 }); });
     wsH.getColumn(1).width = 130;
-    return { wb, R, P, T0, TEND, lists: { s0, s1, sT, c0, c1, u0, u1, q0, q1, t0, t1 } };
+    return { wb, charts, R, P, K, T0, TEND, years: { rows: YS.map((y, k) => ({ y, row: YH + 2 + k })), total: YT }, checks: { r0: H0 + 1, n: ch.length }, lists: { s0, s1, sT, c0, c1, u0, u1, q0, q1, t0, t1 } };
   }
   g.DOC_XLSX = [
     'ЧТО ЭТО', 'Файл выгружен из бизнес-игры «АРКТИКА». Расчёт в игре и формулы здесь — одни и те же правила, итоги совпадают.',
-    'ЛИСТЫ', '«Кейс» — параметры (сверху) и расчёт по месяцам (ниже). Справа от параметров — итоги и проверки.',
+    'ЛИСТЫ', '«Кейс» — параметры (сверху) и расчёт по месяцам на 5 лет (ниже). Справа от параметров — итоги, таблица по годам и проверки.',
     '«Персонал» — список людей: оклад, с какого и по какой месяц работает. «Кейс» берёт отсюда сумму окладов за месяц.',
     '«Вложения» — список покупок и платежей: сумма, месяц, начислять ли резерв 10 % на непредвиденное.', '«Установки» — два типа установок (ТИП-А30 и ТИП-Б130): литры, цена, сколько на старте; ниже — партии докупки по типам.',
-    '«Продажи» — план продаж в литрах в месяц; каждая строка задаёт новый уровень с указанного месяца.',
-    '«По дням» — подневные остатки денег и склада (значения, не формулы). «Журнал» — что и когда меняли в игре.', '«Резюме» — на что идут деньги инвестора и главные показатели сценария (значения на момент выгрузки).',
+    '«Продажи» — план продаж в литрах в месяц; каждая строка задаёт новый уровень с указанного месяца.', '«Графики» — диаграммы по листу «Кейс»: окупаемость (накопленный денежный поток), деньги на счёте и взносы инвестора, выручка — расходы — EBITDA, итоги по годам.',
+    '«По дням» — подневные остатки денег и склада (значения, не формулы). «Журнал» — что и когда меняли в игре.', '«Резюме» — на что идут деньги инвестора, итоги по годам и главные показатели сценария (значения на момент выгрузки).',
     'ЦВЕТА', 'Жёлтое — ввод. Белое — формулы. Зелёное — итоги. Любую белую ячейку в таблице по месяцам можно перебить фактом.',
     'ГЛАВНЫЕ СТРОКИ', '«Инвестор вносит в этом месяце — план»: сколько внести, чтобы на счёте остался неснижаемый остаток. Столбец «Итого» — общая сумма.',
     '«Накопленный денежный поток (без денег инвестора)»: сколько проект заработал или потратил с первого дня. Стал ≥ 0 — проект окупился.',
@@ -1064,7 +1105,56 @@ svg.chart{display:block;width:100%;min-width:640px;height:auto} svg.chart text{f
     'УПРОЩЕНИЯ', 'Материалы списываются в расходы при розливе, деньги за них уходят при оплате партии. Амортизации нет — считаем деньги.',
     'Взносы на зарплату — одним коэффициентом. НДС 5 % после 20 млн ₽ поступлений с начала года. УСН 5 % от прибыли месяца, минимум 1 % поступлений.'
   ];
-  g.Xls = { build };
+  /* ---------- диаграммы Excel: ExcelJS их не умеет, поэтому части файла (chart, drawing, связи) дописываются в готовый xlsx ---------- */
+  const xe = t => String(t).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+  const NSC = 'http://schemas.openxmlformats.org/drawingml/2006/chart', NSA = 'http://schemas.openxmlformats.org/drawingml/2006/main', NSR = 'http://schemas.openxmlformats.org/officeDocument/2006/relationships', XMLH = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n';
+  function chartXml(ch, n) {
+    const ax1 = 5000 + n * 10, ax2 = ax1 + 1; let idx = 0;
+    const cat = ch.catNum ? `<c:cat><c:numRef><c:f>${xe(ch.cats)}</c:f></c:numRef></c:cat>` : `<c:cat><c:strRef><c:f>${xe(ch.cats)}</c:f></c:strRef></c:cat>`;
+    const head = sr => `<c:idx val="${idx}"/><c:order val="${idx++}"/><c:tx><c:v>${xe(sr.name)}</c:v></c:tx>`, val = sr => `<c:val><c:numRef><c:f>${xe(sr.ref)}</c:f></c:numRef></c:val>`;
+    const bars = !ch.bars.length ? '' : `<c:barChart><c:barDir val="col"/><c:grouping val="clustered"/><c:varyColors val="0"/>` +
+      ch.bars.map(sr => `<c:ser>${head(sr)}<c:spPr><a:solidFill><a:srgbClr val="${sr.color}"/></a:solidFill></c:spPr><c:invertIfNegative val="0"/>${cat}${val(sr)}</c:ser>`).join('') +
+      `<c:gapWidth val="${ch.bars.length > 1 ? 80 : 40}"/><c:axId val="${ax1}"/><c:axId val="${ax2}"/></c:barChart>`;
+    const lines = !ch.lines.length ? '' : `<c:lineChart><c:grouping val="standard"/><c:varyColors val="0"/>` +
+      ch.lines.map(sr => `<c:ser>${head(sr)}<c:spPr><a:ln w="28575" cap="rnd"><a:solidFill><a:srgbClr val="${sr.color}"/></a:solidFill><a:round/></a:ln></c:spPr><c:marker><c:symbol val="none"/></c:marker>${cat}${val(sr)}<c:smooth val="0"/></c:ser>`).join('') +
+      `<c:marker val="1"/><c:axId val="${ax1}"/><c:axId val="${ax2}"/></c:lineChart>`;
+    const grey = '<c:spPr><a:ln w="6350"><a:solidFill><a:srgbClr val="D9D9D9"/></a:solidFill></a:ln></c:spPr>';
+    return XMLH + `<c:chartSpace xmlns:c="${NSC}" xmlns:a="${NSA}" xmlns:r="${NSR}"><c:roundedCorners val="0"/><c:chart>` +
+      `<c:title><c:tx><c:rich><a:bodyPr/><a:lstStyle/><a:p><a:pPr><a:defRPr sz="1200" b="1"/></a:pPr><a:r><a:rPr lang="ru-RU" sz="1200" b="1"/><a:t>${xe(ch.title)}</a:t></a:r></a:p></c:rich></c:tx><c:overlay val="0"/></c:title><c:autoTitleDeleted val="0"/>` +
+      `<c:plotArea><c:layout/>${bars}${lines}` +
+      `<c:catAx><c:axId val="${ax1}"/><c:scaling><c:orientation val="minMax"/></c:scaling><c:delete val="0"/><c:axPos val="b"/><c:numFmt formatCode="General" sourceLinked="0"/><c:majorTickMark val="none"/><c:minorTickMark val="none"/><c:tickLblPos val="low"/><c:crossAx val="${ax2}"/><c:crosses val="autoZero"/><c:auto val="1"/><c:lblAlgn val="ctr"/><c:lblOffset val="100"/><c:tickLblSkip val="${ch.skip || 1}"/><c:noMultiLvlLbl val="0"/></c:catAx>` +
+      `<c:valAx><c:axId val="${ax2}"/><c:scaling><c:orientation val="minMax"/></c:scaling><c:delete val="0"/><c:axPos val="l"/><c:majorGridlines>${grey}</c:majorGridlines><c:numFmt formatCode="#,##0.0,," sourceLinked="0"/><c:majorTickMark val="none"/><c:minorTickMark val="none"/><c:tickLblPos val="nextTo"/><c:crossAx val="${ax1}"/><c:crosses val="autoZero"/><c:crossBetween val="between"/></c:valAx>` +
+      `</c:plotArea><c:legend><c:legendPos val="b"/><c:overlay val="0"/></c:legend><c:plotVisOnly val="1"/><c:dispBlanksAs val="gap"/></c:chart></c:chartSpace>`;
+  }
+  function drawingXml(items) {
+    const NSX = 'http://schemas.openxmlformats.org/drawingml/2006/spreadsheetDrawing', pt = (t, c, r) => `<xdr:${t}><xdr:col>${c}</xdr:col><xdr:colOff>0</xdr:colOff><xdr:row>${r}</xdr:row><xdr:rowOff>0</xdr:rowOff></xdr:${t}>`;
+    return XMLH + `<xdr:wsDr xmlns:xdr="${NSX}" xmlns:a="${NSA}">` + items.map((ch, k) => `<xdr:twoCellAnchor editAs="oneCell">${pt('from', ch.at[0], ch.at[1])}${pt('to', ch.at[2], ch.at[3])}` +
+      `<xdr:graphicFrame macro=""><xdr:nvGraphicFramePr><xdr:cNvPr id="${k + 2}" name="Диаграмма ${k + 1}"/><xdr:cNvGraphicFramePr/></xdr:nvGraphicFramePr><xdr:xfrm><a:off x="0" y="0"/><a:ext cx="0" cy="0"/></xdr:xfrm>` +
+      `<a:graphic><a:graphicData uri="${NSC}"><c:chart xmlns:c="${NSC}" xmlns:r="${NSR}" r:id="rId${k + 1}"/></a:graphicData></a:graphic></xdr:graphicFrame><xdr:clientData/></xdr:twoCellAnchor>`).join('') + '</xdr:wsDr>';
+  }
+  /* buf — файл, записанный ExcelJS; возвращает новый файл с диаграммами на листе charts.sheet. Если что-то не сошлось — отдаёт исходный файл без диаграмм */
+  async function addCharts(JSZip, buf, charts, outType) {
+    const type = outType || 'uint8array';
+    try {
+      const zip = await JSZip.loadAsync(buf), RELP = 'http://schemas.openxmlformats.org/package/2006/relationships';
+      const wbx = await zip.file('xl/workbook.xml').async('string'), rels = await zip.file('xl/_rels/workbook.xml.rels').async('string');
+      const sm = new RegExp('<sheet\\b[^>]*name="' + xe(charts.sheet) + '"[^>]*>').exec(wbx); if (!sm) throw new Error('нет листа ' + charts.sheet);
+      const rid = /r:id="([^"]+)"/.exec(sm[0])[1], rel = new RegExp('<Relationship\\b[^>]*Id="' + rid + '"[^>]*>').exec(rels), target = /Target="([^"]+)"/.exec(rel[0])[1].replace(/^\/?xl\//, '').replace(/^\//, '');
+      const sheetPath = 'xl/' + target, sheetFile = sheetPath.split('/').pop(), relPath = 'xl/worksheets/_rels/' + sheetFile + '.rels';
+      let sx = await zip.file(sheetPath).async('string'); if (/<drawing\b/.test(sx) || zip.file(relPath)) throw new Error('на листе уже есть рисунки');
+      const D = 'drawing901.xml', cn = k => 'chart90' + (k + 1) + '.xml';
+      sx = sx.replace('</worksheet>', `<drawing xmlns:r="${NSR}" r:id="rId1"/></worksheet>`); zip.file(sheetPath, sx);
+      zip.file(relPath, XMLH + `<Relationships xmlns="${RELP}"><Relationship Id="rId1" Type="${NSR}/drawing" Target="../drawings/${D}"/></Relationships>`);
+      zip.file('xl/drawings/' + D, drawingXml(charts.items));
+      zip.file('xl/drawings/_rels/' + D + '.rels', XMLH + `<Relationships xmlns="${RELP}">` + charts.items.map((c, k) => `<Relationship Id="rId${k + 1}" Type="${NSR}/chart" Target="../charts/${cn(k)}"/>`).join('') + '</Relationships>');
+      charts.items.forEach((c, k) => zip.file('xl/charts/' + cn(k), chartXml(c, k + 1)));
+      let ct = await zip.file('[Content_Types].xml').async('string');
+      ct = ct.replace('</Types>', `<Override PartName="/xl/drawings/${D}" ContentType="application/vnd.openxmlformats-officedocument.drawing+xml"/>` + charts.items.map((c, k) => `<Override PartName="/xl/charts/${cn(k)}" ContentType="application/vnd.openxmlformats-officedocument.drawingml.chart+xml"/>`).join('') + '</Types>');
+      zip.file('[Content_Types].xml', ct);
+      return { buf: await zip.generateAsync({ type, compression: 'DEFLATE' }), charts: charts.items.length };
+    } catch (e) { return { buf, charts: 0, error: String(e && e.message || e) }; }
+  }
+  g.Xls = { build, addCharts };
 })(typeof window !== 'undefined' ? window : globalThis);
 
 /* ===== ЭКРАН ИГРЫ ===== */
@@ -1080,6 +1170,7 @@ svg.chart{display:block;width:100%;min-width:640px;height:auto} svg.chart text{f
   const show = (v, f) => v == null || v === '' ? '' : f === 'pct' ? trim(v * 100, 2) : f === 'pct1' ? trim(v * 100, 3) : (f === 'money' || f === 'int') ? nf0.format(v) : f === 'dec1' ? trim(v, 2) : f === 'dec2' ? trim(v, 3) : f === 'dec3' ? trim(v, 4) : String(v);
   const parse = (t, f) => { let x = parseFloat(String(t).replace(/[\s  ₽%]/g, '').replace(',', '.')); if (!isFinite(x)) return null; if (f === 'pct' || f === 'pct1') x /= 100; if (f === 'int' || f === 'month') x = Math.round(x); return x; };
   const mLabel = i => i >= 1 && i <= N ? MONTHS[i - 1].label : (() => { const d = new Date(Date.UTC(2026, 10 + i - 1, 1)); return S.MON[d.getUTCMonth()] + ' ' + d.getUTCFullYear(); })();
+  const ENDL = MONTHS[N - 1].label, ord = n => n + '-м'; // последний месяц расчёта («окт 2031») и «на 37-м месяце»
   const disp = (v, f) => f === 'month' ? mLabel(v) : (f === 'pct' || f === 'pct1') ? show(v, f) + ' %' : f === 'money' ? rub(v) : f === 'bool' ? (v ? 'да' : 'нет') : f === 'group' ? (v === 'office' ? 'офис' : 'производство') : show(v, f);
   const newId = () => 'n' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
   const clamp = (x, a, b) => Math.max(a, Math.min(b, x));
@@ -1104,6 +1195,7 @@ svg.chart{display:block;width:100%;min-width:640px;height:auto} svg.chart text{f
     BASE_S.mats.forEach(mt => { const x = s.mats.find(z => z.key === mt.key); if (!x) s.mats.push(clone(mt)); else if (!x.unit) x.unit = mt.unit; });
     const big = s.capex.findIndex(c => /^Ремонт, электрика/.test(c.name) && c.amount === 9620000);
     if (big >= 0) { const det = BASE_S.capex.filter(c => ['Ремонт', 'Вспомогательное оборудование цеха', 'Техника и мебель', 'Разрешения и бренд'].includes(c.cat) || /Спецодежда|Бренд-стойки|преформы у литейщика/.test(c.name)).map(c => Object.assign(clone(c), { id: newId() })); s.capex.splice(big, 1, ...det); }
+    if (s.h !== N) { if (!s.h) s.staff.forEach(e => { if (e.to >= 26) e.to = N; }); s.h = N; } // прежний горизонт был 26 месяцев: «работает до конца» остаётся «до конца»
     s.capex.forEach(c => { if (!c.cat) { const b = BASE_S.capex.find(z => z.name === c.name); c.cat = b ? b.cat : /Лини/.test(c.name) ? 'Линии розлива' : /Установк/.test(c.name) ? 'Установки очистки' : /Пресс-форма/.test(c.name) ? 'Пресс-формы' : 'Прочее'; } });
     return s;
   }
@@ -1159,7 +1251,7 @@ svg.chart{display:block;width:100%;min-width:640px;height:auto} svg.chart text{f
     undo.push(JSON.stringify({ s: st.s, journal: st.journal })); st.s = migrate(j.scenario); st.s.web = id; st.journal = []; res = S.sim(st.s); afterChange(); toast('Открыт сценарий с сайта: «' + st.s.name + '»'); }).catch(() => toast('Нет связи с сайтом')); }
   function webPublish(name, code, btn) { if (code) lsSet('vodaGame.team', code); btn.disabled = true;
     const sc = clone(st.s); sc.name = name; delete sc.web;
-    fetch(API, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ name, author: '', code, scenario: sc, kpi: { invest: res.k.invest, pb: res.k.paybackM, est: res.k.paybackEst, profit28: res.k.profit28 } }) })
+    fetch(API, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ name, author: '', code, scenario: sc, kpi: { invest: res.k.invest, pb: res.k.paybackM, est: res.k.paybackEst, profit28: (res.k.years.find(y => y.y === 2028) || { profit: 0 }).profit } }) })
       .then(r => r.json().then(j => [r.status, j])).then(a => { btn.disabled = false; const j = a[1];
         if (!j.ok) { toast(j.error === 'bad_code' ? 'Неверный код команды' : j.error === 'too_large' ? 'Сценарий слишком большой' : 'Не удалось опубликовать (' + (j.error || a[0]) + ')'); return; }
         st.s.web = j.id; pubUrl = location.origin + location.pathname + '#id=' + j.id; st.tab = 'scn'; persist(); $('savebox').hidden = true; $('b-save').hidden = false;
@@ -1188,30 +1280,28 @@ svg.chart{display:block;width:100%;min-width:640px;height:auto} svg.chart text{f
     const k = res.k, b = BASE.k;
     const dInv = k.invest - b.invest, dPb = (k.paybackEst && b.paybackEst) ? k.paybackEst - b.paybackEst : 0;
     const back = k.invest > 0 ? clamp((k.cashEnd + k.payout) / k.invest, 0, 1) : 1;
-    const status = k.paybackM ? 'Окупается в ' + mLabel(k.paybackM) + ', месяц ' + k.paybackM + ' из ' + N + ' · теперь снижайте бюджет'
-      : 'Не хватает ' + mln(-k.cumEnd) + (k.paybackEst ? ' · по текущему темпу — ' + mLabel(k.paybackEst) : ' · проект не выходит в плюс');
+    const status = k.paybackM ? mLabel(k.paybackM) + ' — ' + k.paybackM + '-й месяц из ' + N + ' · теперь снижайте бюджет'
+      : 'За 5 лет не хватает ' + mln(-k.cumEnd) + (k.paybackEst ? ' · по текущему темпу — ' + mLabel(k.paybackEst) : ' · проект не выходит в плюс');
     const d = (v, good, txt) => `<span class="delta ${Math.abs(v) < 1e-9 ? '' : good ? 'good' : 'bad'}">${txt}</span>`;
     const md = dInv === 0 ? 'как в базе' : (dInv > 0 ? '+' : '−') + mln(Math.abs(dInv)).replace(' ₽', '') + ' к базе';
     const pd = !dPb ? (k.paybackEst ? 'как в базе' : '') : (dPb < 0 ? 'на ' + (-dPb) + ' мес. раньше базы' : 'на ' + dPb + ' мес. позже базы');
-    const verdict = k.paybackM ? 'Цель достигнута' : 'Не окупается', backT = 'Деньги на счёте в конце 2028 плюс выплаты инвестору — к сумме вложений' + (k.payout > 0 ? '. Инвестору выплачено ' + mln(k.payout) : '');
-    const dP = k.profit28 - b.profit28;
-    const pbN = k.paybackM || k.paybackEst || 0, vals = [k.invest, pbN, k.minCash, k.profit28];
+    const verdict = k.paybackM ? 'Окупается' : 'Не окупается', backT = 'Деньги на счёте в конце расчёта (' + ENDL + ') плюс выплаты инвестору — к сумме вложений' + (k.payout > 0 ? '. Инвестору выплачено ' + mln(k.payout) : '');
+    const pbN = k.paybackM || k.paybackEst || 0, vals = [k.invest, pbN, k.minCash, k.profitTotal];
     const fm = [v => `${nf1.format(v / 1e6)} <small>млн ₽</small>`, v => v ? (k.paybackM ? '' : '≈ ') + esc(mLabel(Math.round(v))) : 'нет', v => `${short(v)} <small>₽</small>`, v => `${nf1.format(v / 1e6)} <small>млн ₽</small>`];
     const tiles = [
       ['Вносит инвестор', fm[0](vals[0]), d(0, false, k.lastInvM ? 'последний взнос — ' + esc(mLabel(k.lastInvM)) : 'взносы не нужны')],
-      ['Окупаемость', fm[1](vals[1]), d(0, false, k.paybackM ? 'месяц ' + k.paybackM + ' из ' + N : k.paybackEst ? 'за пределами 26 месяцев' : 'проект не выходит в плюс')],
+      ['Окупаемость', fm[1](vals[1]), d(0, false, k.paybackM ? 'на ' + ord(k.paybackM) + ' месяце' : k.paybackEst ? 'за пределами 5 лет' : 'проект не выходит в плюс')],
       ['Минимум на счёте', fm[2](vals[2]), d(k.minCash < 0 ? 1 : 0, false, esc(S.dateOf(k.minCashDay).text))],
-      ['Прибыль после налогов за 2028', fm[3](vals[3]), d(0, false, 'EBITDA ' + mln(k.ebitda28))]];
+      ['Прибыль за 5 лет', fm[3](vals[3]), d(0, false, 'после налогов · EBITDA ' + mln(k.ebitdaTotal))]];
     const aM = v => Math.abs(v) >= 950000 ? nf1.format(Math.abs(v) / 1e6) + ' млн ₽' : nf0.format(Math.abs(v) / 1e3) + ' тыс. ₽', sM = v => (v < 0 ? '−' : '+') + aM(v);
-    const m28 = res.m, i28 = MONTHS.map((mm, i) => mm.y === 2028 ? i : -1).filter(i => i >= 0), s28 = arr => i28.reduce((q, i) => q + (arr[i] || 0), 0);
-    const cf28 = s28(m28.cf), gap = cf28 - k.profit28, parts = [['запас материалов', -s28(m28.wc)], ['отсрочка покупателей', s28(m28.receipts) - s28(m28.rev)], ['оплата оборудования', -s28(m28.capex)]].filter(x => Math.abs(x[1]) >= 50000);
-    const less = [parts.some(x => x[0] === 'запас материалов' && x[1] < 0) ? 'заплачено за запас материалов вперёд' : '', parts.some(x => x[0] === 'отсрочка покупателей' && x[1] < 0) ? 'покупатели ещё не оплатили' : '', parts.some(x => x[0] === 'оплата оборудования') ? 'в 2028 оплачено оборудование' : ''].filter(Boolean);
-    const why = 'Прибыль считает выручку по отгрузке и материалы по расходу. ' + (Math.abs(gap) < 50000 ? 'В этом сценарии деньги за 2028 почти совпадают с прибылью.' : gap < 0 ? 'Денег приходит меньше на то, что ' + (less.length ? less.map((x, i) => i === 0 ? x : (i === less.length - 1 ? ' и что ' : ', что ') + x).join('') : 'часть расходов оплачена раньше, чем списана') + '.' : 'Денег пришло больше: израсходован запас материалов, купленный раньше, или оплачены прошлые отгрузки.');
-    const pTitle = `Прибыль после налогов за 2028: ${aM(k.profit28)}. Денежный поток за 2028: ${aM(cf28)}. ${why}`;
-    const qd = `<details class="qd"><summary aria-label="Чем прибыль отличается от денежного потока" title="Чем прибыль отличается от денежного потока">?</summary><div class="pop"><dl><dt>Прибыль после налогов за 2028</dt><dd>${aM(k.profit28)}</dd><dt>Денежный поток за 2028</dt><dd>${aM(cf28)}</dd><dt>Разница</dt><dd>${Math.abs(gap) < 500 ? '0' : sM(gap)}</dd></dl>${parts.length ? `<p class="pp">${parts.map(x => x[0] + ' ' + sM(x[1])).join(' · ')}</p>` : ''}<p>${why}</p></div></details>`;
+    const mA = res.m, sA = arr => arr.reduce((q, v) => q + (v || 0), 0), fM = v => (v < 0 ? '−' : '') + aM(v);
+    const cfA = k.cumEnd, gap = cfA - k.profitTotal, parts = [['вложения в оборудование и ремонт', -sA(mA.capex)], ['запас материалов', -sA(mA.wc)], ['отсрочка покупателей', sA(mA.receipts) - sA(mA.rev)]].filter(x => Math.abs(x[1]) >= 50000);
+    const why = 'Прибыль считает выручку по отгрузке и материалы по расходу, вложения в неё не входят. Денежный поток — это прибыль минус вложения, минус деньги, которые лежат в запасе материалов, и минус то, что покупатели ещё не оплатили.';
+    const pTitle = `Прибыль после налогов за 5 лет: ${fM(k.profitTotal)}. Денежный поток за 5 лет: ${fM(cfA)}. ${why}`;
+    const qd = `<details class="qd"><summary aria-label="Чем прибыль отличается от денежного потока" title="Чем прибыль отличается от денежного потока">?</summary><div class="pop"><dl><dt>Прибыль после налогов за 5 лет</dt><dd>${fM(k.profitTotal)}</dd><dt>Денежный поток за 5 лет</dt><dd>${fM(cfA)}</dd><dt>Разница</dt><dd>${Math.abs(gap) < 500 ? '0' : sM(gap)}</dd></dl>${parts.length ? `<p class="pp">${parts.map(x => x[0] + ' ' + sM(x[1])).join(' · ')}</p>` : ''}<p>${why}</p></div></details>`;
     const chips = ['', '', '', ''];
     if (mv && Date.now() - mv.t < 1500) { const f = mv.from, fpb = f.paybackM || f.paybackEst || 0, chip = (txt, good) => `<span class="mv ${good ? 'good' : 'bad'}">${txt}</span>`;
-      const dI = k.invest - f.invest, dM = (pbN && fpb) ? pbN - fpb : 0, dC = k.minCash - f.minCash, dR = k.profit28 - f.profit28;
+      const dI = k.invest - f.invest, dM = (pbN && fpb) ? pbN - fpb : 0, dC = k.minCash - f.minCash, dR = k.profitTotal - (f.profitTotal || 0);
       if (Math.abs(dI) >= 500) chips[0] = chip(dMoney(dI), dI < 0);
       if (dM) chips[1] = chip((dM > 0 ? '+' : '−') + Math.abs(dM) + ' мес.', dM < 0); else if (!!pbN !== !!fpb) chips[1] = chip(pbN ? 'окупается' : 'не окупается', !!pbN);
       if (Math.abs(dC) >= 500) chips[2] = chip(dMoney(dC), dC > 0);
@@ -1219,7 +1309,7 @@ svg.chart{display:block;width:100%;min-width:640px;height:auto} svg.chart text{f
       clearTimeout(mvT); mvT = setTimeout(() => { mv = null; document.querySelectorAll('.mv').forEach(x => x.remove()); document.querySelectorAll('.sb-c.moved').forEach(x => x.classList.remove('moved')); }, Math.max(30, 1500 - (Date.now() - mv.t))); }
     const okNow = !!k.paybackM, flip = lastOk !== null && lastOk !== okNow; lastOk = okNow;
     $('score').innerHTML = `
-      <div class="goal ${k.paybackM ? 'ok' : ''}${flip ? ' flip' : ''}"><span class="verdict"><i class="led"></i>${verdict}</span><b>Окупиться до декабря 2028 с минимальным бюджетом</b><span class="status" title="${esc(status)}">${esc(status)}</span>
+      <div class="goal ${k.paybackM ? 'ok' : ''}${flip ? ' flip' : ''}"><span class="verdict"><i class="led"></i>${verdict}</span><b>Окупить вложения с минимальным бюджетом</b><span class="status" title="${esc(status)}">${esc(status)}</span>
         <div class="debtrow" title="${esc(backT)}"><div class="debt"><i style="width:${(back * 100).toFixed(1)}%;background:${heat(1 - back)}"></i></div><span>возврат ${Math.round(back * 100)} %</span></div></div>` +
       tiles.map((t, i) => `<div class="metric"${i === 3 ? ` title="${esc(pTitle)}"` : ''}><span class="lab">${t[0]}</span><span class="val">${t[1]}</span>${t[2]}${chips[i]}${i === 3 ? qd : ''}</div>`).join('');
     $('sbar-in').innerHTML = `<span class="sb-st ${k.paybackM ? 'ok' : ''}"><i class="led"></i><span>${verdict}</span></span>` +
@@ -1229,7 +1319,7 @@ svg.chart{display:block;width:100%;min-width:640px;height:auto} svg.chart text{f
       tween('score', 380, e => vals.forEach((v, i) => { if (from[i] !== v && !(i === 1 && !(from[i] && v))) put(i, fm[i](from[i] + (v - from[i]) * e)); }), () => vals.forEach((v, i) => put(i, fm[i](v))), 1.5); }
     shown = vals;
     const ms = [
-      ['Окупиться за 26 месяцев', k.paybackM > 0], ['Бюджет ниже базового', k.invest < b.invest - 1], ['EBITDA в плюсе в первые 3 месяца продаж', k.ebitdaM > 0 && k.ebitdaM <= st.s.p.start_m + 2],
+      ['Проект окупается за 5 лет', k.paybackM > 0], ['Бюджет ниже базового', k.invest < b.invest - 1], ['EBITDA в плюсе в первые 3 месяца продаж', k.ebitdaM > 0 && k.ebitdaM <= st.s.p.start_m + 2],
       ['Склад материалов без дефицита', !res.alerts.some(a => a.lvl === 'err' && /закончились/.test(a.text))], ['Без кассовых разрывов', k.minCash >= 0],
       ['Продано всё по плану', k.lostL <= 1], ['Линия успевает', k.maxUtil <= 1.0001], ['Инвестору возвращено всё вложенное', k.payout >= k.invest && k.invest > 0]];
     const done = ms.filter(a => a[1]).length;
@@ -1251,7 +1341,8 @@ svg.chart{display:block;width:100%;min-width:640px;height:auto} svg.chart text{f
   const amax = a => { let m = -Infinity; for (let i = 0; i < a.length; i++) if (a[i] > m) m = a[i]; return m; }, amin = a => { let m = Infinity; for (let i = 0; i < a.length; i++) if (a[i] < m) m = a[i]; return m; };
   function renderTimeline() {
     const sc = $('tl-scroll'), avail = sc.clientWidth || 900, s = st.s, m = res.m, d = res.d;
-    PPD = st.zoom === 'm' ? Math.max(1.45, avail / DAYS) : st.zoom === 'w' ? 7 : 24;
+    PPD = st.zoom === 'm' ? Math.max(0.55, avail / DAYS) : st.zoom === 'w' ? 7 : 24;
+    const tight = st.zoom === 'm' && PPD * 30 < 34; // месяц уже 34 px — подписываем кварталы, а январь — годом
     const W = Math.ceil(DAYS * PPD), X = x => x * PPD;
     const allZero = arr => { for (let i = 0; i < arr.length; i++) if (Math.abs(arr[i]) > 1e-9) return false; return true; };
     const lanes = [{ k: 'axis', h: 40 }, { k: 'cash', h: 80, t: 'Деньги на счёте', s: 'с учётом взносов инвестора', tip: 'Остаток по дням вместе с деньгами, которые внёс инвестор. Максимум за период: ' + short(amax(d.cash)) + ' ₽' }, { k: 'pays', h: 46, t: 'Крупные платежи', s: 'техника и сырьё' }];
@@ -1267,7 +1358,8 @@ svg.chart{display:block;width:100%;min-width:640px;height:auto} svg.chart text{f
     // сетка и ось
     MONTHS.forEach(mm => { const x = X(mm.d0).toFixed(1), yr = mm.m === 0 || mm.i === 1;
       g.push(`<line x1="${x}" x2="${x}" y1="${yr ? 0 : 18}" y2="${H}" stroke="var(--line)" stroke-width="${yr ? 1.4 : 0.7}"/>`);
-      g.push(`<text x="${+x + 3}" y="13" class="${yr ? 't-ink t-b' : ''}">${st.zoom === 'm' ? mm.short + (yr ? ' ' + String(mm.y).slice(2) : '') : mm.label}</text>`); });
+      if (!tight) g.push(`<text x="${+x + 3}" y="13" class="${yr ? 't-ink t-b' : ''}">${st.zoom === 'm' ? mm.short + (yr ? ' ' + String(mm.y).slice(2) : '') : mm.label}</text>`);
+      else if (mm.m % 3 === 0) g.push(`<text x="${+x + 3}" y="13" class="${mm.m === 0 ? 't-ink t-b' : ''}">${mm.m === 0 ? mm.y : mm.short}</text>`); });
     if (st.zoom !== 'm') for (let x = 0; x < DAYS; x++) { const dt = S.dateOf(x); if (st.zoom === 'd') g.push(`<text x="${X(x) + PPD / 2}" y="27" text-anchor="middle" style="font-size:9px">${dt.dom}</text>`); else if ((x % 7) === 0) g.push(`<line x1="${X(x)}" x2="${X(x)}" y1="18" y2="24" stroke="var(--line)"/>`); }
     const dia = (day, col, title) => { const x = X(day) + PPD / 2, yy = 36; return `<path d="M${x},${yy - 6}l6,6l-6,6l-6,-6z" fill="${col}"><title>${esc(title)}</title></path>`; };
     const starAt = (day, title) => `<path d="${star(X(day) + PPD / 2, 35.5, 8)}" fill="var(--brand)" stroke="var(--surface)" stroke-width="1"><title>${esc(title)}</title></path>`;
@@ -1290,8 +1382,11 @@ svg.chart{display:block;width:100%;min-width:640px;height:auto} svg.chart text{f
         const mx = Math.max(1, amax(d.cash)), mn = Math.min(0, amin(d.cash)), top = y0 + 18, hh = h - 18;
         g.push(`<path d="${stepPath(d.cash, top, hh, mn, mx, true)}" fill="var(--brand-soft)" stroke="none"/><path d="${stepPath(d.cash, top, hh, mn, mx, false)}" fill="none" stroke="var(--brand)" stroke-width="1.6"/>`);
         if (mn < 0) { const zy = top + hh - (0 - mn) / (mx - mn) * hh; g.push(`<line x1="0" x2="${W}" y1="${zy}" y2="${zy}" stroke="var(--red)" stroke-dasharray="4 3"/>`); }
+        { // взносы: когда треугольники стоят тесно, подписываем не каждый, а сумму группы
+          const inv = res.ev.filter(e => e.kind === 'invest').sort((p, q) => p.day - q.day), grp = []; inv.forEach(e => { const x = X(e.day) + PPD / 2, lastG = grp[grp.length - 1]; if (lastG && x - lastG.x1 < 34) { lastG.x1 = x; lastG.sum += e.amt; lastG.n++; } else grp.push({ x1: x, sum: e.amt, n: 1 }); });
+          inv.forEach(e => { const x = X(e.day) + PPD / 2; g.push(`<path d="M${x},${y0 + 3}l5,9h-10z" fill="var(--brand)"><title>Взнос инвестора ${rub(e.amt)} — ${S.dateOf(e.day).text}</title></path>`); });
+          grp.forEach(q => g.push(`<text x="${q.x1 + 7}" y="${y0 + 12}" class="t-ink t-b">${q.n > 1 ? 'всего ' : ''}${nf1.format(q.sum / 1e6)}${q.n > 1 ? '<title>' + q.n + ' ' + plur(q.n, 'взнос', 'взноса', 'взносов') + ' подряд на ' + rub(q.sum) + '. Наведите на треугольник, чтобы увидеть каждый</title>' : ''}</text>`)); }
         res.ev.forEach(e => { const x = X(e.day) + PPD / 2;
-          if (e.kind === 'invest') g.push(`<path d="M${x},${y0 + 3}l5,9h-10z" fill="var(--brand)"><title>Взнос инвестора ${rub(e.amt)}</title></path><text x="${x + 7}" y="${y0 + 12}" class="t-ink t-b">${nf1.format(e.amt / 1e6)}</text>`);
           if (e.kind === 'payout') g.push(`<path d="M${x},${y0 + 12}l5,-9h-10z" fill="var(--ink)"><title>Возврат инвестору ${rub(-e.amt)}</title></path>`); });
       }
       if (l.k === 'pays') {
@@ -1342,7 +1437,7 @@ svg.chart{display:block;width:100%;min-width:640px;height:auto} svg.chart text{f
     let left = x + 14; if (left + 262 > sc.scrollLeft + sc.clientWidth) left = x - 264; tip.style.left = Math.max(sc.scrollLeft + 4, left) + 'px';
   }
   function stopPlay() { clearInterval(playT); playT = 0; $('b-play').textContent = '► Проиграть'; }
-  function play() { if (playT) { stopPlay(); return; } let day = (curDay == null || curDay >= DAYS - 2) ? 0 : curDay; const step = st.zoom === 'd' ? 1 : st.zoom === 'w' ? 2 : 4;
+  function play() { if (playT) { stopPlay(); return; } let day = (curDay == null || curDay >= DAYS - 2) ? 0 : curDay; const step = st.zoom === 'd' ? 1 : st.zoom === 'w' ? 2 : 8;
     $('b-play').textContent = '❚❚ Пауза'; playT = setInterval(() => { day += step; if (day >= DAYS) { stopPlay(); return; } showTip(day, true); }, 45); }
   function dayAt(e) { const svg = $('tl-svg').firstChild; return clamp(Math.floor((e.clientX - svg.getBoundingClientRect().left) / PPD), 0, DAYS - 1); }
   function initTimelineEvents() {
@@ -1488,9 +1583,11 @@ svg.chart{display:block;width:100%;min-width:640px;height:auto} svg.chart text{f
   const pbTxt = kk => kk.paybackM ? mLabel(kk.paybackM) : kk.paybackEst ? '≈ ' + mLabel(kk.paybackEst) : 'нет';
   function summaryData() { const k = res.k, sp = S.investSplit(st.s, res);
     // показатель: [название, значение, вид ('pct' — проценты)]
-    const kpi = [['Вносит инвестор, ₽', k.invest], ['Последний взнос инвестора', k.lastInvM ? mLabel(k.lastInvM) : 'не требуется'], ['Окупаемость', pbTxt(k)], ['IRR проекта за 5 лет, годовых', k.irr, 'pct'], ['Пиковая потребность в деньгах, ₽', k.peak], ['Накопленный поток к декабрю 2028, ₽', k.cumEnd],
-      ['EBITDA за 2027, ₽', k.ebitda27], ['EBITDA за 2028, ₽', k.ebitda28], ['Маржинальность по EBITDA за 2028', k.ebm28, 'pct'], ['Прибыль после налогов за 2027, ₽', k.profit27], ['Прибыль после налогов за 2028, ₽', k.profit28],
-      ['Вложения в основные средства с резервом за 26 месяцев, ₽', k.capexTotal], ['Зарплаты с взносами за 26 месяцев, ₽', k.fotTotal], ['Минимум на счёте, ₽', k.minCash], ['Людей в штате, максимум', k.headMax]];
+    const kpi = [['Вносит инвестор, ₽', k.invest], ['Последний взнос инвестора', k.lastInvM ? mLabel(k.lastInvM) : 'не требуется'], ['Окупаемость', pbTxt(k)], ['Окупаемость, на каком месяце', k.paybackM ? k.paybackM : 'за пределами 5 лет'], ['IRR проекта за 5 лет, годовых', k.irr, 'pct'], ['Пиковая потребность в деньгах, ₽', k.peak], ['Накопленный поток за 5 лет, ₽', k.cumEnd],
+      ['EBITDA за 5 лет, ₽', k.ebitdaTotal], ['Маржинальность по EBITDA за 5 лет', k.ebm, 'pct'], ['Прибыль после налогов за 5 лет, ₽', k.profitTotal],
+      ['Вложения в основные средства с резервом за 5 лет, ₽', k.capexTotal], ['Зарплаты с взносами за 5 лет, ₽', k.fotTotal], ['Минимум на счёте, ₽', k.minCash], ['Людей в штате, максимум', k.headMax]];
+    // по годам: [год, месяцев, выручка без НДС, EBITDA, маржа, прибыль, поток, накопленный поток]
+    let acc = 0; const years = k.years.map(y => { acc += y.cf; return [y.y, y.n, y.rev, y.ebitda, y.ebm, y.profit, y.cf, acc]; });
     // вложения инвестора: [статья, сумма, уровень 0–2, пояснение]
     const inv = []; if (sp) { const tl = mLabel(sp.T);
       inv.push(['Вносит инвестор', k.invest, 0, 'Все взносы инвестора по ' + tl]);
@@ -1501,10 +1598,10 @@ svg.chart{display:block;width:100%;min-width:640px;height:auto} svg.chart text{f
       inv.push(['Тара и материалы', sp.tara, 2, 'Оплачено поставщикам, вместе с запасом на складе'], ['ФОТ с взносами', sp.fot, 2], ['Прочее: аренда, энергия, обслуживание, маркетинг, логистика, налоги', sp.oth, 2], ['Минус поступления от покупателей', -sp.rec, 2, 'Эту часть расходов проект уже оплатил сам']);
       inv.push(['Остаток на счёте на конец ' + tl, sp.cash, 1, 'Эти деньги не потрачены — они лежат на счёте проекта']);
       if (sp.pay > 0) inv.push(['Возвращено инвестору за это время', sp.pay, 1]); }
-    return { kpi, inv, sp }; }
+    return { kpi, inv, sp, years }; }
   function summaryPanel() {
     const sd = summaryData(), k = res.k, sp = sd.sp, pc = v => v === null ? 'нет' : nf1.format(v * 100) + ' %';
-    const pbS = k.paybackM ? 'Вложения возвращаются в ' + mLabel(k.paybackM) + '.' : k.paybackEst ? 'За 26 месяцев вложения не возвращаются; по текущему темпу это ' + mLabel(k.paybackEst) + '.' : 'Проект не выходит в плюс.';
+    const pbS = k.paybackM ? 'Вложения возвращаются в ' + mLabel(k.paybackM) + ' — на ' + ord(k.paybackM) + ' месяце.' : k.paybackEst ? 'За 5 лет вложения не возвращаются; по текущему темпу это ' + mLabel(k.paybackEst) + '.' : 'Проект не выходит в плюс.';
     const lead = sp ? `Инвестор вносит ${mln(k.invest)}; последний взнос — ${mLabel(sp.T)}, дальше проект покрывает расходы сам. ${pbS}` : `Взносы инвестора в этом сценарии не нужны. ${pbS}`;
     const share = v => k.invest > 0 ? nf1.format(v / k.invest * 100) + ' %' : '';
     const invTable = !sp ? '' : `<h3>На что идут деньги инвестора</h3>
@@ -1514,9 +1611,14 @@ svg.chart{display:block;width:100%;min-width:640px;height:auto} svg.chart text{f
     const kpiTable = `<h3>Показатели сценария</h3><div class="tbl"><table class="kpit"><thead><tr><th>Показатель</th><th class="r">Значение</th></tr></thead><tbody>` +
         sd.kpi.map(r => { const pct = r[2] === 'pct', num = typeof r[1] === 'number', money = /₽/.test(r[0]);
           return `<tr><td>${esc(r[0].replace(', ₽', ''))}</td><td class="r">${(pct ? pc(r[1]) : money ? mln(r[1]) : num ? pcs(r[1]) : esc(r[1])).replace('-', '−')}</td></tr>`; }).join('') + `</tbody></table></div>
-      <p class="tnote2">IRR — годовая доходность проекта за 5 лет: 26 месяцев по модели, дальше денежный поток как в среднем за последние 12 месяцев (сейчас ${mln(k.avg12)} в месяц). EBITDA — выручка без НДС минус операционные расходы, до налога УСН. Маржинальность — EBITDA к выручке без НДС.</p>`;
+      <p class="tnote2">Расчёт идёт 5 лет — ${N} месяцев, с ${MONTHS[0].label} по ${ENDL}. IRR — годовая доходность проекта по денежному потоку всех ${N} месяцев. EBITDA — выручка без НДС минус операционные расходы, до налога УСН. Маржинальность — EBITDA к выручке без НДС.</p>`;
+    const sg = v => mln(v).replace('-', '−');
+    const yearTable = `<h3>По годам</h3><div class="tbl"><table class="yrt"><thead><tr><th>Год</th><th class="r">Месяцев</th><th class="r">Выручка без НДС</th><th class="r">EBITDA</th><th class="r">Маржа</th><th class="r">Прибыль после налогов</th><th class="r">Денежный поток</th><th class="r">Накопленный поток</th></tr></thead><tbody>` +
+        sd.years.map(y => `<tr${k.paybackM && MONTHS[k.paybackM - 1].y === y[0] ? ' class="pb"' : ''}><td><b>${y[0]}</b>${k.paybackM && MONTHS[k.paybackM - 1].y === y[0] ? ' <small>окупаемость</small>' : ''}</td><td class="r calc">${y[1]}</td><td class="r">${sg(y[2])}</td><td class="r">${sg(y[3])}</td><td class="r calc">${y[2] > 0 ? pc(y[4]).replace('-', '−') : '—'}</td><td class="r">${sg(y[5])}</td><td class="r">${sg(y[6])}</td><td class="r">${sg(y[7])}</td></tr>`).join('') +
+        `</tbody><tfoot><tr><td>Итого</td><td class="r">${N}</td><td class="r">${sg(k.revTotal)}</td><td class="r">${sg(k.ebitdaTotal)}</td><td class="r">${pc(k.ebm).replace('-', '−')}</td><td class="r">${sg(k.profitTotal)}</td><td class="r">${sg(k.cumEnd)}</td><td class="r">${sg(k.cumEnd)}</td></tr></tfoot></table></div>
+      <p class="tnote2">2026 год — два месяца (ноябрь и декабрь), 2031 — десять (по октябрь). Денежный поток — без денег инвестора: поступления минус расходы, налоги, вложения и запас материалов.</p>`;
     return `<h3>Резюме сценария «${esc(st.s.name)}»</h3>
-      <p style="color:var(--ink);font-size:15px;max-width:90ch">${esc(lead)}</p>${invTable}${kpiTable}`;
+      <p style="color:var(--ink);font-size:15px;max-width:90ch">${esc(lead)}</p>${invTable}${yearTable}${kpiTable}`;
   }
   function squarify(items, x, y, w, h) { // раскладка «квадратами» (treemap): площади пропорциональны суммам
     const out = [], tot = items.reduce((a, b) => a + b.v, 0); if (!tot || w <= 0 || h <= 0) return out;
@@ -1530,7 +1632,7 @@ svg.chart{display:block;width:100%;min-width:640px;height:auto} svg.chart text{f
     return out;
   }
   function spend(upto, s, res) { // куда ушли деньги за месяцы 1..upto: [название, группа, сумма]
-    const p = s.p, m = res.m, c = res.k.cost, ic = i => i >= p.idx_m ? 1 + p.cost_idx : 1, sumTo = a => a.slice(0, upto).reduce((x, y) => x + y, 0), out = [];
+    const p = s.p, m = res.m, c = res.k.cost, ic = i => S.idxC(p, i), sumTo = a => a.slice(0, upto).reduce((x, y) => x + y, 0), out = [];
     const startCost = s.utypes.reduce((a, x) => a + x.start * x.price, 0), byCat = {};
     s.capex.forEach(x => { if (x.month >= 1 && x.month <= upto) byCat[x.cat || 'Прочее'] = (byCat[x.cat || 'Прочее'] || 0) + (x.auto ? startCost * 0.5 : (+x.amount || 0)); });
     Object.keys(byCat).forEach(k => out.push([k === 'Прочее' ? 'Депозит и вход в сети' : k, 'Вложения', byCat[k]]));
@@ -1553,7 +1655,7 @@ svg.chart{display:block;width:100%;min-width:640px;height:auto} svg.chart text{f
     const X = i => L + (i + 0.5) * pw / N, Y = v => T + (hi - v) / span * ph, y0 = Y(0), bw = pw / N * 0.5;
     const stepv = (() => { const raw = span / 6, e = Math.pow(10, Math.floor(Math.log10(raw))), f = raw / e; return (f < 1.5 ? 1 : f < 3.5 ? 2 : f < 7.5 ? 5 : 10) * e; })();
     let g = ''; for (let v = Math.ceil(lo / stepv) * stepv; v <= hi + 1; v += stepv) g += `<line x1="${L}" x2="${W - R}" y1="${Y(v)}" y2="${Y(v)}" stroke="${Math.abs(v) < 1 ? 'var(--muted)' : 'var(--line)'}" stroke-width="${Math.abs(v) < 1 ? 1 : 0.8}" stroke-dasharray="${Math.abs(v) < 1 ? '' : '2 5'}"/><text x="${L - 8}" y="${Y(v) + 4}" text-anchor="end">${nf0.format(v / 1e6)}</text>`;
-    MONTHS.forEach((mm, i) => { if (i % 2 === 0 || mm.m === 0) g += `<text x="${X(i)}" y="${H - 12}" text-anchor="middle" class="${mm.m === 0 || i === 0 ? 't-ink t-b' : ''}">${mm.short}${mm.m === 0 || i === 0 ? ' ' + String(mm.y).slice(2) : ''}</text>`; });
+    MONTHS.forEach((mm, i) => { if (mm.m === 0) g += `<line x1="${X(i) - pw / N / 2}" x2="${X(i) - pw / N / 2}" y1="${T}" y2="${T + ph}" stroke="var(--line)" stroke-width="1"/>`; if (mm.m % 3 === 0) g += `<text x="${X(i)}" y="${H - 12}" text-anchor="middle" class="${mm.m === 0 ? 't-ink t-b' : ''}">${mm.m === 0 ? mm.y : mm.short}</text>`; });
     const pts = cum.map((v, i) => X(i).toFixed(1) + ',' + Y(v).toFixed(1)), line = 'M' + pts.join('L'), area = line + `L${X(N - 1)},${y0}L${X(0)},${y0}Z`;
     CHn = { pts: cum.map((v, i) => [X(i), Y(v)]), y0, x0: X(0), x1: X(N - 1) };
     g += `<defs><clipPath id="cpos"><rect x="0" y="0" width="${W}" height="${y0}"/></clipPath><clipPath id="cneg"><rect x="0" y="${y0}" width="${W}" height="${H}"/></clipPath>
@@ -1565,7 +1667,7 @@ svg.chart{display:block;width:100%;min-width:640px;height:auto} svg.chart text{f
     g += `<g filter="url(#glow)"><path class="pl" d="${line}" fill="none" stroke="var(--brand)" stroke-width="2.4" stroke-linejoin="round" clip-path="url(#cpos)"/><path class="pl" d="${line}" fill="none" stroke="var(--red)" stroke-width="2.4" stroke-linejoin="round" clip-path="url(#cneg)"/></g>`;
     const pi = cum.indexOf(Math.min(...cum)); if (cum[pi] < 0) g += `<circle cx="${X(pi)}" cy="${Y(cum[pi])}" r="5" fill="var(--red)"/><text x="${X(pi) + 12}" y="${Y(cum[pi]) - 12}" class="t-ink t-b">Дно: −${mln(-cum[pi])}, ${mLabel(pi + 1)}</text>`;
     if (k.paybackM) { const i = k.paybackM - 1; g += `<path d="${star(X(i), y0, 11)}" fill="var(--brand)" stroke="var(--ink)" stroke-width="1.2"/><text x="${X(i)}" y="${y0 - 16}" text-anchor="middle" class="t-ink t-b">Окупаемость: ${mLabel(k.paybackM)}</text>`; }
-    else g += `<text x="${W - R - 4}" y="${Y(cum[N - 1]) - 10}" text-anchor="end" class="t-ink t-b">Дек. 2028: −${mln(-cum[N - 1])}${k.paybackEst ? ' · по темпу окупится ≈ ' + mLabel(k.paybackEst) : ''}</text>`;
+    else g += `<text x="${W - R - 4}" y="${Y(cum[N - 1]) - 10}" text-anchor="end" class="t-ink t-b">${ENDL}: −${mln(-cum[N - 1])}${k.paybackEst ? ' · по темпу окупится ≈ ' + mLabel(k.paybackEst) : ''}</text>`;
     cum.forEach((v, i) => { g += `<rect x="${X(i) - pw / N / 2}" y="${T}" width="${pw / N}" height="${ph}" fill="transparent"><title>${mm_(i)}: накоплено ${v < 0 ? '−' : '+'}${mln(Math.abs(v))}, за месяц ${cf[i] < 0 ? '−' : '+'}${mln(Math.abs(cf[i]))}</title></rect>`; });
     const upto = (st.tmAll || !k.lastInvM) ? N : k.lastInvM, items = spend(upto, st.s, res), tot = items.reduce((a, b) => a + b[2], 0), delta = st.tmCol === 'delta';
     const base = {}; spend(upto, BASE_S, BASE).forEach(a => { base[a[0]] = a[2]; }); const baseTot = Object.keys(base).reduce((a, n) => a + base[n], 0);
@@ -1580,7 +1682,7 @@ svg.chart{display:block;width:100%;min-width:640px;height:auto} svg.chart text{f
       <div class="chartbox"><svg viewBox="0 0 ${W} ${H}" class="chart" role="img" aria-label="График окупаемости"><text x="${L - 8}" y="14" text-anchor="end">млн ₽</text>${g}</svg></div>
       <h3>Куда уходят деньги</h3>
       <p>Площадь плитки — доля в общих тратах. ${delta ? 'Цвет — изменение к базовому сценарию: зелёная плитка стала дешевле, красная — дороже, серая не изменилась.' : 'Цвет — «жар»: чем больше денег съедает статья, тем краснее; мелкие статьи зелёные.'}</p>
-      <div class="row"><div class="seg" role="group" aria-label="Период"><button data-act="tm:0" aria-pressed="${!st.tmAll}">Пока вносит инвестор: ${MONTHS[0].label} — ${mLabel(k.lastInvM || N)}</button><button data-act="tm:1" aria-pressed="${!!st.tmAll}">Все 26 месяцев</button></div>
+      <div class="row"><div class="seg" role="group" aria-label="Период"><button data-act="tm:0" aria-pressed="${!st.tmAll}">Пока вносит инвестор: ${MONTHS[0].label} — ${mLabel(k.lastInvM || N)}</button><button data-act="tm:1" aria-pressed="${!!st.tmAll}">Все ${N} месяцев</button></div>
         <div class="seg" role="group" aria-label="Цвет плиток"><button data-act="tmc:heat" aria-pressed="${!delta}">Цвет: размер траты</button><button data-act="tmc:delta" aria-pressed="${delta}">Цвет: изменение к базе</button></div>
         <span class="heatleg">${delta ? 'дешевле' : 'мало'}<i style="background:linear-gradient(90deg,${rgb(HG)},${delta ? rgb(HNeutral()) : rgb(HY)},${rgb(HR)})"></i>${delta ? 'дороже' : 'много'}</span></div>
       <p style="font-family:var(--mono);color:var(--ink)">ВСЕГО ЗА ПЕРИОД: ${mln(tot)}${delta && baseTot ? ' · к базе ' + sgn((tot - baseTot) / baseTot) + ' (' + ((tot - baseTot) >= 0 ? '+' : '−') + mln(Math.abs(tot - baseTot)) + ')' : ''}</p>
@@ -1594,7 +1696,7 @@ svg.chart{display:block;width:100%;min-width:640px;height:auto} svg.chart text{f
   const mm_ = i => MONTHS[i].label;
   function panel() {
     buildDiff();
-    const s = st.s, p = s.p, m = res.m, k = res.k, t = st.tab, ic = i => i >= p.idx_m ? 1 + p.cost_idx : 1, c = k.cost, last = N - 1;
+    const s = st.s, p = s.p, m = res.m, k = res.k, t = st.tab, ic = i => S.idxC(p, i), c = k.cost, last = N - 1;
     if (t === 'summary') return summaryPanel();
     if (t === 'charts') return chartsPanel();
     if (t === 'people') {
@@ -1628,7 +1730,7 @@ svg.chart{display:block;width:100%;min-width:640px;height:auto} svg.chart text{f
       const goCx = `<button type="button" class="lnk" data-act="gocx">открыть раздел</button>`;
       return intro(`Типы установок: литры в сутки, цена и штук на старте. Докупка — партиями.`, `<p>Для партии задаются тип, количество и месяц запуска. Кружки «+N» на дорожке «Очистка воды» можно тянуть по месяцам.</p><p><b>Пилотные установки</b> собираются по этапам. Их стоимость вносится детальными строками в раздел «Установки очистки» во «Вложениях», а здесь задаётся только сколько их и сколько литров в сутки даёт одна. В автоматические строки «Установки очистки на старте» пилотные не входят, поэтому деньги не считаются дважды.</p>`) + `
       <h3>Типы установок</h3>
-      <div class="tbl"><table><thead><tr><th>Тип</th><th class="r">Литров в сутки с одной</th><th class="r">Цена одной, ₽</th><th class="r">На старте, шт</th><th class="r">Докуплено</th><th class="r">Всего к дек. 2028</th><th class="r">Дают в сутки</th></tr></thead><tbody>` +
+      <div class="tbl"><table><thead><tr><th>Тип</th><th class="r">Литров в сутки с одной</th><th class="r">Цена одной, ₽</th><th class="r">На старте, шт</th><th class="r">Докуплено</th><th class="r">Всего к ${ENDL}</th><th class="r">Дают в сутки</th></tr></thead><tbody>` +
         s.utypes.map(u => `<tr><td class="name">${wrapM('ut:' + u.id + ':name', 'txt', `<input class="ttl" aria-label="Название типа" id="ut-${u.id}-name" data-bind="ut:${u.id}:name" value="${esc(u.name)}" maxlength="30">`)}</td><td class="n">${num('ut-' + u.id + '-l', 'ut:' + u.id + ':l', u.l, 'int')}</td><td class="n">${u.pilot ? `<span class="calc" title="Стоимость пилотных установок — детальные строки раздела «Установки очистки» во «Вложениях»">строками во «Вложениях»</span>` : num('ut-' + u.id + '-price', 'ut:' + u.id + ':price', u.price, 'money')}</td><td class="n">${num('ut-' + u.id + '-start', 'ut:' + u.id + ':start', u.start, 'int')}</td><td class="r calc">${u.pilot ? '—' : bought(u.id)}</td><td class="r calc">${u.start + bought(u.id)}</td><td class="r calc">${pcs((u.start + bought(u.id)) * u.l)} л</td></tr>`).join('') +
         `</tbody><tfoot><tr><td>Всего</td><td></td><td></td><td class="r">${s.utypes.reduce((a, u) => a + u.start, 0)}</td><td class="r">${s.batches.reduce((a, b) => a + b.qty, 0)}</td><td class="r">${s.utypes.reduce((a, u) => a + u.start + bought(u.id), 0)}</td><td class="r">${pcs(m.startL[last] + m.newL[last])} л</td></tr></tfoot></table></div>` +
       (pilN > 0 && detSum <= 0 ? `<div class="alert warn"><b>Пилотные установки</b><span>Заведено ${pilN} шт. ${det.length ? `Детальные строки в разделе «Установки очистки» есть (${det.length}), но суммы в них нулевые — впишите суммы, иначе стоимость пилотных в расчёт не попадает.` : 'Детальных строк в разделе «Установки очистки» во «Вложениях» пока нет — их стоимость сейчас в расчёт не попадает.'} ${goCx}</span></div>` : '') + `
@@ -1636,18 +1738,18 @@ svg.chart{display:block;width:100%;min-width:640px;height:auto} svg.chart text{f
       <h3>Партии докупки</h3><p>Новая мощность сама себя не продаёт: после добавления партии поднимите план продаж кнопкой в строке.</p>
       <div class="tbl"><table><thead><tr><th>Тип</th><th class="r">Штук</th><th>Месяц запуска</th><th class="r">Дают в сутки</th><th class="r">Сумма</th><th></th><th></th></tr></thead><tbody>` +
         (s.batches.length ? s.batches.map(b => { const u = tOf(s, b.type); return `<tr><td class="mo">${wrapM('batch:' + b.id + ':type', 'txt', `<select id="bt-${b.id}-type" data-bind="batch:${b.id}:type" data-fmt="txt">${s.utypes.filter(z => !z.pilot || z.id === b.type).map(z => `<option value="${z.id}"${z.id === b.type ? ' selected' : ''}>${esc(z.name)}</option>`).join('')}</select>`)}</td><td class="n">${num('bt-' + b.id + '-qty', 'batch:' + b.id + ':qty', b.qty, 'int')}</td><td class="mo">${monthSel('bt-' + b.id + '-month', 'batch:' + b.id + ':month', b.month)}</td><td class="r calc">${pcs(b.qty * u.l)} л</td><td class="r calc">${short(b.qty * u.price)} ₽</td><td><button class="btn sm" data-act="plancap:${b.id}">Поднять план продаж до мощности</button></td><td><button class="x" data-act="del:batch:${b.id}" aria-label="Удалить партию">×</button></td></tr>`; }).join('') : '<tr><td colspan="7" class="calc">Партий докупки пока нет.</td></tr>') +
-        `</tbody></table></div><div class="row">${s.utypes.filter(z => !z.pilot).map(u => `<button class="btn" data-act="add:batch:${u.id}">＋ Партия ${esc(u.name)}</button>`).join('')}<span style="color:var(--muted)">Мощность в декабре 2028: ${pcs(m.cap_l[last])} л в месяц · план продаж: ${pcs(m.plan_l[last])} л · линия вытянет ${pcs(k.lineCapB)} бутылок в месяц</span></div>
+        `</tbody></table></div><div class="row">${s.utypes.filter(z => !z.pilot).map(u => `<button class="btn" data-act="add:batch:${u.id}">＋ Партия ${esc(u.name)}</button>`).join('')}<span style="color:var(--muted)">Мощность в ${ENDL}: ${pcs(m.cap_l[last])} л в месяц · план продаж: ${pcs(m.plan_l[last])} л · линия вытянет ${pcs(k.lineCapB)} бутылок в месяц</span></div>
       ${fields('prod')}`;
     }
     if (t === 'sales') {
       const plan = s.plan.slice().sort((a, b) => a.month - b.month), sh = [p.sh03, p.sh05, p.sh10], pr = [p.p03, p.p05, p.p10], sold = [m.b03, m.b05, m.b10], sum = a => a.reduce((x, y) => x + y, 0);
-      const revT = i => sold[i].reduce((a, x, q) => a + x * pr[i] * (q + 1 >= p.idx_m ? 1 + p.price_idx : 1), 0), revAll = revT(0) + revT(1) + revT(2), shSum = sh[0] + sh[1] + sh[2];
+      const revT = i => sold[i].reduce((a, x, q) => a + x * pr[i] * S.idxP(p, q + 1), 0), revAll = revT(0) + revT(1) + revT(2), shSum = sh[0] + sh[1] + sh[2];
       const palOf = (lit, i) => c.pal[i].bottles ? lit * sh[i] / BT[i][2] / c.pal[i].bottles : 0;
       return `<h3>Три бутылки: доля, цена и что это даёт</h3>
       <div class="bcards">` + BT.map((b, i) => `<article class="bcard"><div class="bpic"><div class="cols2">${colSvg([[sh[i], 'var(--water)', 'Доля литров', Math.round(sh[i] * 100) + ' %']], 120, 'литры')}${colSvg([[revAll ? revT(i) / revAll : 0, 'var(--brand)', 'Доля выручки', (revAll ? Math.round(revT(i) / revAll * 100) : 0) + ' %']], 120, 'выручка')}</div><b>${b[1]}</b></div><div class="brows">
           ${brow('Доля литров', bin('sh' + b[0]))}${brow('Цена продажи с завода, с НДС', bin('p' + b[0]))}
-          <div class="bres"><h5>Результат</h5>${brow('В декабре 2028: бутылок', pcs(sold[i][last]))}${brow('В декабре 2028: паллет', nf1.format(palOf(m.sold_l[last], i)))}
-          ${brow('За 26 месяцев: бутылок', pcs(sum(sold[i])))}${brow('За 26 месяцев: выручка', mln(revT(i)))}${brow('Доля в выручке', (revAll ? Math.round(revT(i) / revAll * 100) : 0) + ' %')}</div></div></article>`).join('') + `</div>
+          <div class="bres"><h5>Результат</h5>${brow('В ' + ENDL + ': бутылок', pcs(sold[i][last]))}${brow('В ' + ENDL + ': паллет', nf1.format(palOf(m.sold_l[last], i)))}
+          ${brow('За 5 лет: бутылок', pcs(sum(sold[i])))}${brow('За 5 лет: выручка', mln(revT(i)))}${brow('Доля в выручке', (revAll ? Math.round(revT(i) / revAll * 100) : 0) + ' %')}</div></div></article>`).join('') + `</div>
       <p class="${Math.abs(shSum - 1) < 1e-4 ? '' : 'bad'}">Сумма долей: ${show(shSum, 'pct')} %${Math.abs(shSum - 1) < 1e-4 ? '.' : ' — должно быть 100 %.'} Столбики: доля бутылки в литрах и в выручке. Цена за литр: ${BT.map((b, i) => b[1] + ' — ' + Math.round(pr[i] / b[2]) + ' ₽').join(', ')}.</p>
       <h3>План продаж</h3><p>Сколько литров в месяц вы продаёте на полном ходу. Каждая строка задаёт новый уровень с указанного месяца. План выше мощности — продажи теряются; ниже — установки простаивают.</p>
       <div class="tbl"><table><thead><tr><th>С месяца</th><th class="r">План, литров в месяц</th><th class="r">0,3 л, бут.</th><th class="r">0,5 л, бут.</th><th class="r">1,0 л, бут.</th><th class="r">Паллет в месяц</th><th class="r">Мощность, л</th><th></th></tr></thead><tbody>` +
@@ -1679,13 +1781,13 @@ svg.chart{display:block;width:100%;min-width:640px;height:auto} svg.chart text{f
       const sh = [p.sh03, p.sh05, p.sh10], bp = [p.sh03 / 0.3, p.sh05 / 0.5, p.sh10].map(x => c.bpl ? x / c.bpl : 0), pf = s.mats.find(x => x.key === (p.glass ? 'gb' : 'pf'));
       const alt = S.pallet(Object.assign({}, p, { pal_w: p.pal_w === 800 ? 1000 : 800 })), PN = w => w === 800 ? 'европаллета 1200 × 800' : 'американская 1200 × 1000', selName = PN(p.pal_w), altName = PN(p.pal_w === 800 ? 1000 : 800), lim = x => x.byKg < x.byH ? 'вес' : 'высота';
       return intro(`Материалы покупаются целыми партиями и заранее; оплата — 15-го числа месяца заказа.`, `<p>Заказ покрывает расход на столько месяцев вперёд, сколько указано в столбце «за сколько месяцев». ${p.glass ? 'Показаны материалы для стеклянной тары; партии для ПЭТ сохранены и вернутся при переключении.' : 'Первая партия крышек едет вместе с линией и приходит в ' + mLabel(3) + '.'}</p>`) + `
-      <div class="tbl"><table><thead><tr><th>Материал</th><th class="r">Цена</th><th class="r">Партия</th><th class="r">Заказ за сколько месяцев</th><th>Первый заказ</th><th class="r">Транспорт следующих партий, ₽</th><th class="r">Расход в дек. 2028</th><th class="r">Куплено за период</th></tr></thead><tbody>` +
+      <div class="tbl"><table><thead><tr><th>Материал</th><th class="r">Цена</th><th class="r">Партия</th><th class="r">Заказ за сколько месяцев</th><th>Первый заказ</th><th class="r">Транспорт следующих партий, ₽</th><th class="r">Расход в ${ENDL}</th><th class="r">Куплено за период</th></tr></thead><tbody>` +
         matsOn(s).map(mt => `<tr><td><b>${esc(mt.name)}</b></td><td class="r calc">${nf1.format(c.mat[mt.key])} ₽/${mt.unit}</td><td class="n"><span class="in">${num('mt-' + mt.key + '-moq', 'mat:' + mt.key + ':moq', mt.moq, 'int')}<span class="u">${mt.unit}</span></span></td><td class="n">${num('mt-' + mt.key + '-lead', 'mat:' + mt.key + ':lead', mt.lead, 'int')}</td><td class="mo">${monthSel('mt-' + mt.key + '-first', 'mat:' + mt.key + ':first', mt.first)}</td><td class="n">${num('mt-' + mt.key + '-ship', 'mat:' + mt.key + ':ship', mt.ship, 'money')}</td><td class="r calc">${mt.unit === 'кг' ? nf1.format(res.useBy[mt.key][last]) : pcs(res.useBy[mt.key][last])} ${mt.unit}</td><td class="r calc">${pcs(res.ord[mt.key].reduce((a, b) => a + b, 0))} ${mt.unit}</td></tr>`).join('') +
         `</tbody></table></div><p>Партию ${p.glass ? 'стеклянных бутылок' : 'преформ'} ${pcs(pf.moq)} шт заказывайте в пропорции продаж: 0,3 л — ${pcs(pf.moq * bp[0])}, 0,5 л — ${pcs(pf.moq * bp[1])}, 1,0 л — ${pcs(pf.moq * bp[2])} шт. В запасах материалов заморожено до ${mln(k.wcMax)}.</p>
       <h3>Сколько бутылок встаёт на паллету</h3>
       <p>Считается из размеров бутылки и упаковки: сколько упаковок помещается в слой и сколько слоёв проходит по высоте и по весу. Это оценка простой раскладкой рядами; смешанная раскладка иногда даёт на одну-две упаковки в слое больше.</p>
       <div class="tbl"><table class="pal"><thead><tr><th colspan="3"></th><th colspan="7" class="gh">Выбрана: ${selName}</th><th colspan="3" class="gh">Для сравнения: ${altName}</th></tr>
-        <tr><th>Бутылка</th><th class="r">Размер, мм</th><th class="r">В упаковке</th><th class="r gl">Упаковок в слое</th><th class="r">Бутылок в слое</th><th class="r">Слоёв</th><th class="r">Бутылок на паллете</th><th class="r">Вес груза</th><th>Что ограничивает</th><th class="r">Паллет в дек. 2028</th><th class="r gl">Бутылок на паллете</th><th class="r">Вес груза</th><th>Что ограничивает</th></tr></thead><tbody>` +
+        <tr><th>Бутылка</th><th class="r">Размер, мм</th><th class="r">В упаковке</th><th class="r gl">Упаковок в слое</th><th class="r">Бутылок в слое</th><th class="r">Слоёв</th><th class="r">Бутылок на паллете</th><th class="r">Вес груза</th><th>Что ограничивает</th><th class="r">Паллет в ${ENDL}</th><th class="r gl">Бутылок на паллете</th><th class="r">Вес груза</th><th>Что ограничивает</th></tr></thead><tbody>` +
         BT.map((b, i) => { const x = c.pal[i], y = alt[i], df = y.bottles - x.bottles; return `<tr><td><b>${b[1]}</b></td><td class="r calc">⌀ ${S.tara(p, 'd', b[0])} × ${S.tara(p, 'h', b[0])}</td><td class="r calc">${S.tara(p, 'pk', b[0])} (${x.pc} × ${x.pr})</td><td class="r calc gl">${x.packs}</td><td class="r calc">${x.perLayer}</td><td class="r calc">${x.layers}</td><td class="r"><b>${pcs(x.bottles)}</b></td><td class="r calc">${pcs(x.kg)} кг</td><td class="calc">${lim(x)}</td><td class="r calc">${nf1.format(x.bottles ? m.prod_l[last] * sh[i] / b[2] / x.bottles : 0)}</td><td class="r calc gl" title="${y.packs} упаковок в слое × ${y.layers} слоёв">${pcs(y.bottles)}${df ? ` <span class="${df > 0 ? 'more' : 'less'}">${df > 0 ? '+' : '−'}${pcs(Math.abs(df))}</span>` : ''}</td><td class="r calc">${pcs(y.kg)} кг</td><td class="calc">${lim(y)}</td></tr>`; }).join('') +
         `</tbody><tfoot><tr><td colspan="9">Всего паллет в месяц на полном ходу</td><td class="r">${nf1.format(m.pallets[last])}</td><td colspan="3" class="gl"></td></tr></tfoot></table></div>
       <p class="tnote2">Считается по выбранной паллете — предел груза ${pcs(p.pal_kg)} кг и ${pcs(p.pal_h)} мм по высоте. Правый блок — справка: сколько встало бы на другой тип при тех же пределах, в расчёт он не идёт. Большая паллета не всегда вмещает больше: слой на ней тяжелее, и по весу проходит меньше слоёв.</p>
@@ -1706,21 +1808,21 @@ svg.chart{display:block;width:100%;min-width:640px;height:auto} svg.chart text{f
     if (t === 'levers') {
       const pbOf = r => r.pb || r.est || 9999, rows = LEVERS.map((lv, i) => levCalc(i, levVal(i), s, k)).sort((a, b) => (b.dCum - a.dCum) || (pbOf(a) - pbOf(b)));
       LEVMX = Math.max(1, ...rows.map(r => Math.abs(r.dCum)));
-      return intro(`Что сильнее всего сдвигает результат. Впишите своё значение и нажмите «Применить».`, `<p>Полоса и число рядом показывают, на сколько изменится накопленный денежный поток к декабрю 2028 от текущего сценария. «Экономия» в колонке бюджета — на сколько меньше внесёт инвестор. Строки пересчитываются, пока вы набираете значение, а порядок обновляется, когда вы выходите из поля. «Применить» делает ход, его можно отменить.</p>`) + `
-      <div><div class="lever hd"><span>Рычаг</span><span>Значение</span><span>К потоку к дек. 2028</span><span>Бюджет инвестора</span><span>Окупаемость</span><span>Применить</span></div>` +
+      return intro(`Что сильнее всего сдвигает результат. Впишите своё значение и нажмите «Применить».`, `<p>Полоса и число рядом показывают, на сколько изменится накопленный денежный поток за 5 лет (к ${ENDL}) от текущего сценария. «Экономия» в колонке бюджета — на сколько меньше внесёт инвестор. Строки пересчитываются, пока вы набираете значение, а порядок обновляется, когда вы выходите из поля. «Применить» делает ход, его можно отменить.</p>`) + `
+      <div><div class="lever hd"><span>Рычаг</span><span>Значение</span><span>К потоку за 5 лет</span><span>Бюджет инвестора</span><span>Окупаемость</span><span>Применить</span></div>` +
         rows.map(r => { const cl = levCells(r); return `<div class="lever" data-lev="${r.i}"><span>${esc(r.lv.a(s))}</span><span class="in">${num('lv-' + r.i, 'lev:' + r.i, levVal(r.i), 'dec1')}<span class="u">${r.lv.u}</span></span><span class="lb">${cl.bar}</span><span class="li">${cl.inv}</span><span class="lp">${cl.pb}</span><button class="btn sm" data-act="lever:${r.i}">Применить</button></div>`; }).join('') + '</div>';
     }
     if (t === 'scn') {
-      const row = (n, kk, btns) => `<tr><td>${esc(n)}</td><td class="r">${mln(kk.invest)}</td><td>${kk.paybackM ? esc(mLabel(kk.paybackM)) : kk.paybackEst ? '≈ ' + esc(mLabel(kk.paybackEst)) : 'нет'}</td><td class="r">${mln(kk.profit28)}</td><td class="r">${short(kk.minCash)} ₽</td><td class="r">${kk.headMax}</td><td style="white-space:nowrap">${btns}</td></tr>`;
-      const head = '<thead><tr><th>Сценарий</th><th class="r">Вносит инвестор</th><th>Окупаемость</th><th class="r">Прибыль 2028</th><th class="r">Минимум на счёте</th><th class="r">Людей</th><th></th></tr></thead>';
+      const row = (n, kk, btns) => `<tr><td>${esc(n)}</td><td class="r">${mln(kk.invest)}</td><td>${kk.paybackM ? esc(mLabel(kk.paybackM)) : kk.paybackEst ? '≈ ' + esc(mLabel(kk.paybackEst)) : 'нет'}</td><td class="r">${mln(kk.profitTotal)}</td><td class="r">${short(kk.minCash)} ₽</td><td class="r">${kk.headMax}</td><td style="white-space:nowrap">${btns}</td></tr>`;
+      const head = '<thead><tr><th>Сценарий</th><th class="r">Вносит инвестор</th><th>Окупаемость</th><th class="r">Прибыль за 5 лет</th><th class="r">Минимум на счёте</th><th class="r">Людей</th><th></th></tr></thead>';
       const pub = Object.keys(shared), mine = Object.keys(st.saved), tok = getTok();
       const pbT = x => x.pb ? esc(mLabel(x.pb)) : x.est ? '≈ ' + esc(mLabel(x.est)) : 'нет', adm = lsGet('vodaGame.admin');
       const anyAuthor = remote.items.some(hasAuthor);
       const web = !remote.on ? '' : `<h3>Сценарии участников — сохранены на сайте, видят все</h3>
       <p>Чтобы опубликовать свой: «Сохранить сценарий» наверху → впишите название → «Опубликовать на сайте». Чужой сценарий можно открыть и играть от него; изменить или удалить его нельзя, можно опубликовать свой вариант рядом.</p>
       ${pubUrl ? `<div class="row"><code id="puburl" class="linkbox">${esc(pubUrl)}</code><button class="btn sm" data-act="copypub">Скопировать ссылку</button></div>` : ''}
-      <div class="tbl"><table><thead><tr><th>Сценарий</th>${anyAuthor ? '<th>Автор</th>' : ''}<th>Когда</th><th class="r">Вносит инвестор</th><th>Окупаемость</th><th class="r">Прибыль 2028</th><th></th></tr></thead><tbody>` +
-        (remote.items.length ? remote.items.map(x => `<tr><td>${esc(x.name)}</td>${anyAuthor ? `<td>${hasAuthor(x) ? esc(x.author) : ''}</td>` : ''}<td class="calc">${esc(new Date(x.created).toLocaleString('ru-RU', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }))}</td><td class="r">${mln(x.invest || 0)}</td><td>${pbT(x)}</td><td class="r">${mln(x.profit28 || 0)}</td><td style="white-space:nowrap"><button class="btn sm" data-act="open:web:${esc(x.id)}">Открыть</button>${remote.canHide && adm ? ` <button class="btn sm" data-act="webdel:${esc(x.id)}">Убрать</button>` : ''}</td></tr>`).join('') : `<tr><td colspan="${anyAuthor ? 7 : 6}" class="calc">Пока никто ничего не опубликовал. Будьте первым.</td></tr>`) + `</tbody></table></div>
+      <div class="tbl"><table><thead><tr><th>Сценарий</th>${anyAuthor ? '<th>Автор</th>' : ''}<th>Когда</th><th class="r">Вносит инвестор</th><th>Окупаемость</th><th></th></tr></thead><tbody>` +
+        (remote.items.length ? remote.items.map(x => `<tr><td>${esc(x.name)}</td>${anyAuthor ? `<td>${hasAuthor(x) ? esc(x.author) : ''}</td>` : ''}<td class="calc">${esc(new Date(x.created).toLocaleString('ru-RU', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }))}</td><td class="r">${mln(x.invest || 0)}</td><td>${pbT(x)}</td><td style="white-space:nowrap"><button class="btn sm" data-act="open:web:${esc(x.id)}">Открыть</button>${remote.canHide && adm ? ` <button class="btn sm" data-act="webdel:${esc(x.id)}">Убрать</button>` : ''}</td></tr>`).join('') : `<tr><td colspan="${anyAuthor ? 6 : 5}" class="calc">Пока никто ничего не опубликовал. Будьте первым.</td></tr>`) + `</tbody></table></div>
       ${remote.canHide ? `<div class="row"><input id="admcode" type="password" autocomplete="off" placeholder="Код владельца — чтобы убирать сценарии" style="max-width:320px;flex:1" value="${esc(adm)}" aria-label="Код владельца"><button class="btn sm" data-act="admsave">Запомнить</button></div>` : ''}`;
       const fileBlock = (remote.on && !pub.length) ? '' : `<h3>Общие сценарии из файла — видят все, кто открыл ссылку</h3>
       <p>Лежат в файле <code>scenarios.json</code> рядом со страницей. Любой посетитель может открыть общий сценарий и играть от него; его правки остаются только у него.${sharedAt ? ' Обновлено: ' + esc(new Date(sharedAt).toLocaleString('ru-RU')) + '.' : ''}</p>
@@ -1741,15 +1843,15 @@ svg.chart{display:block;width:100%;min-width:640px;height:auto} svg.chart text{f
     return RULES;
   }
   const RULES = `<div class="rules">
-    <div><h3>Цель</h3><p>Вы строите завод АРКТИКА и ведёте его 26 месяцев. Задача — чтобы проект вернул вложенное до декабря 2028, а инвестор внёс как можно меньше. Табло наверху всегда показывает оба числа.</p></div>
+    <div><h3>Цель</h3><p>Вы строите завод АРКТИКА и ведёте его 5 лет — 60 месяцев, с ноября 2026 по октябрь 2031. Задача — чтобы проект вернул вложенное, а инвестор внёс как можно меньше. Табло наверху показывает оба числа и на каком месяце проект окупается.</p></div>
     <div><h3>Как играть</h3><ol><li>Посмотрите на ленту: когда уходят деньги, когда кончается запас, когда начинаются продажи.</li><li>Сделайте ход: поменяйте цифру во вкладке или перетащите элемент на ленте.</li><li>Табло покажет, что стало с бюджетом и окупаемостью. Ход записан в журнал.</li><li>Не понравилось — «Отменить ход». Понравилось — «Сохранить сценарий» под именем.</li><li>Вкладка «Рычаги» подсказывает, какой ход сейчас даёт больше всего; значение рычага можно вписать своё.</li></ol></div>
-    <div><h3>Что можно менять</h3><ul><li><b>Резюме</b> — на что идут деньги инвестора (вложения и расходы до самоокупаемости) и главные показатели сценария.</li><li><b>Люди</b> — добавить, убрать, сдвинуть выход, изменить оклад.</li><li><b>Вложения</b> — добавить или убрать строку, поменять сумму, дату и резерв.</li><li><b>Установки</b> — типы ТИП-А30 и ТИП-Б130: сколько на старте и партии докупки. Пилотные, которые собираете сами: штуки и литры здесь, стоимость — детальными строками во «Вложениях».</li><li><b>Продажи</b> — план в литрах, доли и цены трёх бутылок, разгон.</li><li><b>Тара</b> — ПЭТ или стекло; цена бутылки или преформы, крышки, этикетки, плёнки и лотка; вес, размеры и упаковка.</li><li><b>Склад и паллеты</b> — партии и сроки заказа материалов, тип паллеты.</li><li><b>Расходы и налоги</b> — аренда, маркетинг, подушка, возврат инвестору.</li></ul></div>
+    <div><h3>Что можно менять</h3><ul><li><b>Резюме</b> — на что идут деньги инвестора (вложения и расходы до самоокупаемости), итоги по годам и главные показатели сценария.</li><li><b>Люди</b> — добавить, убрать, сдвинуть выход, изменить оклад.</li><li><b>Вложения</b> — добавить или убрать строку, поменять сумму, дату и резерв.</li><li><b>Установки</b> — типы ТИП-А30 и ТИП-Б130: сколько на старте и партии докупки. Пилотные, которые собираете сами: штуки и литры здесь, стоимость — детальными строками во «Вложениях».</li><li><b>Продажи</b> — план в литрах, доли и цены трёх бутылок, разгон.</li><li><b>Тара</b> — ПЭТ или стекло; цена бутылки или преформы, крышки, этикетки, плёнки и лотка; вес, размеры и упаковка.</li><li><b>Склад и паллеты</b> — партии и сроки заказа материалов, тип паллеты.</li><li><b>Расходы и налоги</b> — аренда, маркетинг, подушка, возврат инвестору.</li></ul></div>
     <div><h3>Дорожки ленты</h3><ul><li><b>Деньги на счёте</b> — остаток по дням. Треугольник сверху — взнос инвестора, число рядом — млн ₽.</li><li><b>Крупные платежи</b> — оранжевые столбики с кружком: оборудование; бирюзовые: партии материалов. Высота — размер платежа.</li><li><b>Готовая вода</b> — бутылок на складе: разлито минус продано.</li><li><b>Крышки, преформы или стеклянные бутылки, этикетки, паллеты, стрейч-плёнка</b> — «пила»: партия пришла — вверх, розлив — вниз. Пунктир — оплачено, но ещё в пути.</li><li><b>Очистка воды</b> — литров в сутки со всех установок обоих типов.</li><li><b>Люди</b> — кто и с какого по какой месяц работает.</li></ul></div>
     <div><h3>Как считаются деньги</h3><ul><li>Инвестор вносит 1-го числа ровно столько, чтобы в конце месяца на счёте остался неснижаемый остаток.</li><li>Зарплата и взносы — 10-го и 25-го. Аренда — 1-го. Партии материалов — 15-го. Налоги — 28-го.</li><li>Выручка приходит равномерно по дням; часть — в следующем месяце (отсрочка покупателям).</li><li>Материалы попадают в расходы, когда воду разлили, а деньги уходят, когда оплатили партию.</li><li>«Резерв» у строки вложений добавляет к ней процент на непредвиденное; платится в том же месяце.</li><li>Окупаемость — месяц, когда накопленный денежный поток без денег инвестора стал неотрицательным.</li></ul></div>
     <div><h3>Производство и продажи</h3><ul><li>Мощность = сумма по типам (штук × литров в сутки) × коэффициент использования × дни.</li><li>Завод разливает столько, сколько нужно по плану продаж плюс целевой запас, но не больше мощности воды и линии.</li><li>Продано = меньшее из плана и того, что есть на складе с учётом розлива.</li><li>Докупили установки, но не подняли план продаж — мощность простаивает, деньги потрачены зря.</li></ul></div>
     <div><h3>Паллеты</h3><ul><li>Бутылок на паллете = упаковок в слое × штук в упаковке × слоёв.</li><li>Упаковок в слое — сколько прямоугольников упаковки встаёт рядами на 1200 × 800 или 1200 × 1000.</li><li>Слоёв — сколько проходит и по высоте груза, и по весу.</li><li>Паллеты и стрейч-плёнка расходуются на каждую разлитую паллету и покупаются партиями, как крышки.</li></ul></div>
     <div><h3>Тревоги</h3><ul><li><b>Материал закончился</b> — заказ сделан поздно или партия мала.</li><li><b>Кассовый разрыв</b> — в середине месяца на счёте минус, хотя в конце плюс. Увеличьте неснижаемый остаток.</li><li><b>Линия не успевает</b> — нужна вторая смена.</li><li><b>План выше производства</b> — не хватает воды или линии.</li><li><b>Лимиты УСН</b> — доход за год вышел за порог, налоги будут выше.</li></ul></div>
-    <div><h3>Excel и допущения</h3><ul><li>«Скачать Excel» выгружает текущий сценарий: «Кейс» с формулами, «Персонал», «Вложения», «Установки» (типы и партии), «Продажи», подневные остатки, журнал и справку. Итоги в файле и на экране совпадают.</li><li>Обратно из Excel сценарий не загружается — правьте здесь, выгружайте заново.</li><li>Оклады по ролям, размеры бутылок, цены паллет и стрейч-плёнки — оценки; пресс-формы бутылок и транспорт крышек стоят нулями.</li><li>Амортизации нет: игра считает деньги, а не бухгалтерскую прибыль.</li></ul></div></div>`;
+    <div><h3>Excel и допущения</h3><ul><li>«Скачать Excel» выгружает текущий сценарий: «Кейс» с формулами, «Персонал», «Вложения», «Установки» (типы и партии), «Продажи», «Графики» с диаграммами окупаемости, подневные остатки, журнал и справку. Итоги в файле и на экране совпадают.</li><li>Обратно из Excel сценарий не загружается — правьте здесь, выгружайте заново.</li><li>Оклады по ролям, размеры бутылок, цены паллет и стрейч-плёнки — оценки; пресс-формы бутылок и транспорт крышек стоят нулями.</li><li>Амортизации нет: игра считает деньги, а не бухгалтерскую прибыль.</li></ul></div></div>`;
 
   const GROUPS = [['prod', 'Производство', ['capex', 'units', 'people']], ['tara', 'Тара', ['bottle', 'stock']], ['sales', 'Продажи', ['sales']], ['fin', 'Ежем. расходы и др.', ['costs', 'money']], ['total', 'Итог', ['summary', 'charts', 'levers']], ['model', 'Моделирование', ['scn', 'journal', 'rules']]];
   const TABN = {}; TABS.forEach(a => { TABN[a[0]] = a[1]; }); const grpOf = t => GROUPS.find(g => g[2].includes(t)) || GROUPS[0];
@@ -1824,9 +1926,11 @@ svg.chart{display:block;width:100%;min-width:640px;height:auto} svg.chart text{f
     if (!window.ExcelJS) { toast('Не загрузилась библиотека Excel. Проверьте интернет и обновите страницу.'); return; }
     const btn = $('b-xlsx'); btn.disabled = true;
     try {
-      const sd = summaryData(), b = window.Xls.build(window.ExcelJS, st.s, res, st.journal.slice().reverse(), { kpi: sd.kpi, inv: sd.inv }), buf = await b.wb.xlsx.writeBuffer();
+      const sd = summaryData(), b = window.Xls.build(window.ExcelJS, st.s, res, st.journal.slice().reverse(), { kpi: sd.kpi, inv: sd.inv, years: sd.years });
+      let buf = await b.wb.xlsx.writeBuffer(), noCharts = true;
+      if (window.JSZip) { const o = await window.Xls.addCharts(window.JSZip, buf, b.charts); buf = o.buf; noCharts = !o.charts; }
       const fname = 'АРКТИКА_' + st.s.name.replace(/[^0-9A-Za-zА-Яа-яЁё-]+/g, '_') + '.xlsx', blob = new Blob([buf], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
-      if (await saveFile(fname, blob)) toast('Файл Excel сохранён');
+      if (await saveFile(fname, blob)) toast(noCharts ? 'Файл Excel сохранён, но без диаграмм: не загрузилась библиотека. Обновите страницу и выгрузите ещё раз.' : 'Файл Excel сохранён');
     } catch (err) { toast(err && err.code === 'declined' ? 'Сохранение отменено' : 'Не удалось сохранить файл' + (err && err.code ? ': ' + err.code : '')); }
     finally { btn.disabled = false; }
   }

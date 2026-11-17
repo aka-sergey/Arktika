@@ -1,6 +1,6 @@
 /* ===== РАСЧЁТНОЕ ЯДРО: сценарий -> помесячный расчёт (как в Excel) + подневная раскладка ===== */
 (function (g) {
-  const N = 26, Y0 = 2026, M0 = 10;
+  const N = 60, Y0 = 2026, M0 = 10; // горизонт расчёта — 5 лет: ноя 2026 — окт 2031
   const MON = ['янв', 'фев', 'мар', 'апр', 'май', 'июн', 'июл', 'авг', 'сен', 'окт', 'ноя', 'дек'];
   const MONTHS = [];
   { let d0 = 0;
@@ -16,7 +16,7 @@
 
   function defaults() {
     return {
-      name: 'База',
+      name: 'База', h: N, // h — горизонт, на котором сценарий создан (старые, на 26 месяцев, переводятся при открытии)
       p: {
         k_use: 0.95, days: 30, lead: 2,
         bph: 1000, hours: 8, shifts: 1, wdays: 21, eff: 0.85,
@@ -26,7 +26,7 @@
         waste: 0.02, energy: 9, logist: 0.08, returns: 0.005, mkt_pct: 0.03, mkt_launch: 1500000, mkt_start: 2, mkt_n: 3,
         pilots: 120000, pilots_m: 4,
         tax_k: 1.13, rent: 350000, rent_start: 1, maint: 250000, maint_start: 3, other: 133000,
-        idx_m: 15, cost_idx: 0.08, price_idx: 0.05, contingency: 0.10,
+        idx_m: 15, idx_rep: 0, cost_idx: 0.08, price_idx: 0.05, contingency: 0.10,
         vat_thr: 20000000, vat_rate: 0.05, usn_rate: 0.05, usn_min: 0.01, vat7_thr: 250000000, usn_lim: 450000000,
         reserve_m: 1, payout_on: 0, payout_keep: 3,
         pal_w: 800, pal_h: 1600, pal_kg: 1000, d03: 60, h03: 170, pk03: 12, d05: 65, h05: 215, pk05: 12, d10: 82, h10: 270, pk10: 6,
@@ -123,7 +123,9 @@
     });
   }
 
-  const IRR_M = 60; // горизонт IRR, месяцев
+  /* индексация: с месяца idx_m цены и затраты растут на заданный процент; idx_rep = 1 — так же каждый следующий год */
+  const idxN = (p, i) => i < p.idx_m ? 0 : (+p.idx_rep ? 1 + Math.floor((i - p.idx_m) / 12) : 1);
+  const idxC = (p, i) => Math.pow(1 + p.cost_idx, idxN(p, i)), idxP = (p, i) => Math.pow(1 + p.price_idx, idxN(p, i));
   function irrOf(f) { // месячная ставка, при которой приведённая сумма потоков равна нулю; null — если такой нет
     const npv = r => { let s = 0, q = 1; for (let i = 0; i < f.length; i++) { q *= 1 + r; s += f[i] / q; } return s; };
     let lo = -0.9, hi = 1; if (!(npv(lo) > 0 && npv(hi) < 0)) return null;
@@ -138,7 +140,7 @@
       'capex_sched', 'new_pay', 'contingency', 'capex', 'wc_pay', 'wc_use', 'wc', 'wc_cum', 'cf', 'cum_cf', 'contrib', 'reserve', 'fixed', 'need', 'payout', 'cash', 'inv_cum', 'headcount'];
     const m = {}; keys.forEach(k => m[k] = Z());
     const yr = i => MONTHS[i - 1].y;
-    const idxc = i => i >= p.idx_m ? 1 + p.cost_idx : 1, idxp = i => i >= p.idx_m ? 1 + p.price_idx : 1;
+    const idxc = i => idxC(p, i), idxp = i => idxP(p, i);
     const lineCapB = p.bph * p.hours * p.shifts * p.wdays * p.eff, lineCapL = bpl ? lineCapB / bpl : 0;
     const plan = s.plan.slice().sort((a, b) => a.month - b.month);
     const UT = {}; s.utypes.forEach(t => { UT[t.id] = t; });
@@ -266,17 +268,19 @@
     const sum = a => a.reduce((x, y) => x + y, 0), sumY = (a, y) => a.reduce((x, v, k) => x + (MONTHS[k].y === y ? v : 0), 0);
     let minCash = Infinity, minCashDay = 0; for (let x = 0; x < DAYS; x++) if (d.cash[x] < minCash) { minCash = d.cash[x]; minCashDay = x; }
     const invest = sum(m.need) + sum(m.contrib);
-    // IRR проекта за 5 лет: 26 месяцев по модели, дальше — средний поток последних 12 месяцев
-    const flows = m.cf.slice(); for (let q = N; q < IRR_M; q++) flows.push(avg12);
-    const irrM = irrOf(flows), ebitda27 = sumY(m.ebitda, 2027), ebitda28 = sumY(m.ebitda, 2028), revN28 = sumY(m.rev_net, 2028);
+    // IRR проекта за 5 лет — по денежному потоку всех 60 месяцев модели
+    const irrM = irrOf(m.cf);
+    const years = []; MONTHS.forEach((mm, q) => { let y = years[years.length - 1]; if (!y || y.y !== mm.y) { y = { y: mm.y, n: 0, rev: 0, ebitda: 0, profit: 0, cf: 0, rec: 0 }; years.push(y); }
+      y.n++; y.rev += m.rev_net[q]; y.ebitda += m.ebitda[q]; y.profit += m.profit[q]; y.cf += m.cf[q]; y.rec += m.receipts[q]; });
+    years.forEach(y => { y.ebm = y.rev > 0 ? y.ebitda / y.rev : 0; });
+    const revTotal = sum(m.rev_net), ebitdaTotal = sum(m.ebitda);
     const k = {
       invest, peak: -Math.min(0, Math.min.apply(null, m.cum_cf)), ebitdaM, paybackM, paybackEst, minCash, minCashDay,
-      irr: irrM === null ? null : Math.pow(1 + irrM, 12) - 1, irrM, avg12, ebitda27, ebitda28, ebm28: revN28 > 0 ? ebitda28 / revN28 : 0,
+      irr: irrM === null ? null : Math.pow(1 + irrM, 12) - 1, irrM, avg12, years, revTotal, ebitdaTotal, profitTotal: sum(m.profit), ebm: revTotal > 0 ? ebitdaTotal / revTotal : 0,
       lastInvM: (() => { let r = 0; for (let q = 0; q < N; q++) if (m.need[q] + m.contrib[q] > 0) r = q + 1; return r; })(),
-      rev27: sumY(m.rev_net, 2027), rev28: sumY(m.rev_net, 2028), profit27: sumY(m.profit, 2027), profit28: sumY(m.profit, 2028),
       cumEnd: m.cum_cf[N - 1], cashEnd: m.cash[N - 1], payout: sum(m.payout), maxUtil: Math.max.apply(null, m.line_util), wcMax: Math.max.apply(null, m.wc_cum),
       opexTotal: sum(m.opex), capexTotal: sum(m.capex), fotTotal: sum(m.staff), headMax: Math.max.apply(null, m.headcount),
-      lostL: sum(m.lost_l), rec27: recYear[2027] || 0, rec28: recYear[2028] || 0, sharesOk: Math.abs(p.sh03 + p.sh05 + p.sh10 - 1) < 1e-4,
+      lostL: sum(m.lost_l), sharesOk: Math.abs(p.sh03 + p.sh05 + p.sh10 - 1) < 1e-4,
       cost: pr, lineCapB
     };
     const al = [];
@@ -286,7 +290,7 @@
     { const q = firstIdx(z => m.lost_l[z] > 1 && z + 1 > p.start_m); if (q) al.push({ lvl: 'warn', day: dayOf(q, 1), text: 'С ' + MONTHS[q - 1].label + ' план продаж выше производства — недопродано ' + Math.round(k.lostL).toLocaleString('ru-RU') + ' л за период' }); }
     { const q = firstIdx(z => m.fg_l[z] > 2 * Math.max(1, m.plan_l[z]) && m.plan_l[z] > 0); if (q) al.push({ lvl: 'warn', day: dayOf(q, 1), text: 'Склад готовой воды больше двух месяцев продаж с ' + MONTHS[q - 1].label }); }
     if (minCash < -1) al.push({ lvl: 'warn', day: minCashDay, text: 'Кассовый разрыв внутри месяца: ' + dateOf(minCashDay).text + ' на счёте ' + Math.round(minCash / 1000).toLocaleString('ru-RU') + ' тыс. ₽ — увеличьте неснижаемый остаток' });
-    const recMax = Math.max(k.rec27, k.rec28);
+    const recMax = Math.max.apply(null, years.map(y => y.rec));
     if (recMax > p.usn_lim) al.push({ lvl: 'err', day: 0, text: 'Доход за год выше лимита УСН — налоги в расчёте занижены' });
     else if (recMax > p.vat7_thr) al.push({ lvl: 'warn', day: 0, text: 'Доход за год выше порога — НДС будет 7 %, поменяйте ставку' });
     s.capex.forEach(c => { if (!(c.month >= 1 && c.month <= N)) al.push({ lvl: 'err', day: 0, text: 'Вложение «' + c.name + '»: месяц оплаты вне периода' }); });
@@ -307,5 +311,5 @@
     const rec = sumT(m.receipts), pay = sumT(m.payout), cash = m.cash[T - 1], opx = tara + fot + oth - rec;
     return { T, cap, capT, np, tara, fot, oth, rec, opx, cash, pay, capAfter: all(m.capex) - capT, check: capT + opx + cash + pay - k.invest };
   }
-  g.Sim = { investSplit, CAP_MAIN, N, MONTHS, DAYS, MON, dayOf, dateOf, defaults, sim, prices, pallet, PACK, id, matOn, tara, irrOf, IRR_M };
+  g.Sim = { investSplit, CAP_MAIN, N, MONTHS, DAYS, MON, dayOf, dateOf, defaults, sim, prices, pallet, PACK, id, matOn, tara, irrOf, idxC, idxP };
 })(typeof window !== 'undefined' ? window : globalThis);

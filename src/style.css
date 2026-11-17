@@ -245,6 +245,7 @@ tr.cat td{background:var(--sunken);font-weight:600;font-size:12.5px;border-botto
 details.alld{border:1px solid var(--line);border-radius:6px;padding:0 12px} details.alld summary{cursor:pointer;padding:10px 0;font-family:var(--mono);font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)} details.alld[open] summary{border-bottom:1px solid var(--line);margin-bottom:6px}
 table.invt td small{display:block;font-weight:400;color:var(--muted);font-size:12px;margin-top:1px}
 table.invt tr.l0 td{font-weight:700;background:var(--sunken);font-size:15px} table.invt tr.l1 td{font-weight:600;border-top:1px solid var(--field-line)} table.invt tr.l2 td:first-child{padding-left:30px} table.invt tr.l2 td{color:var(--ink)}
+table.yrt{max-width:1040px} table.yrt td.r{font-family:var(--mono);white-space:nowrap} table.yrt td small{color:var(--brand);font-weight:600;margin-left:6px} table.yrt tr.pb td{background:var(--sunken)}
 table.invt td.r,table.kpit td.r{font-family:var(--mono);white-space:nowrap} table.kpit{max-width:860px} table.invt{max-width:1040px}
 @media(max-width:640px){table.invt th:nth-child(3),table.invt td:nth-child(3){display:none} table.invt tr.l2 td:first-child{padding-left:18px}}
 .tops{margin:0;padding-left:22px;display:flex;flex-direction:column;gap:6px;max-width:1000px} .tops li{padding-left:4px} .tops li span{margin-right:10px} .tops li b{white-space:nowrap;font-size:12.5px}

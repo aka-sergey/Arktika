@@ -8,6 +8,7 @@ html=f'''<title>Завод воды АРКТИКА</title>
 </style>
 {r('body.html')}
 <script src="https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.4.0/exceljs.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <script>
 {r('engine.js')}
 {r('meta.js')}

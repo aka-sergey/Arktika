@@ -25,7 +25,7 @@
     // Персонал: A должность, B группа, C оклад, D с месяца, E по месяц, F.. месяцы
     const wsS = wb.addWorksheet('Персонал', { views: [{ showGridLines: false, state: 'frozen', xSplit: 5, ySplit: 4 }] });
     put(wsS, 'A1', 'Персонал — оклады до налогов (gross) и месяцы работы', { bold: true, size: 14, color: C.pri });
-    put(wsS, 'A2', 'Жёлтое — ввод. Месяц — номер от 1 (ноя 2026) до ' + N + ' (дек 2028). Новых людей вписывайте в пустые жёлтые строки.', { kind: 'note' });
+    put(wsS, 'A2', 'Жёлтое — ввод. Месяц — номер от 1 (' + S.MONTHS[0].label + ') до ' + N + ' (' + S.MONTHS[N - 1].label + '). Новых людей вписывайте в пустые жёлтые строки.', { kind: 'note' });
     ['Должность', 'Группа', 'Оклад, ₽/мес', 'С месяца №', 'По месяц №'].forEach((t, k) => put(wsS, L(k + 1) + 4, t, { kind: 'head' }));
     put(wsS, 'A3', '№ месяца', { kind: 'note' });
     S.MONTHS.forEach(mm => { put(wsS, L(5 + mm.i) + 3, mm.i, { fmt: 'int', kind: 'note' }); put(wsS, L(5 + mm.i) + 4, mm.label, { kind: 'head', h: 'center' }); });
@@ -86,7 +86,7 @@
     const C0 = 5, col = i => L(C0 + i - 1), CF = col(1), CL = col(N);
     ws.getColumn(1).width = 2; ws.getColumn(2).width = 58; ws.getColumn(3).width = 12; ws.getColumn(4).width = 16; for (let i = 1; i <= N; i++) ws.getColumn(C0 + i - 1).width = 12;
     put(ws, 'B1', 'АРКТИКА · завод воды, Иваново — сценарий «' + s.name + '»', { bold: true, size: 16, color: C.pri });
-    put(ws, 'B2', 'Выгружено из бизнес-игры. Жёлтое — ввод, белое — формулы. Списки людей, вложений, установок и плана продаж — на соседних листах. Месяц 1 = ноябрь 2026.', { kind: 'note' });
+    put(ws, 'B2', 'Выгружено из бизнес-игры. Жёлтое — ввод, белое — формулы. Списки людей, вложений, установок и плана продаж — на соседних листах. Месяц 1 = ноябрь 2026, расчёт на ' + N + ' месяцев — по ' + S.MONTHS[N - 1].label + '.', { kind: 'note' });
     const P = {}; let r = 4;
     const param = (key, label, unit, val, fmt, hint, calc) => { put(ws, 'B' + r, label); put(ws, 'C' + r, unit, { kind: 'note', h: 'center' }); put(ws, 'D' + r, val, { fmt, kind: calc ? null : 'input' }); if (hint) put(ws, 'E' + r, hint, { kind: 'note' }); P[key] = '$D$' + r; r++; };
     Meta.groups.forEach(gr => {
@@ -140,7 +140,8 @@
     const MROW = T0, YROW = T0 + 2; r = T0 + 3;
     ws.views = [{ showGridLines: false, state: 'frozen', xSplit: 4, ySplit: 0 }]; // закреплены только столбцы A–D; строки не закрепляем — лист должен свободно листаться вниз
     const R = {}, M = c => `${c}$${MROW}`, Y = c => `${c}$${YROW}`, MR = `$${CF}$${MROW}:$${CL}$${MROW}`;
-    const idc = c => `IF(${M(c)}>=${P.idx_m},1+${P.cost_idx},1)`, idp = c => `IF(${M(c)}>=${P.idx_m},1+${P.price_idx},1)`;
+    const idn = c => `IF(${M(c)}<${P.idx_m},0,IF(${P.idx_rep}=1,1+INT((${M(c)}-${P.idx_m})/12),1))`; // сколько раз применена индексация к этому месяцу
+    const idc = c => `(1+${P.cost_idx})^${idn(c)}`, idp = c => `(1+${P.price_idx})^${idn(c)}`;
     const row = (key, label, unit, fn, fmt, kind, total) => { R[key] = r; put(ws, 'B' + r, label, { kind: kind === 'total' ? 'total' : null }); put(ws, 'C' + r, unit, { kind: kind === 'total' ? 'total' : 'note', h: 'center' });
       for (let i = 1; i <= N; i++) { const c = col(i), pc = i > 1 ? col(i - 1) : null; put(ws, c + r, fn(i, c, pc), { fmt: fmt || 'money', kind }); }
       const t = total === undefined ? 'SUM' : total; if (t) put(ws, 'D' + r, t === 'LAST' ? `=${CL}${r}` : `=${t}(${CF}${r}:${CL}${r})`, { fmt: fmt || 'money', kind: 'total' }); r++; };
@@ -220,43 +221,73 @@
     row('inv_cum', 'Внесено инвестором накопленно (факт + план)', '₽', (i, c) => `=SUM($${CF}${R.contrib}:${c}${R.contrib})+SUM($${CF}${R.need}:${c}${R.need})`, 'money', null, 'LAST');
     row('pb_flag', 'Окупились: накопленный поток впервые ≥ 0 (служебная)', '', (i, c, pc) => pc ? `=IF(AND(${X(c, 'cum_cf')}>=0,${X(pc, 'cum_cf')}<0),1,0)` : '=0', '0', null, null);
     row('eb_flag', 'EBITDA впервые > 0 (служебная)', '', (i, c, pc) => `=IF(AND(${X(c, 'ebitda')}>0,${X(c, 'rev')}>0,${pc ? X(pc, 'ebitda') + '<=0' : 'TRUE'}),1,0)`, '0', null, null);
-    // поток для IRR: 26 месяцев модели и дальше до 60-го месяца — среднее последних 12
-    r++; const IR = r, IRN = S.IRR_M; put(ws, 'B' + IR, 'Поток для IRR за 5 лет: 26 месяцев по модели, дальше — среднее последних 12 месяцев (служебная)', { kind: 'note' }); put(ws, 'C' + IR, '₽', { kind: 'note', h: 'center' });
-    for (let i = 1; i <= IRN; i++) put(ws, L(C0 + i - 1) + IR, i <= N ? `=${col(i)}${R.cf}` : `=AVERAGE($${col(N - 11)}$${R.cf}:$${CL}$${R.cf})`, { fmt: 'money' });
     r++;
     const TEND = r;
     // итоги и проверки справа от пульта
-    const rng = k => `$${CF}$${R[k]}:$${CL}$${R[k]}`, labels = `$${CF}$${T0 + 1}:$${CL}$${T0 + 1}`, years = `$${CF}$${YROW}:$${CL}$${YROW}`;
-    band(ws, 4, 'Итоги сценария', 16, 25);
+    const rng = k => `$${CF}$${R[k]}:$${CL}$${R[k]}`, labels = `$${CF}$${T0 + 1}:$${CL}$${T0 + 1}`, years = `$${CF}$${YROW}:$${CL}$${YROW}`, ENDL = S.MONTHS[N - 1].label;
+    band(ws, 4, 'Итоги сценария за ' + N + ' месяцев (' + S.MONTHS[0].label + ' — ' + ENDL + ')', 16, 25);
     const kp = [
-      ['ОБЩАЯ СУММА ВЛОЖЕНИЙ ИНВЕСТОРА, ₽', `=SUM(${rng('contrib')})+SUM(${rng('need')})`, 'money'],
-      ['Пиковая потребность в деньгах, ₽', `=-MIN(0,MIN(${rng('cum_cf')}))`, 'money'],
-      ['EBITDA в плюс с', `=IFERROR(INDEX(${labels},MATCH(1,${rng('eb_flag')},0)),"не в горизонте")`, 'txt'],
-      ['Окупаемость (накопленный поток ≥ 0)', `=IFERROR(INDEX(${labels},MATCH(1,${rng('pb_flag')},0)),"за горизонтом")`, 'txt'],
-      ['Накопленный поток на конец 2028, ₽', `=${CL}${R.cum_cf}`, 'money'],
-      ['Возвращено инвестору, ₽', `=SUM(${rng('payout')})`, 'money'],
-      ['Прибыль после налогов 2027, ₽', `=SUMIF(${years},2027,${rng('profit')})`, 'money'],
-      ['Прибыль после налогов 2028, ₽', `=SUMIF(${years},2028,${rng('profit')})`, 'money'],
-      ['Максимальная загрузка линии', `=MAX(${rng('line_util')})`, 'pct'],
-      ['Деньги на счёте на конец 2028, ₽', `=${CL}${R.cash}`, 'money'],
-      ['EBITDA за 2027, ₽', `=SUMIF(${years},2027,${rng('ebitda')})`, 'money'],
-      ['EBITDA за 2028, ₽', `=SUMIF(${years},2028,${rng('ebitda')})`, 'money'],
-      ['Маржинальность по EBITDA за 2028', `=IF(SUMIF(${years},2028,${rng('rev_net')})>0,SUMIF(${years},2028,${rng('ebitda')})/SUMIF(${years},2028,${rng('rev_net')}),0)`, 'pct1'],
-      ['IRR проекта за 5 лет, годовых', `=IFERROR((1+IRR($${CF}$${IR}:$${L(C0 + IRN - 1)}$${IR},0.02))^12-1,"нет")`, 'pct1']];
-    kp.forEach((a, k) => { put(ws, 'P' + (5 + k), a[0]); ws.mergeCells(`P${5 + k}:U${5 + k}`); put(ws, 'V' + (5 + k), a[1], { fmt: a[2], bold: true, color: C.pri, h: 'right' }); ws.mergeCells(`V${5 + k}:Y${5 + k}`); });
-    const H0 = 5 + kp.length + 1; band(ws, H0, 'Проверки — во всех строках должно быть OK', 16, 25);
-    const rec = y => `SUMIF(${years},${y},${rng('receipts')})`;
+      ['invest', 'ОБЩАЯ СУММА ВЛОЖЕНИЙ ИНВЕСТОРА, ₽', `=SUM(${rng('contrib')})+SUM(${rng('need')})`, 'money'],
+      ['peak', 'Пиковая потребность в деньгах, ₽', `=-MIN(0,MIN(${rng('cum_cf')}))`, 'money'],
+      ['eb_m', 'EBITDA в плюс с', `=IFERROR(INDEX(${labels},MATCH(1,${rng('eb_flag')},0)),"не в горизонте")`, 'txt'],
+      ['pb', 'Окупаемость (накопленный поток ≥ 0)', `=IFERROR(INDEX(${labels},MATCH(1,${rng('pb_flag')},0)),"за горизонтом")`, 'txt'],
+      ['pb_n', 'Окупаемость, на каком месяце', `=IFERROR(MATCH(1,${rng('pb_flag')},0),"за горизонтом")`, 'int'],
+      ['cum', 'Накопленный поток за ' + N + ' месяцев (на конец ' + ENDL + '), ₽', `=${CL}${R.cum_cf}`, 'money'],
+      ['payout', 'Возвращено инвестору, ₽', `=SUM(${rng('payout')})`, 'money'],
+      ['profit', 'Прибыль после налогов за ' + N + ' месяцев, ₽', `=SUM(${rng('profit')})`, 'money'],
+      ['ebitda', 'EBITDA за ' + N + ' месяцев, ₽', `=SUM(${rng('ebitda')})`, 'money'],
+      ['ebm', 'Маржинальность по EBITDA за ' + N + ' месяцев', `=IF(SUM(${rng('rev_net')})>0,SUM(${rng('ebitda')})/SUM(${rng('rev_net')}),0)`, 'pct1'],
+      ['util', 'Максимальная загрузка линии', `=MAX(${rng('line_util')})`, 'pct'],
+      ['cash', 'Деньги на счёте на конец ' + ENDL + ', ₽', `=${CL}${R.cash}`, 'money'],
+      ['irr', 'IRR проекта за 5 лет, годовых', `=IFERROR((1+IRR(${rng('cf')},0.02))^12-1,"нет")`, 'pct1']];
+    const K = {};
+    kp.forEach((a, k) => { put(ws, 'P' + (5 + k), a[1]); ws.mergeCells(`P${5 + k}:U${5 + k}`); put(ws, 'V' + (5 + k), a[2], { fmt: a[3], bold: true, color: C.pri, h: 'right' }); ws.mergeCells(`V${5 + k}:Y${5 + k}`); K[a[0]] = 'V' + (5 + k); });
+    // по годам
+    const YH = 5 + kp.length + 1, YS = []; S.MONTHS.forEach(mm => { if (YS.indexOf(mm.y) < 0) YS.push(mm.y); });
+    band(ws, YH, 'По годам', 16, 25);
+    ['Год', 'Месяцев', 'Выручка без НДС, ₽', 'EBITDA, ₽', 'Маржа EBITDA', 'Прибыль после налогов, ₽', 'Денежный поток, ₽', 'Накопленный поток, ₽'].forEach((t, k) => put(ws, L(16 + k) + (YH + 1), t, { bold: true, wrap: true, h: 'center' }));
+    ws.getRow(YH + 1).height = 40;
+    const sy = (y, k) => `SUMIF(${years},${y},${rng(k)})`;
+    YS.forEach((y, k) => { const rr = YH + 2 + k;
+      put(ws, 'P' + rr, y, { fmt: '0', bold: true }); put(ws, 'Q' + rr, `=COUNTIF(${years},${y})`, { fmt: 'int' });
+      put(ws, 'R' + rr, `=${sy(y, 'rev_net')}`, { fmt: 'money' }); put(ws, 'S' + rr, `=${sy(y, 'ebitda')}`, { fmt: 'money' }); put(ws, 'T' + rr, `=IF(R${rr}>0,S${rr}/R${rr},0)`, { fmt: 'pct1' });
+      put(ws, 'U' + rr, `=${sy(y, 'profit')}`, { fmt: 'money' }); put(ws, 'V' + rr, `=${sy(y, 'cf')}`, { fmt: 'money' }); put(ws, 'W' + rr, `=SUM($V$${YH + 2}:V${rr})`, { fmt: 'money' }); });
+    const YT = YH + 2 + YS.length;
+    put(ws, 'P' + YT, 'Итого', { kind: 'total' }); put(ws, 'Q' + YT, `=SUM(Q${YH + 2}:Q${YT - 1})`, { kind: 'total', fmt: 'int' });
+    ['R', 'S', 'U', 'V'].forEach(c => put(ws, c + YT, `=SUM(${c}${YH + 2}:${c}${YT - 1})`, { kind: 'total', fmt: 'money' })); put(ws, 'T' + YT, `=IF(R${YT}>0,S${YT}/R${YT},0)`, { kind: 'total', fmt: 'pct1' }); put(ws, 'W' + YT, `=W${YT - 1}`, { kind: 'total', fmt: 'money' });
+    const H0 = YT + 2; band(ws, H0, 'Проверки — во всех строках должно быть OK', 16, 25);
+    const recMax = `MAX(${YS.map(y => `SUMIF(${years},${y},${rng('receipts')})`).join(',')})`;
     const ch = [
       ['Доли бутылок в сумме 100 %', `=IF(ABS(${P.sh03}+${P.sh05}+${P.sh10}-1)<0.0001,"OK","ОШИБКА: сумма долей не 100 %")`],
       ['Все вложения попали в график оплат', `=IF(ABS(SUM(${rng('capex_sched')})-SUM(${V('C')}))<1,"OK","ОШИБКА: месяц оплаты пустой или вне 1–${N}")`],
       ...s.mats.map(mt => [mt.name + ': запас не уходит в минус', `=IF(MIN(${rng(mt.key + '_stock')})<-0.5,"ОШИБКА: не хватает — партия или месяц 1-го заказа","OK")`]),
       ['Линия розлива успевает', `=IF(MAX(${rng('line_util')})>1.0001,"ВНИМАНИЕ: линия не успевает","OK")`],
       ['План продаж обеспечен производством', `=IF(SUM(${rng('lost_l')})>1,"ВНИМАНИЕ: план выше производства","OK")`],
-      ['Доход за год в пределах УСН и НДС 5 %', `=IF(MAX(${rec(2027)},${rec(2028)})>${P.usn_lim},"ВНИМАНИЕ: выше лимита УСН",IF(MAX(${rec(2027)},${rec(2028)})>${P.vat7_thr},"ВНИМАНИЕ: НДС будет 7 %","OK"))`]];
+      ['Доход за год в пределах УСН и НДС 5 %', `=IF(${recMax}>${P.usn_lim},"ВНИМАНИЕ: выше лимита УСН",IF(${recMax}>${P.vat7_thr},"ВНИМАНИЕ: НДС будет 7 %","OK"))`]];
     ch.forEach((a, k) => { put(ws, 'P' + (H0 + 1 + k), a[0]); ws.mergeCells(`P${H0 + 1 + k}:U${H0 + 1 + k}`); put(ws, 'V' + (H0 + 1 + k), a[1], { bold: true, h: 'left' }); ws.mergeCells(`V${H0 + 1 + k}:Y${H0 + 1 + k}`); });
     ws.addConditionalFormatting({ ref: `V${H0 + 1}:V${H0 + ch.length}`, rules: [{ type: 'cellIs', operator: 'notEqual', formulae: ['"OK"'], priority: 1, style: { fill: { type: 'pattern', pattern: 'solid', bgColor: { argb: C.err } }, font: { color: { argb: 'FFB00020' }, bold: true } } }] });
     ws.addConditionalFormatting({ ref: `${CF}${R.need}:${CL}${R.need}`, rules: [{ type: 'cellIs', operator: 'greaterThan', formulae: [0], priority: 2, style: { fill: { type: 'pattern', pattern: 'solid', bgColor: { argb: 'FFC6E0B4' } }, font: { bold: true } } }] });
     ws.addConditionalFormatting({ ref: `${CF}${R.line_util}:${CL}${R.line_util}`, rules: [{ type: 'cellIs', operator: 'greaterThan', formulae: [1], priority: 3, style: { fill: { type: 'pattern', pattern: 'solid', bgColor: { argb: 'FFFFE699' } } } }] });
+
+    /* ---------- графики: сами диаграммы вставляются в файл после записи (addCharts), здесь — лист и описание ---------- */
+    const wsG = wb.addWorksheet('Графики', { views: [{ showGridLines: false }] });
+    put(wsG, 'A1', 'Графики сценария «' + s.name + '»', { bold: true, size: 14, color: C.pri });
+    put(wsG, 'A2', 'Диаграммы построены по листу «Кейс» и пересчитываются вместе с ним: поменяйте жёлтую ячейку — графики обновятся.', { kind: 'note' });
+    put(wsG, 'A3', 'Окупаемость:', { bold: true }); put(wsG, 'C3', `=${q('Кейс')}${K.pb}`, { bold: true, color: C.pri, h: 'left' });
+    put(wsG, 'E3', 'на месяце №', {}); put(wsG, 'G3', `=${q('Кейс')}${K.pb_n}`, { bold: true, color: C.pri, h: 'left', fmt: 'int' });
+    put(wsG, 'I3', 'Вносит инвестор, ₽:', {}); put(wsG, 'L3', `=${q('Кейс')}${K.invest}`, { bold: true, color: C.pri, h: 'left', fmt: 'money' });
+    for (let c = 1; c <= 18; c++) wsG.getColumn(c).width = 12;
+    wsG.pageSetup = { orientation: 'landscape', fitToPage: true, fitToWidth: 1, fitToHeight: 0, paperSize: 9 }; // печать: вся ширина листа на одну страницу
+    const KS = q('Кейс'), cref = k => `${KS}$${CF}$${R[k]}:$${CL}$${R[k]}`, mcats = `${KS}$${CF}$${T0 + 1}:$${CL}$${T0 + 1}`, yref = c => `${KS}$${c}$${YH + 2}:$${c}$${YT - 1}`;
+    const charts = { sheet: 'Графики', items: [
+      { title: 'Окупаемость: накопленный денежный поток без денег инвестора, млн ₽', at: [0, 4, 15, 26], cats: mcats, skip: 3,
+        bars: [{ name: 'Денежный поток за месяц', ref: cref('cf'), color: 'A9C4D4' }], lines: [{ name: 'Накопленный денежный поток', ref: cref('cum_cf'), color: '00533E' }] },
+      { title: 'Деньги на счёте и взносы инвестора, млн ₽', at: [0, 27, 15, 49], cats: mcats, skip: 3,
+        bars: [], lines: [{ name: 'Внесено инвестором накопленно', ref: cref('inv_cum'), color: 'C0392B' }, { name: 'Деньги на счёте на конец месяца', ref: cref('cash'), color: '2E75B6' }] },
+      { title: 'Выручка без НДС, операционные расходы и EBITDA по месяцам, млн ₽', at: [0, 50, 15, 72], cats: mcats, skip: 3,
+        bars: [{ name: 'EBITDA', ref: cref('ebitda'), color: 'A9D18E' }], lines: [{ name: 'Выручка без НДС', ref: cref('rev_net'), color: '00533E' }, { name: 'Операционные расходы', ref: cref('opex'), color: 'C0392B' }] },
+      { title: 'По годам: EBITDA, прибыль после налогов и денежный поток, млн ₽', at: [0, 73, 15, 95], cats: yref('P'), catNum: true, skip: 1,
+        bars: [{ name: 'EBITDA', ref: yref('S'), color: 'A9D18E' }, { name: 'Прибыль после налогов', ref: yref('U'), color: '00533E' }, { name: 'Денежный поток', ref: yref('V'), color: '2E75B6' }], lines: [] }] };
 
     /* ---------- по дням (значения) ---------- */
     if (res) {
@@ -282,9 +313,12 @@
       if (inv.length) { ['На что идут деньги инвестора', 'Сумма, ₽', 'Доля взносов'].forEach((t, k) => put(wsR, L(k + 1) + rr, t, { kind: 'head' })); const top = rr + 1;
         inv.forEach(r => { rr++; put(wsR, 'A' + rr, (r[2] === 2 ? '      ' : r[2] === 1 ? '   ' : '') + r[0], { kind: r[2] === 0 ? 'total' : null, bold: r[2] === 1 }); put(wsR, 'B' + rr, Math.round(r[1]), { fmt: 'money', h: 'right', kind: r[2] === 0 ? 'total' : null, bold: r[2] === 1 }); put(wsR, 'C' + rr, `=IF($B$${top}=0,0,B${rr}/$B$${top})`, { fmt: '0.0%', h: 'right', kind: r[2] === 0 ? 'total' : null }); if (r[3]) put(wsR, 'D' + rr, r[3], { kind: 'note' }); });
         rr += 2; }
+      if ((summary.years || []).length) { ['По годам', 'Месяцев', 'Выручка без НДС, ₽', 'EBITDA, ₽', 'Маржа EBITDA', 'Прибыль после налогов, ₽', 'Денежный поток, ₽', 'Накопленный поток, ₽'].forEach((t, k) => put(wsR, L(k + 1) + rr, t, { kind: 'head', wrap: true })); wsR.getRow(rr).height = 30;
+        summary.years.forEach(y => { rr++; put(wsR, 'A' + rr, y[0], { fmt: '0', bold: true, h: 'left' }); put(wsR, 'B' + rr, y[1], { fmt: 'int', h: 'right' }); [2, 3, 5, 6, 7].forEach(q => put(wsR, L(q + 1) + rr, Math.round(y[q]), { fmt: 'money', h: 'right' })); put(wsR, 'E' + rr, y[4], { fmt: '0.0%', h: 'right' }); });
+        rr += 2; }
       ['Показатель', 'Значение'].forEach((t, k) => put(wsR, L(k + 1) + rr, t, { kind: 'head' }));
       summary.kpi.forEach(r => { rr++; const pct = r[2] === 'pct', v = r[1] === null ? 'нет' : (typeof r[1] === 'number' && !pct) ? Math.round(r[1]) : r[1]; put(wsR, 'A' + rr, r[0]); put(wsR, 'B' + rr, v, { fmt: pct ? '0.0%' : 'money', h: 'right', bold: true }); });
-      wsR.getColumn(1).width = 74; wsR.getColumn(2).width = 22; wsR.getColumn(3).width = 16; wsR.getColumn(4).width = 80;
+      wsR.getColumn(1).width = 74; wsR.getColumn(2).width = 22; [3, 4, 5, 6, 7, 8].forEach(q => { wsR.getColumn(q).width = 20; });
     }
     /* ---------- журнал и справка ---------- */
     const wsJ = wb.addWorksheet('Журнал', { views: [{ showGridLines: false }] });
@@ -296,15 +330,15 @@
     put(wsH, 'A1', 'Как читать этот файл', { bold: true, size: 14, color: C.pri });
     (g.DOC_XLSX || []).forEach((t, k) => { put(wsH, 'A' + (3 + k), t, { wrap: true, bold: /^[А-ЯЁ0-9 «»—,.]+$/.test(t) && t.length < 60 }); });
     wsH.getColumn(1).width = 130;
-    return { wb, R, P, T0, TEND, lists: { s0, s1, sT, c0, c1, u0, u1, q0, q1, t0, t1 } };
+    return { wb, charts, R, P, K, T0, TEND, years: { rows: YS.map((y, k) => ({ y, row: YH + 2 + k })), total: YT }, checks: { r0: H0 + 1, n: ch.length }, lists: { s0, s1, sT, c0, c1, u0, u1, q0, q1, t0, t1 } };
   }
   g.DOC_XLSX = [
     'ЧТО ЭТО', 'Файл выгружен из бизнес-игры «АРКТИКА». Расчёт в игре и формулы здесь — одни и те же правила, итоги совпадают.',
-    'ЛИСТЫ', '«Кейс» — параметры (сверху) и расчёт по месяцам (ниже). Справа от параметров — итоги и проверки.',
+    'ЛИСТЫ', '«Кейс» — параметры (сверху) и расчёт по месяцам на 5 лет (ниже). Справа от параметров — итоги, таблица по годам и проверки.',
     '«Персонал» — список людей: оклад, с какого и по какой месяц работает. «Кейс» берёт отсюда сумму окладов за месяц.',
     '«Вложения» — список покупок и платежей: сумма, месяц, начислять ли резерв 10 % на непредвиденное.', '«Установки» — два типа установок (ТИП-А30 и ТИП-Б130): литры, цена, сколько на старте; ниже — партии докупки по типам.',
-    '«Продажи» — план продаж в литрах в месяц; каждая строка задаёт новый уровень с указанного месяца.',
-    '«По дням» — подневные остатки денег и склада (значения, не формулы). «Журнал» — что и когда меняли в игре.', '«Резюме» — на что идут деньги инвестора и главные показатели сценария (значения на момент выгрузки).',
+    '«Продажи» — план продаж в литрах в месяц; каждая строка задаёт новый уровень с указанного месяца.', '«Графики» — диаграммы по листу «Кейс»: окупаемость (накопленный денежный поток), деньги на счёте и взносы инвестора, выручка — расходы — EBITDA, итоги по годам.',
+    '«По дням» — подневные остатки денег и склада (значения, не формулы). «Журнал» — что и когда меняли в игре.', '«Резюме» — на что идут деньги инвестора, итоги по годам и главные показатели сценария (значения на момент выгрузки).',
     'ЦВЕТА', 'Жёлтое — ввод. Белое — формулы. Зелёное — итоги. Любую белую ячейку в таблице по месяцам можно перебить фактом.',
     'ГЛАВНЫЕ СТРОКИ', '«Инвестор вносит в этом месяце — план»: сколько внести, чтобы на счёте остался неснижаемый остаток. Столбец «Итого» — общая сумма.',
     '«Накопленный денежный поток (без денег инвестора)»: сколько проект заработал или потратил с первого дня. Стал ≥ 0 — проект окупился.',
@@ -313,5 +347,54 @@
     'УПРОЩЕНИЯ', 'Материалы списываются в расходы при розливе, деньги за них уходят при оплате партии. Амортизации нет — считаем деньги.',
     'Взносы на зарплату — одним коэффициентом. НДС 5 % после 20 млн ₽ поступлений с начала года. УСН 5 % от прибыли месяца, минимум 1 % поступлений.'
   ];
-  g.Xls = { build };
+  /* ---------- диаграммы Excel: ExcelJS их не умеет, поэтому части файла (chart, drawing, связи) дописываются в готовый xlsx ---------- */
+  const xe = t => String(t).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+  const NSC = 'http://schemas.openxmlformats.org/drawingml/2006/chart', NSA = 'http://schemas.openxmlformats.org/drawingml/2006/main', NSR = 'http://schemas.openxmlformats.org/officeDocument/2006/relationships', XMLH = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n';
+  function chartXml(ch, n) {
+    const ax1 = 5000 + n * 10, ax2 = ax1 + 1; let idx = 0;
+    const cat = ch.catNum ? `<c:cat><c:numRef><c:f>${xe(ch.cats)}</c:f></c:numRef></c:cat>` : `<c:cat><c:strRef><c:f>${xe(ch.cats)}</c:f></c:strRef></c:cat>`;
+    const head = sr => `<c:idx val="${idx}"/><c:order val="${idx++}"/><c:tx><c:v>${xe(sr.name)}</c:v></c:tx>`, val = sr => `<c:val><c:numRef><c:f>${xe(sr.ref)}</c:f></c:numRef></c:val>`;
+    const bars = !ch.bars.length ? '' : `<c:barChart><c:barDir val="col"/><c:grouping val="clustered"/><c:varyColors val="0"/>` +
+      ch.bars.map(sr => `<c:ser>${head(sr)}<c:spPr><a:solidFill><a:srgbClr val="${sr.color}"/></a:solidFill></c:spPr><c:invertIfNegative val="0"/>${cat}${val(sr)}</c:ser>`).join('') +
+      `<c:gapWidth val="${ch.bars.length > 1 ? 80 : 40}"/><c:axId val="${ax1}"/><c:axId val="${ax2}"/></c:barChart>`;
+    const lines = !ch.lines.length ? '' : `<c:lineChart><c:grouping val="standard"/><c:varyColors val="0"/>` +
+      ch.lines.map(sr => `<c:ser>${head(sr)}<c:spPr><a:ln w="28575" cap="rnd"><a:solidFill><a:srgbClr val="${sr.color}"/></a:solidFill><a:round/></a:ln></c:spPr><c:marker><c:symbol val="none"/></c:marker>${cat}${val(sr)}<c:smooth val="0"/></c:ser>`).join('') +
+      `<c:marker val="1"/><c:axId val="${ax1}"/><c:axId val="${ax2}"/></c:lineChart>`;
+    const grey = '<c:spPr><a:ln w="6350"><a:solidFill><a:srgbClr val="D9D9D9"/></a:solidFill></a:ln></c:spPr>';
+    return XMLH + `<c:chartSpace xmlns:c="${NSC}" xmlns:a="${NSA}" xmlns:r="${NSR}"><c:roundedCorners val="0"/><c:chart>` +
+      `<c:title><c:tx><c:rich><a:bodyPr/><a:lstStyle/><a:p><a:pPr><a:defRPr sz="1200" b="1"/></a:pPr><a:r><a:rPr lang="ru-RU" sz="1200" b="1"/><a:t>${xe(ch.title)}</a:t></a:r></a:p></c:rich></c:tx><c:overlay val="0"/></c:title><c:autoTitleDeleted val="0"/>` +
+      `<c:plotArea><c:layout/>${bars}${lines}` +
+      `<c:catAx><c:axId val="${ax1}"/><c:scaling><c:orientation val="minMax"/></c:scaling><c:delete val="0"/><c:axPos val="b"/><c:numFmt formatCode="General" sourceLinked="0"/><c:majorTickMark val="none"/><c:minorTickMark val="none"/><c:tickLblPos val="low"/><c:crossAx val="${ax2}"/><c:crosses val="autoZero"/><c:auto val="1"/><c:lblAlgn val="ctr"/><c:lblOffset val="100"/><c:tickLblSkip val="${ch.skip || 1}"/><c:noMultiLvlLbl val="0"/></c:catAx>` +
+      `<c:valAx><c:axId val="${ax2}"/><c:scaling><c:orientation val="minMax"/></c:scaling><c:delete val="0"/><c:axPos val="l"/><c:majorGridlines>${grey}</c:majorGridlines><c:numFmt formatCode="#,##0.0,," sourceLinked="0"/><c:majorTickMark val="none"/><c:minorTickMark val="none"/><c:tickLblPos val="nextTo"/><c:crossAx val="${ax1}"/><c:crosses val="autoZero"/><c:crossBetween val="between"/></c:valAx>` +
+      `</c:plotArea><c:legend><c:legendPos val="b"/><c:overlay val="0"/></c:legend><c:plotVisOnly val="1"/><c:dispBlanksAs val="gap"/></c:chart></c:chartSpace>`;
+  }
+  function drawingXml(items) {
+    const NSX = 'http://schemas.openxmlformats.org/drawingml/2006/spreadsheetDrawing', pt = (t, c, r) => `<xdr:${t}><xdr:col>${c}</xdr:col><xdr:colOff>0</xdr:colOff><xdr:row>${r}</xdr:row><xdr:rowOff>0</xdr:rowOff></xdr:${t}>`;
+    return XMLH + `<xdr:wsDr xmlns:xdr="${NSX}" xmlns:a="${NSA}">` + items.map((ch, k) => `<xdr:twoCellAnchor editAs="oneCell">${pt('from', ch.at[0], ch.at[1])}${pt('to', ch.at[2], ch.at[3])}` +
+      `<xdr:graphicFrame macro=""><xdr:nvGraphicFramePr><xdr:cNvPr id="${k + 2}" name="Диаграмма ${k + 1}"/><xdr:cNvGraphicFramePr/></xdr:nvGraphicFramePr><xdr:xfrm><a:off x="0" y="0"/><a:ext cx="0" cy="0"/></xdr:xfrm>` +
+      `<a:graphic><a:graphicData uri="${NSC}"><c:chart xmlns:c="${NSC}" xmlns:r="${NSR}" r:id="rId${k + 1}"/></a:graphicData></a:graphic></xdr:graphicFrame><xdr:clientData/></xdr:twoCellAnchor>`).join('') + '</xdr:wsDr>';
+  }
+  /* buf — файл, записанный ExcelJS; возвращает новый файл с диаграммами на листе charts.sheet. Если что-то не сошлось — отдаёт исходный файл без диаграмм */
+  async function addCharts(JSZip, buf, charts, outType) {
+    const type = outType || 'uint8array';
+    try {
+      const zip = await JSZip.loadAsync(buf), RELP = 'http://schemas.openxmlformats.org/package/2006/relationships';
+      const wbx = await zip.file('xl/workbook.xml').async('string'), rels = await zip.file('xl/_rels/workbook.xml.rels').async('string');
+      const sm = new RegExp('<sheet\\b[^>]*name="' + xe(charts.sheet) + '"[^>]*>').exec(wbx); if (!sm) throw new Error('нет листа ' + charts.sheet);
+      const rid = /r:id="([^"]+)"/.exec(sm[0])[1], rel = new RegExp('<Relationship\\b[^>]*Id="' + rid + '"[^>]*>').exec(rels), target = /Target="([^"]+)"/.exec(rel[0])[1].replace(/^\/?xl\//, '').replace(/^\//, '');
+      const sheetPath = 'xl/' + target, sheetFile = sheetPath.split('/').pop(), relPath = 'xl/worksheets/_rels/' + sheetFile + '.rels';
+      let sx = await zip.file(sheetPath).async('string'); if (/<drawing\b/.test(sx) || zip.file(relPath)) throw new Error('на листе уже есть рисунки');
+      const D = 'drawing901.xml', cn = k => 'chart90' + (k + 1) + '.xml';
+      sx = sx.replace('</worksheet>', `<drawing xmlns:r="${NSR}" r:id="rId1"/></worksheet>`); zip.file(sheetPath, sx);
+      zip.file(relPath, XMLH + `<Relationships xmlns="${RELP}"><Relationship Id="rId1" Type="${NSR}/drawing" Target="../drawings/${D}"/></Relationships>`);
+      zip.file('xl/drawings/' + D, drawingXml(charts.items));
+      zip.file('xl/drawings/_rels/' + D + '.rels', XMLH + `<Relationships xmlns="${RELP}">` + charts.items.map((c, k) => `<Relationship Id="rId${k + 1}" Type="${NSR}/chart" Target="../charts/${cn(k)}"/>`).join('') + '</Relationships>');
+      charts.items.forEach((c, k) => zip.file('xl/charts/' + cn(k), chartXml(c, k + 1)));
+      let ct = await zip.file('[Content_Types].xml').async('string');
+      ct = ct.replace('</Types>', `<Override PartName="/xl/drawings/${D}" ContentType="application/vnd.openxmlformats-officedocument.drawing+xml"/>` + charts.items.map((c, k) => `<Override PartName="/xl/charts/${cn(k)}" ContentType="application/vnd.openxmlformats-officedocument.drawingml.chart+xml"/>`).join('') + '</Types>');
+      zip.file('[Content_Types].xml', ct);
+      return { buf: await zip.generateAsync({ type, compression: 'DEFLATE' }), charts: charts.items.length };
+    } catch (e) { return { buf, charts: 0, error: String(e && e.message || e) }; }
+  }
+  g.Xls = { build, addCharts };
 })(typeof window !== 'undefined' ? window : globalThis);
