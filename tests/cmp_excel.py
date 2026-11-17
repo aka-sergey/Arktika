@@ -13,5 +13,8 @@ for n,o in reg.items():
             if d>worst[1]: worst=(k+str(i+1),d)
     pal=[w[a.replace('$','')].value for a in o['pp']['bpp']]
     if pal!=o['pp']['pal']: print('   ПАЛЛЕТА НЕ СОШЛАСЬ',pal,o['pp']['pal'])
+    mm=[w[a.replace('$','')].value for a in o['pp']['m']]; kg=[w[a.replace('$','')].value for a in o['pp']['kg']]
+    if max(abs(x-y) for x,y in zip(mm,o['pp']['mEng']))>1e-6: print('   МАТЕРИАЛЫ НА БУТЫЛКУ НЕ СОШЛИСЬ',mm,o['pp']['mEng'])
+    if max(abs(x-y) for x,y in zip(kg,o['pp']['kgEng']))>1e-6: print('   ВЕС ПАЛЛЕТЫ НЕ СОШЁЛСЯ',kg,o['pp']['kgEng'])
     chk=[w[f'V{r}'].value for r in range(5,28)]
     print(f"{n:13s} ошибок формул {out.get('total_errors')} {out.get('error_summary') or ''} | строк сверено {len(o['eng'])} | макс. расхождение {worst[0]} {worst[1]:.4f} | внести {o['invest']/1e6:.2f} / Excel {chk[0]/1e6:.2f} | окуп {o['pb']} / {chk[3]} | проверки не-OK: {[c for c in chk[11:] if c not in ('OK',None)]} | паллета {pal} | тревоги игры: {len(o['alerts'])}")

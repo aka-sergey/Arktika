@@ -30,7 +30,11 @@
         vat_thr: 20000000, vat_rate: 0.05, usn_rate: 0.05, usn_min: 0.01, vat7_thr: 250000000, usn_lim: 450000000,
         reserve_m: 1, payout_on: 0, payout_keep: 3,
         pal_w: 800, pal_h: 1600, pal_kg: 1000, d03: 60, h03: 170, pk03: 12, d05: 65, h05: 215, pk05: 12, d10: 82, h10: 270, pk10: 6,
-        pallet_price: 450, stretch_per: 0.35, stretch_price: 300
+        pallet_price: 450, stretch_per: 0.35, stretch_price: 300,
+        // тара: 0 — ПЭТ (преформа + выдув), 1 — стекло (готовая бутылка). Цены и вес стекла — оценки, уточнить у поставщика
+        glass: 0, tray: 0,
+        gb03: 14, gb05: 17, gb10: 30, gw03: 220, gw05: 300, gw10: 520, gcap: 3.5,
+        gd03: 60, gh03: 170, gpk03: 12, gd05: 65, gh05: 215, gpk05: 12, gd10: 82, gh10: 270, gpk10: 6
       },
       utypes: [{ id: 'A', name: 'ТИП-А30', l: 30, price: 480000, start: 30 }, { id: 'B', name: 'ТИП-Б130', l: 130, price: 900000, start: 0 }],
       staff: [
@@ -84,30 +88,37 @@
         { key: 'pf', name: 'Преформы', unit: 'шт', moq: 60000, lead: 1, first: 3, ship: 0, arrive1: 0 },
         { key: 'label', name: 'Этикетки', unit: 'шт', moq: 60000, lead: 1, first: 3, ship: 0, arrive1: 0 },
         { key: 'pallet', name: 'Паллеты', unit: 'шт', moq: 100, lead: 1, first: 3, ship: 0, arrive1: 0 },
-        { key: 'stretch', name: 'Стрейч-плёнка', unit: 'кг', moq: 50, lead: 1, first: 3, ship: 0, arrive1: 0 }
+        { key: 'stretch', name: 'Стрейч-плёнка', unit: 'кг', moq: 50, lead: 1, first: 3, ship: 0, arrive1: 0 },
+        { key: 'gb', name: 'Бутылки стеклянные', unit: 'шт', moq: 30000, lead: 1, first: 3, ship: 0, arrive1: 0 },
+        { key: 'gcap', name: 'Крышки для стекла', unit: 'шт', moq: 60000, lead: 1, first: 3, ship: 0, arrive1: 0 }
       ],
       contrib: {}
     };
   }
 
+  const T3 = ['03', '05', '10'];
+  const matOn = (p, key) => (key === 'cap' || key === 'pf') ? !p.glass : (key === 'gb' || key === 'gcap') ? !!p.glass : true; // какие материалы расходуются при выбранной таре
+  const tara = (p, k, t) => +p[(p.glass ? 'g' : '') + k + t] || 0; // размер, высота, штук в упаковке, вес — по выбранной таре
   function prices(p) {
-    const bpl = p.sh03 / 0.3 + p.sh05 / 0.5 + p.sh10 / 1;
+    const G = p.glass ? 1 : 0, bpl = p.sh03 / 0.3 + p.sh05 / 0.5 + p.sh10 / 1;
     const cap = p.cap_usd * p.usd * (1 + p.cap_vat);
-    const pf = [p.w03, p.w05, p.w10].map(w => w / 1000 * p.pf_kg);
-    const pfAvg = bpl ? (p.sh03 / 0.3 * pf[0] + p.sh05 / 0.5 * pf[1] + p.sh10 * pf[2]) / bpl : 0;
-    const m = pf.map(x => x + cap + p.label + p.pack);
+    const pf = [p.w03, p.w05, p.w10].map(w => w / 1000 * p.pf_kg), gb = [p.gb03, p.gb05, p.gb10].map(x => +x || 0);
+    const avg = a => bpl ? (p.sh03 / 0.3 * a[0] + p.sh05 / 0.5 * a[1] + p.sh10 * a[2]) / bpl : 0;
+    const pfAvg = avg(pf), gbAvg = avg(gb), bt = G ? gb : pf, capA = G ? (+p.gcap || 0) : cap;
+    const tray = T3.map(t => { const pk = tara(p, 'pk', t); return pk > 0 ? (+p.tray || 0) / pk : 0; }); // лоток на бутылку
+    const m = bt.map((x, i) => x + capA + p.label + p.pack + tray[i]);
     const pal = pallet(p), vol = [0.3, 0.5, 1], sh = [p.sh03, p.sh05, p.sh10];
     const palPerL = pal.reduce((a, x, i) => a + (x.bottles > 0 ? sh[i] / vol[i] / x.bottles : 0), 0); // паллет на литр разлитой воды
-    return { bpl, cap, pf, pfAvg, m, pal, palPerL, mat: { cap: cap, pf: pfAvg, label: p.label, pallet: p.pallet_price, stretch: p.stretch_price } };
+    return { glass: G, bpl, cap, pf, pfAvg, gb, gbAvg, bt, capA, tray, m, pal, palPerL, mat: { cap: cap, pf: pfAvg, gb: gbAvg, gcap: +p.gcap || 0, label: p.label, pallet: p.pallet_price, stretch: p.stretch_price } };
   }
   const PACK = { 6: 3, 8: 4, 12: 4, 20: 5, 24: 6 }; // бутылок в упаковке -> бутылок в ряду
   function pallet(p) { // сколько бутылок встаёт на паллету: упаковки в слое x слоёв (по высоте и по весу)
     const L = 1200, W = p.pal_w;
-    return [['03', 0.3, p.w03], ['05', 0.5, p.w05], ['10', 1, p.w10]].map(a => {
-      const d = p['d' + a[0]], h = p['h' + a[0]], pk = p['pk' + a[0]], pc = PACK[pk] || 4, prw = pk / pc, x = pc * d, y = prw * d;
-      const packs = (x > 0 && y > 0) ? Math.max(Math.floor(L / x) * Math.floor(W / y), Math.floor(L / y) * Math.floor(W / x)) : 0, perLayer = packs * pk, kg1 = a[1] + a[2] / 1000;
+    return [['03', 0.3], ['05', 0.5], ['10', 1]].map(a => {
+      const d = tara(p, 'd', a[0]), h = tara(p, 'h', a[0]), pk = tara(p, 'pk', a[0]), wt = +p[(p.glass ? 'gw' : 'w') + a[0]] || 0, pc = PACK[pk] || 4, prw = pk / pc, x = pc * d, y = prw * d;
+      const packs = (x > 0 && y > 0) ? Math.max(Math.floor(L / x) * Math.floor(W / y), Math.floor(L / y) * Math.floor(W / x)) : 0, perLayer = packs * pk, kg1 = a[1] + wt / 1000;
       const byH = h > 0 ? Math.floor(p.pal_h / h) : 0, byKg = perLayer > 0 ? Math.floor(p.pal_kg / (perLayer * kg1)) : 0, layers = Math.max(0, Math.min(byH, byKg));
-      return { packs, perLayer, byH, byKg, layers, bottles: perLayer * layers, kg: perLayer * layers * kg1, pc, pr: prw };
+      return { packs, perLayer, byH, byKg, layers, bottles: perLayer * layers, kg: perLayer * layers * kg1, kg1, layerKg: perLayer * kg1, pc, pr: prw };
     });
   }
 
@@ -152,7 +163,8 @@
     }
     // --- 2. закупки материалов: заказ покрывает расход на `lead` месяцев вперёд, целыми партиями
     const ord = {}, stockEnd = {}, useBy = {};
-    s.mats.forEach(mt => { useBy[mt.key] = mt.key === 'pallet' ? m.pallets : mt.key === 'stretch' ? m.pallets.map(x => x * p.stretch_per) : m.use_pcs; });
+    const none = Z();
+    s.mats.forEach(mt => { useBy[mt.key] = mt.key === 'pallet' ? m.pallets : mt.key === 'stretch' ? m.pallets.map(x => x * p.stretch_per) : matOn(p, mt.key) ? m.use_pcs : none; });
     s.mats.forEach(mt => { const U = useBy[mt.key];
       const o = Z(); let sum = 0, cum = 0; const se = Z();
       for (let i = 1; i <= N; i++) {
@@ -268,5 +280,5 @@
     s.capex.forEach(c => { if (!(c.month >= 1 && c.month <= N)) al.push({ lvl: 'err', day: 0, text: 'Вложение «' + c.name + '»: месяц оплаты вне периода' }); });
     return { m, d, ev, arrivals, ord, stockEnd, useBy, cnt, k, alerts: al, prices: pr };
   }
-  g.Sim = { N, MONTHS, DAYS, MON, dayOf, dateOf, defaults, sim, prices, pallet, PACK, id };
+  g.Sim = { N, MONTHS, DAYS, MON, dayOf, dateOf, defaults, sim, prices, pallet, PACK, id, matOn, tara };
 })(typeof window !== 'undefined' ? window : globalThis);
