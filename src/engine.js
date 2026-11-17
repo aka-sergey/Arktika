@@ -292,5 +292,20 @@
     s.capex.forEach(c => { if (!(c.month >= 1 && c.month <= N)) al.push({ lvl: 'err', day: 0, text: 'Вложение «' + c.name + '»: месяц оплаты вне периода' }); });
     return { m, d, ev, arrivals, ord, stockEnd, useBy, cnt, k, alerts: al, prices: pr };
   }
-  g.Sim = { N, MONTHS, DAYS, MON, dayOf, dateOf, defaults, sim, prices, pallet, PACK, id, matOn, tara, irrOf, IRR_M };
+  /* На что ушли деньги инвестора: вложения и операционные расходы за срок, пока он вносит деньги (по месяц последнего взноса).
+     Тождество: взносы = вложения + (расходы и налоги − поступления) + остаток на счёте + возвращено инвестору. */
+  const CAP_MAIN = ['Линии розлива', 'Установки очистки', 'Ремонт', 'Вспомогательное оборудование цеха'];
+  function investSplit(s, res) {
+    const p = s.p, m = res.m, k = res.k, T = k.lastInvM; if (!T || !(k.invest > 0)) return null;
+    const sumT = a => { let v = 0; for (let i = 0; i < T; i++) v += a[i] || 0; return v; }, all = a => a.reduce((q, v) => q + v, 0);
+    const startCost = s.utypes.reduce((a, t) => a + (+t.start || 0) * (+t.price || 0), 0), amt = c => c.auto === 'units0' ? startCost * 0.5 : (+c.amount || 0);
+    const cap = {}; CAP_MAIN.concat(['Прочее']).forEach(q => { cap[q] = 0; });
+    s.capex.forEach(c => { if (c.month >= 1 && c.month <= T) cap[CAP_MAIN.indexOf(c.cat) >= 0 ? c.cat : 'Прочее'] += amt(c) * (1 + (c.reserve ? p.contingency : 0)); });
+    const np = sumT(m.new_pay) * (1 + p.contingency); cap['Установки очистки'] += np;
+    const capT = sumT(m.capex), tara = sumT(m.materials) + sumT(m.wc), fot = sumT(m.staff);
+    const oth = sumT(m.energy) + sumT(m.rent) + sumT(m.maint) + sumT(m.other) + sumT(m.mkt) + sumT(m.logist) + sumT(m.returns) + sumT(m.vat) + sumT(m.usn);
+    const rec = sumT(m.receipts), pay = sumT(m.payout), cash = m.cash[T - 1], opx = tara + fot + oth - rec;
+    return { T, cap, capT, np, tara, fot, oth, rec, opx, cash, pay, capAfter: all(m.capex) - capT, check: capT + opx + cash + pay - k.invest };
+  }
+  g.Sim = { investSplit, CAP_MAIN, N, MONTHS, DAYS, MON, dayOf, dateOf, defaults, sim, prices, pallet, PACK, id, matOn, tara, irrOf, IRR_M };
 })(typeof window !== 'undefined' ? window : globalThis);

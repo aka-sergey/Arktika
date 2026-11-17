@@ -243,6 +243,10 @@ tr.cat td{background:var(--sunken);font-weight:600;font-size:12.5px;border-botto
 .sumcards .grp{padding-bottom:10px} .sumnum{display:flex;gap:22px;padding:4px 0 8px;border-top:1px solid var(--line)} .sumnum small{display:block;font-family:var(--mono);font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-bottom:1px} .sumnum .delta{font-size:17px;font-weight:700}
 .sumcards ul{margin:0;padding-left:18px;display:flex;flex-direction:column;gap:4px;font-size:13px} .sumcards li.more{color:var(--muted);list-style:none;margin-left:-18px}
 details.alld{border:1px solid var(--line);border-radius:6px;padding:0 12px} details.alld summary{cursor:pointer;padding:10px 0;font-family:var(--mono);font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)} details.alld[open] summary{border-bottom:1px solid var(--line);margin-bottom:6px}
+table.invt td small{display:block;font-weight:400;color:var(--muted);font-size:12px;margin-top:1px}
+table.invt tr.l0 td{font-weight:700;background:var(--sunken);font-size:15px} table.invt tr.l1 td{font-weight:600;border-top:1px solid var(--field-line)} table.invt tr.l2 td:first-child{padding-left:30px} table.invt tr.l2 td{color:var(--ink)}
+table.invt td.r,table.kpit td.r{font-family:var(--mono);white-space:nowrap} table.kpit{max-width:860px} table.invt{max-width:1040px}
+@media(max-width:640px){table.invt th:nth-child(3),table.invt td:nth-child(3){display:none} table.invt tr.l2 td:first-child{padding-left:18px}}
 .tops{margin:0;padding-left:22px;display:flex;flex-direction:column;gap:6px;max-width:1000px} .tops li{padding-left:4px} .tops li span{margin-right:10px} .tops li b{white-space:nowrap;font-size:12.5px}
 @media (max-width:640px){ .tops li b{white-space:normal;display:block} }
 .panel code{font-family:var(--mono);font-size:12px;background:var(--sunken);padding:1px 5px;border-radius:3px;color:var(--ink)}
