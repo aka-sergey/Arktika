@@ -30,11 +30,11 @@
     if (!s.utypes) { s.utypes = clone(BASE_S.utypes); if (old.units0 != null) s.utypes[0].start = old.units0; if (old.l_unit) s.utypes[0].l = old.l_unit; if (old.unit_price) s.utypes[0].price = old.unit_price;
       (s.batches || []).forEach(b => { if (b.type) return; if (b.l === s.utypes[0].l) b.type = 'A'; else { b.type = 'B'; if (b.l) s.utypes[1].l = b.l; if (b.price) s.utypes[1].price = b.price; } delete b.l; delete b.price; }); }
     BASE_S.utypes.forEach(t => { if (!s.utypes.find(z => z.id === t.id)) s.utypes.push(clone(t)); });
-    s.capex.forEach(c => { if (c.cat === 'Линии') c.cat = 'Линии розлива'; }); // раздел переименован
+    { const REN = { 'Линии': 'Линии розлива', 'Оборудование': 'Вспомогательное оборудование цеха' }; s.capex.forEach(c => { if (REN[c.cat]) c.cat = REN[c.cat]; }); } // разделы переименованы
     s.batches = s.batches || []; s.p = Object.assign({}, BASE_S.p, old); ['units0', 'l_unit', 'unit_price'].forEach(k => { delete s.p[k]; });
     BASE_S.mats.forEach(mt => { const x = s.mats.find(z => z.key === mt.key); if (!x) s.mats.push(clone(mt)); else if (!x.unit) x.unit = mt.unit; });
     const big = s.capex.findIndex(c => /^Ремонт, электрика/.test(c.name) && c.amount === 9620000);
-    if (big >= 0) { const det = BASE_S.capex.filter(c => ['Ремонт', 'Оборудование', 'Техника и мебель', 'Разрешения и бренд'].includes(c.cat) || /Спецодежда|Бренд-стойки|преформы у литейщика/.test(c.name)).map(c => Object.assign(clone(c), { id: newId() })); s.capex.splice(big, 1, ...det); }
+    if (big >= 0) { const det = BASE_S.capex.filter(c => ['Ремонт', 'Вспомогательное оборудование цеха', 'Техника и мебель', 'Разрешения и бренд'].includes(c.cat) || /Спецодежда|Бренд-стойки|преформы у литейщика/.test(c.name)).map(c => Object.assign(clone(c), { id: newId() })); s.capex.splice(big, 1, ...det); }
     s.capex.forEach(c => { if (!c.cat) { const b = BASE_S.capex.find(z => z.name === c.name); c.cat = b ? b.cat : /Лини/.test(c.name) ? 'Линии розлива' : /Установк/.test(c.name) ? 'Установки очистки' : /Пресс-форма/.test(c.name) ? 'Пресс-формы' : 'Прочее'; } });
     return s;
   }
@@ -302,7 +302,7 @@
 
   /* ---------- вкладки ---------- */
   const TABS = [['summary', 'Резюме'], ['charts', 'Графики'], ['people', 'Люди'], ['capex', 'Вложения'], ['units', 'Установки и линия'], ['sales', 'Продажи и цены'], ['bottle', 'Бутылка и упаковка'], ['stock', 'Склад и паллеты'], ['costs', 'Расходы'], ['money', 'Налоги и инвестор'], ['levers', 'Рычаги'], ['scn', 'Сценарии'], ['journal', 'Журнал'], ['rules', 'Правила игры']];
-  const CATS = ['Линии розлива', 'Установки очистки', 'Ремонт', 'Оборудование', 'Пресс-формы', 'Техника и мебель', 'Разрешения и бренд', 'Прочее'];
+  const CATS = ['Линии розлива', 'Установки очистки', 'Ремонт', 'Вспомогательное оборудование цеха', 'Пресс-формы', 'Техника и мебель', 'Разрешения и бренд', 'Прочее'];
   const BT = [['03', '0,3 л', 0.3, 96], ['05', '0,5 л', 0.5, 122], ['10', '1,0 л', 1, 152]];
   /* маркер отличия от базы: точка у поля; щелчок возвращает базовое значение.
      Выключено по решению владельца: базовый сценарий — просто шаблон, отличия от него у полей не подсвечиваются */

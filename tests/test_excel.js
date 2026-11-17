@@ -10,7 +10,7 @@ const SC={
  fg: mk(s=>{s.p.fg_days=20; s.p.caution=0.8;}),
  overplan: mk(s=>{s.plan=[{id:'a',month:1,liters:60000}];}),
  line: mk(s=>{s.batches.push(B('B',40,6)); s.plan.push({id:'p2',month:6,liters:160000});}),
- staff: mk(s=>{s.staff.push({id:'e1',name:'Маркетолог',group:'office',salary:110000,from:5,to:14}); s.staff[10].to=8; s.staff.splice(3,1); s.capex.push({id:'c1',cat:'Оборудование',name:'Погрузчик',amount:1800000,month:7,day:12,reserve:true}); s.capex[s.capex.length-2].reserve=true;}),
+ staff: mk(s=>{s.staff.push({id:'e1',name:'Маркетолог',group:'office',salary:110000,from:5,to:14}); s.staff[10].to=8; s.staff.splice(3,1); s.capex.push({id:'c1',cat:'Вспомогательное оборудование цеха',name:'Погрузчик',amount:1800000,month:7,day:12,reserve:true}); s.capex[s.capex.length-2].reserve=true;}),
  payout: mk(s=>{s.p.payout_on=1; s.p.payout_keep=2; s.batches.push(B('B',10,9)); s.plan.push({id:'p2',month:9,liters:62700}); s.contrib={1:20000000,3:5000000};}),
  mats: mk(s=>{s.mats[0].lead=4; s.mats[0].ship=250000; s.mats[1].moq=100000; s.mats[2].moq=30000; s.mats[2].lead=2; s.mats[2].first=2; s.mats[3].moq=33; s.mats[4].lead=2; s.p.start_m=5; s.p.idx_m=10; s.p.defer=0.8; s.p.mkt_n=0; s.p.vat_thr=5000000;}),
  pilot: mk(s=>{const P=s.utypes.find(z=>z.id==='P'); P.start=6; P.l=45; s.utypes[0].start=12; [['Элемент теплообменного устройства',1850000,1],['Плата блока управления',420000,2],['Клапаны шаровые с электроприводом',380000,2],['Сварка',260000,3],['Медные трубы',510000,3]].forEach((r,i)=>s.capex.splice(5+i,0,{id:'pd'+i,cat:'Установки очистки',name:r[0],amount:r[1],month:r[2],day:12,reserve:i%2===0,auto:null})); s.batches.push(B('A',5,12)); s.plan.push({id:'p2',month:12,liters:24000});}),
