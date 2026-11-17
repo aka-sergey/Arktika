@@ -30,11 +30,12 @@
     if (!s.utypes) { s.utypes = clone(BASE_S.utypes); if (old.units0 != null) s.utypes[0].start = old.units0; if (old.l_unit) s.utypes[0].l = old.l_unit; if (old.unit_price) s.utypes[0].price = old.unit_price;
       (s.batches || []).forEach(b => { if (b.type) return; if (b.l === s.utypes[0].l) b.type = 'A'; else { b.type = 'B'; if (b.l) s.utypes[1].l = b.l; if (b.price) s.utypes[1].price = b.price; } delete b.l; delete b.price; }); }
     BASE_S.utypes.forEach(t => { if (!s.utypes.find(z => z.id === t.id)) s.utypes.push(clone(t)); });
+    s.capex.forEach(c => { if (c.cat === 'Линии') c.cat = 'Линии розлива'; }); // раздел переименован
     s.batches = s.batches || []; s.p = Object.assign({}, BASE_S.p, old); ['units0', 'l_unit', 'unit_price'].forEach(k => { delete s.p[k]; });
     BASE_S.mats.forEach(mt => { const x = s.mats.find(z => z.key === mt.key); if (!x) s.mats.push(clone(mt)); else if (!x.unit) x.unit = mt.unit; });
     const big = s.capex.findIndex(c => /^Ремонт, электрика/.test(c.name) && c.amount === 9620000);
     if (big >= 0) { const det = BASE_S.capex.filter(c => ['Ремонт', 'Оборудование', 'Техника и мебель', 'Разрешения и бренд'].includes(c.cat) || /Спецодежда|Бренд-стойки|преформы у литейщика/.test(c.name)).map(c => Object.assign(clone(c), { id: newId() })); s.capex.splice(big, 1, ...det); }
-    s.capex.forEach(c => { if (!c.cat) { const b = BASE_S.capex.find(z => z.name === c.name); c.cat = b ? b.cat : /Лини/.test(c.name) ? 'Линии' : /Установк/.test(c.name) ? 'Установки очистки' : /Пресс-форма/.test(c.name) ? 'Пресс-формы' : 'Прочее'; } });
+    s.capex.forEach(c => { if (!c.cat) { const b = BASE_S.capex.find(z => z.name === c.name); c.cat = b ? b.cat : /Лини/.test(c.name) ? 'Линии розлива' : /Установк/.test(c.name) ? 'Установки очистки' : /Пресс-форма/.test(c.name) ? 'Пресс-формы' : 'Прочее'; } });
     return s;
   }
   try { const o = JSON.parse(localStorage.getItem(LS) || 'null'); if (o && o.s && o.s.p && o.s.staff && o.s.capex && o.s.mats) { Object.assign(st, o); migrate(st.s); Object.keys(st.saved || {}).forEach(n => migrate(st.saved[n])); } } catch (e) { st.s = clone(BASE_S); }
@@ -301,9 +302,11 @@
 
   /* ---------- вкладки ---------- */
   const TABS = [['summary', 'Резюме'], ['charts', 'Графики'], ['people', 'Люди'], ['capex', 'Вложения'], ['units', 'Установки и линия'], ['sales', 'Продажи и цены'], ['bottle', 'Бутылка и упаковка'], ['stock', 'Склад и паллеты'], ['costs', 'Расходы'], ['money', 'Налоги и инвестор'], ['levers', 'Рычаги'], ['scn', 'Сценарии'], ['journal', 'Журнал'], ['rules', 'Правила игры']];
-  const CATS = ['Линии', 'Установки очистки', 'Ремонт', 'Оборудование', 'Пресс-формы', 'Техника и мебель', 'Разрешения и бренд', 'Прочее'];
+  const CATS = ['Линии розлива', 'Установки очистки', 'Ремонт', 'Оборудование', 'Пресс-формы', 'Техника и мебель', 'Разрешения и бренд', 'Прочее'];
   const BT = [['03', '0,3 л', 0.3, 96], ['05', '0,5 л', 0.5, 122], ['10', '1,0 л', 1, 152]];
-  /* маркер отличия от базы: точка у поля; щелчок возвращает базовое значение */
+  /* маркер отличия от базы: точка у поля; щелчок возвращает базовое значение.
+     Выключено по решению владельца: базовый сценарий — просто шаблон, отличия от него у полей не подсвечиваются */
+  const MARKS = false;
   let DIFF = null; const FIRSTF = { staff: 'name', capex: 'name', plan: 'month', batch: 'type' };
   function buildDiff() { const s = st.s, d = { staff: new Map(), capex: new Map(), plan: new Map(), removed: { staff: [], capex: [], plan: [] } };
     ['staff', 'capex', 'plan'].forEach(L => pairUp(BASE_S[L], s[L]).forEach(pr => { if (pr[1]) d[L].set(pr[1].id, pr[0] || null); else d.removed[L].push(pr[0]); })); DIFF = d; }
@@ -320,7 +323,7 @@
     if (DIFF && DIFF[kind]) { const c = s[kind].find(x => x.id === id), b = DIFF[kind].get(id); if (!c) return null; if (!b) return { added: true }; if (kind === 'capex' && field === 'amount' && c.auto) return null;
       const norm = v => field === 'reserve' ? !!v : field === 'cat' ? (v || 'Прочее') : (field === 'amount' || field === 'salary' || field === 'liters') ? (+v || 0) : field === 'day' ? (v || 10) : v; return { cur: norm(c[field]), base: norm(b[field]) }; }
     return null; }
-  function markFor(bind, f) { const a = bind.split(':'), kind = a[0], id = a[1], field = a[2], r = baseOf(kind, id, field); if (!r) return '';
+  function markFor(bind, f) { if (!MARKS) return ''; const a = bind.split(':'), kind = a[0], id = a[1], field = a[2], r = baseOf(kind, id, field); if (!r) return '';
     if (r.added) return field === FIRSTF[kind] ? dot('revadd:' + kind + ':' + id, 'Этой строки нет в базе. Щёлкните, чтобы убрать её') : '';
     if (r.cur === r.base) return '';
     const shown = kind === 'p' ? dvP(id, r.base) : field === 'type' ? tOf(BASE_S, r.base).name : field === 'reserve' ? (r.base ? 'с резервом' : 'без резерва') : field === 'cat' || field === 'name' ? r.base : disp(r.base, f);
@@ -335,7 +338,7 @@
   let focusId = '';
   const plur = (n, a, b, c3) => { const d = n % 10, h = n % 100; return d === 1 && h !== 11 ? a : d >= 2 && d <= 4 && (h < 12 || h > 14) ? b : c3; };
   const capCats = s => CATS.concat(s.capex.map(x => x.cat || 'Прочее').filter(x => !CATS.includes(x)).filter((x, i, a) => a.indexOf(x) === i));
-  const removedChip = L => (DIFF && DIFF.removed[L].length) ? `<span class="rmchip">${dot('revdel:' + L, 'Вернуть убранные строки базы: ' + DIFF.removed[L].map(b => b.name || mLabel(b.month)).join('; '))}убрано ${DIFF.removed[L].length}</span>` : '';
+  const removedChip = L => (MARKS && DIFF && DIFF.removed[L].length) ? `<span class="rmchip">${dot('revdel:' + L, 'Вернуть убранные строки базы: ' + DIFF.removed[L].map(b => b.name || mLabel(b.month)).join('; '))}убрано ${DIFF.removed[L].length}</span>` : '';
   function pIn(k) { const mt = Meta.by[k], f = mt.fmt, v = st.s.p[k];
     if (f === 'month') return monthSel('p-' + k, 'p:' + k, v);
     if (f === 'opt') return wrapM('p:' + k, f, `<select id="p-${k}" data-bind="p:${k}" data-fmt="int">${mt.opts.map(o => `<option value="${o[0]}"${o[0] === v ? ' selected' : ''}>${o[1]}</option>`).join('')}</select>`);
@@ -548,7 +551,7 @@
         `<p>Сумма, месяц и день оплаты задаются в строке; название меняется щелчком по нему. Столбики с кружком на дорожке «Крупные платежи» можно перетаскивать по месяцам. Строки с нулём — заготовки: впишите сумму, когда узнаете цену. Кнопка «⋯» в строке переносит её в другой раздел, а «шашечки» слева от названия меняют строки местами внутри раздела.</p>
         <p><b>Что такое «Резерв».</b> Галочка значит: к этой строке добавить ${show(p.contingency, 'pct')} % сверху на непредвиденное — подорожание, доставку, монтаж, курс. Строка 1 000 000 ₽ с галочкой обойдётся в ${nf0.format(1e6 * (1 + p.contingency))} ₽. Снимайте галочку там, где сумма твёрдая и удорожания не будет: депозит, договор с фиксированной ценой. Сам процент меняется во вкладке «Расходы».</p>`) +
         `<div class="tbl"><table class="cx"><thead><tr><th>Статья</th><th class="r">Сумма, ₽</th><th>Месяц оплаты</th><th class="r">День</th><th title="Добавить к строке резерв на непредвиденное">Резерв ${show(p.contingency, 'pct')} %</th><th></th></tr></thead>` +
-        used.map(cat => { const rows = rowsOf(cat), open = cxOpen.has(cat), nd = rows.reduce((a, x) => a + diffN(x), 0);
+        used.map(cat => { const rows = rowsOf(cat), open = cxOpen.has(cat), nd = MARKS ? rows.reduce((a, x) => a + diffN(x), 0) : 0;
           return `<tbody><tr class="cat" data-act="cx:${cats.indexOf(cat)}"><td><button type="button" class="catbtn" aria-expanded="${open}"><span class="chev">${open ? '▾' : '▸'}</span>${esc(cat)}</button><span class="catn">${rows.length} ${plur(rows.length, 'строка', 'строки', 'строк')}</span>${nd ? `<span class="dmc" title="Отличий от базы в разделе: ${nd}. Раскройте раздел, чтобы увидеть их и вернуть">${nd}</span>` : ''}<button type="button" class="addin" data-act="add:capex:${cats.indexOf(cat)}" title="Добавить строку в раздел «${esc(cat)}»" aria-label="Добавить строку в раздел «${esc(cat)}»">＋</button></td><td class="r">${rub(rows.reduce((a, x) => a + amt(x), 0))}</td><td colspan="4"></td></tr>` + (open ? rows.map(line).join('') : '') + '</tbody>'; }).join('') +
         `<tfoot><tr><td>Итого по списку</td><td class="r">${rub(s.capex.reduce((a, x) => a + amt(x), 0))}</td><td colspan="4">с резервом и докупкой установок: ${mln(k.capexTotal)}</td></tr></tfoot></table></div>
       ${hidAuto ? `<p class="tnote2">Скрыто ${hidAuto} ${plur(hidAuto, 'автоматическая строка', 'автоматические строки', 'автоматических строк')} «Установки очистки на старте»: установок с ценой на старте нет, платить по ним нечего. Они вернутся сами, если на вкладке «Установки и линия» поставить на старт тип с ценой.</p>` : ''}
