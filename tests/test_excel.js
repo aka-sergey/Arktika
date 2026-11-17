@@ -23,6 +23,6 @@ const SC={
    await b.wb.xlsx.writeFile(`x_${n}.xlsx`); if(!globalThis.__P) globalThis.__P={}; globalThis.__P[n]={bpp:['03','05','10'].map(t=>b.P['bpp'+t]), pal:res.prices.pal.map(x=>x.bottles), m:['03','05','10'].map(t=>b.P['m'+t]), mEng:res.prices.m, kg:['03','05','10'].map(t=>b.P['pkg'+t]), kgEng:res.prices.pal.map(x=>x.kg)};
    const m={}; for(const k of Object.keys(b.R)){ const kk=k.endsWith('_ord')?null:k; }
    const eng={}; for(const k of Object.keys(b.R)){ if(res.m[k]) eng[k]=res.m[k]; else if(k.endsWith('_ord')) eng[k]=res.ord[k.slice(0,-4)]; else if(k.endsWith('_stock')) eng[k]=res.stockEnd[k.slice(0,-6)]; else if(k==='use_pet') eng[k]=res.useBy.pf; else if(k==='use_gl') eng[k]=res.useBy.gb; }
-   out[n]={pp:globalThis.__P[n],R:b.R,eng,invest:res.k.invest,pb:res.k.paybackM,alerts:res.alerts.map(a=>a.text)}; }
+   out[n]={pp:globalThis.__P[n],R:b.R,eng,kx:[res.k.ebitda27,res.k.ebitda28,res.k.ebm28,res.k.irr],invest:res.k.invest,pb:res.k.paybackM,alerts:res.alerts.map(a=>a.text)}; }
  fs.writeFileSync('x_reg.json',JSON.stringify(out)); console.log('written',Object.keys(SC).length);
 })();

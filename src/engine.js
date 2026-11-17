@@ -122,6 +122,13 @@
     });
   }
 
+  const IRR_M = 60; // горизонт IRR, месяцев
+  function irrOf(f) { // месячная ставка, при которой приведённая сумма потоков равна нулю; null — если такой нет
+    const npv = r => { let s = 0, q = 1; for (let i = 0; i < f.length; i++) { q *= 1 + r; s += f[i] / q; } return s; };
+    let lo = -0.9, hi = 1; if (!(npv(lo) > 0 && npv(hi) < 0)) return null;
+    for (let i = 0; i < 100; i++) { const mid = (lo + hi) / 2; if (npv(mid) > 0) lo = mid; else hi = mid; }
+    return (lo + hi) / 2;
+  }
   function sim(s) {
     const p = s.p, pr = prices(p), bpl = pr.bpl;
     const Z = () => new Array(N).fill(0);
@@ -258,8 +265,12 @@
     const sum = a => a.reduce((x, y) => x + y, 0), sumY = (a, y) => a.reduce((x, v, k) => x + (MONTHS[k].y === y ? v : 0), 0);
     let minCash = Infinity, minCashDay = 0; for (let x = 0; x < DAYS; x++) if (d.cash[x] < minCash) { minCash = d.cash[x]; minCashDay = x; }
     const invest = sum(m.need) + sum(m.contrib);
+    // IRR проекта за 5 лет: 26 месяцев по модели, дальше — средний поток последних 12 месяцев
+    const flows = m.cf.slice(); for (let q = N; q < IRR_M; q++) flows.push(avg12);
+    const irrM = irrOf(flows), ebitda27 = sumY(m.ebitda, 2027), ebitda28 = sumY(m.ebitda, 2028), revN28 = sumY(m.rev_net, 2028);
     const k = {
       invest, peak: -Math.min(0, Math.min.apply(null, m.cum_cf)), ebitdaM, paybackM, paybackEst, minCash, minCashDay,
+      irr: irrM === null ? null : Math.pow(1 + irrM, 12) - 1, irrM, avg12, ebitda27, ebitda28, ebm28: revN28 > 0 ? ebitda28 / revN28 : 0,
       lastInvM: (() => { let r = 0; for (let q = 0; q < N; q++) if (m.need[q] + m.contrib[q] > 0) r = q + 1; return r; })(),
       rev27: sumY(m.rev_net, 2027), rev28: sumY(m.rev_net, 2028), profit27: sumY(m.profit, 2027), profit28: sumY(m.profit, 2028),
       cumEnd: m.cum_cf[N - 1], cashEnd: m.cash[N - 1], payout: sum(m.payout), maxUtil: Math.max.apply(null, m.line_util), wcMax: Math.max.apply(null, m.wc_cum),
@@ -280,5 +291,5 @@
     s.capex.forEach(c => { if (!(c.month >= 1 && c.month <= N)) al.push({ lvl: 'err', day: 0, text: 'Вложение «' + c.name + '»: месяц оплаты вне периода' }); });
     return { m, d, ev, arrivals, ord, stockEnd, useBy, cnt, k, alerts: al, prices: pr };
   }
-  g.Sim = { N, MONTHS, DAYS, MON, dayOf, dateOf, defaults, sim, prices, pallet, PACK, id, matOn, tara };
+  g.Sim = { N, MONTHS, DAYS, MON, dayOf, dateOf, defaults, sim, prices, pallet, PACK, id, matOn, tara, irrOf, IRR_M };
 })(typeof window !== 'undefined' ? window : globalThis);

@@ -16,5 +16,7 @@ for n,o in reg.items():
     mm=[w[a.replace('$','')].value for a in o['pp']['m']]; kg=[w[a.replace('$','')].value for a in o['pp']['kg']]
     if max(abs(x-y) for x,y in zip(mm,o['pp']['mEng']))>1e-6: print('   МАТЕРИАЛЫ НА БУТЫЛКУ НЕ СОШЛИСЬ',mm,o['pp']['mEng'])
     if max(abs(x-y) for x,y in zip(kg,o['pp']['kgEng']))>1e-6: print('   ВЕС ПАЛЛЕТЫ НЕ СОШЁЛСЯ',kg,o['pp']['kgEng'])
-    chk=[w[f'V{r}'].value for r in range(5,28)]
-    print(f"{n:13s} ошибок формул {out.get('total_errors')} {out.get('error_summary') or ''} | строк сверено {len(o['eng'])} | макс. расхождение {worst[0]} {worst[1]:.4f} | внести {o['invest']/1e6:.2f} / Excel {chk[0]/1e6:.2f} | окуп {o['pb']} / {chk[3]} | проверки не-OK: {[c for c in chk[11:] if c not in ('OK',None)]} | паллета {pal} | тревоги игры: {len(o['alerts'])}")
+    chk=[w[f'V{r}'].value for r in range(5,34)]
+    kx=o['kx']; xk=chk[10:14]; bad=[i for i in range(4) if (kx[i] is None)!=(not isinstance(xk[i],(int,float))) or (kx[i] is not None and abs(xk[i]-kx[i])>(1e-6 if i>=2 else 0.01))]
+    if bad: print('   ИТОГИ НЕ СОШЛИСЬ (EBITDA 27, 28, маржа, IRR):',xk,kx)
+    print(f"{n:13s} ошибок формул {out.get('total_errors')} {out.get('error_summary') or ''} | строк сверено {len(o['eng'])} | макс. расхождение {worst[0]} {worst[1]:.4f} | внести {o['invest']/1e6:.2f} / Excel {chk[0]/1e6:.2f} | окуп {o['pb']} / {chk[3]} | IRR {('%.1f%%'%(kx[3]*100)) if kx[3] is not None else 'нет'} / Excel {('%.1f%%'%(xk[3]*100)) if isinstance(xk[3],(int,float)) else xk[3]} | проверки не-OK: {[c for c in chk[15:] if c not in ('OK',None)]} | паллета {pal} | тревоги игры: {len(o['alerts'])}")

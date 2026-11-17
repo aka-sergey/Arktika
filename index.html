@@ -448,6 +448,13 @@ svg.chart{display:block;width:100%;min-width:640px;height:auto} svg.chart text{f
     });
   }
 
+  const IRR_M = 60; // горизонт IRR, месяцев
+  function irrOf(f) { // месячная ставка, при которой приведённая сумма потоков равна нулю; null — если такой нет
+    const npv = r => { let s = 0, q = 1; for (let i = 0; i < f.length; i++) { q *= 1 + r; s += f[i] / q; } return s; };
+    let lo = -0.9, hi = 1; if (!(npv(lo) > 0 && npv(hi) < 0)) return null;
+    for (let i = 0; i < 100; i++) { const mid = (lo + hi) / 2; if (npv(mid) > 0) lo = mid; else hi = mid; }
+    return (lo + hi) / 2;
+  }
   function sim(s) {
     const p = s.p, pr = prices(p), bpl = pr.bpl;
     const Z = () => new Array(N).fill(0);
@@ -584,8 +591,12 @@ svg.chart{display:block;width:100%;min-width:640px;height:auto} svg.chart text{f
     const sum = a => a.reduce((x, y) => x + y, 0), sumY = (a, y) => a.reduce((x, v, k) => x + (MONTHS[k].y === y ? v : 0), 0);
     let minCash = Infinity, minCashDay = 0; for (let x = 0; x < DAYS; x++) if (d.cash[x] < minCash) { minCash = d.cash[x]; minCashDay = x; }
     const invest = sum(m.need) + sum(m.contrib);
+    // IRR проекта за 5 лет: 26 месяцев по модели, дальше — средний поток последних 12 месяцев
+    const flows = m.cf.slice(); for (let q = N; q < IRR_M; q++) flows.push(avg12);
+    const irrM = irrOf(flows), ebitda27 = sumY(m.ebitda, 2027), ebitda28 = sumY(m.ebitda, 2028), revN28 = sumY(m.rev_net, 2028);
     const k = {
       invest, peak: -Math.min(0, Math.min.apply(null, m.cum_cf)), ebitdaM, paybackM, paybackEst, minCash, minCashDay,
+      irr: irrM === null ? null : Math.pow(1 + irrM, 12) - 1, irrM, avg12, ebitda27, ebitda28, ebm28: revN28 > 0 ? ebitda28 / revN28 : 0,
       lastInvM: (() => { let r = 0; for (let q = 0; q < N; q++) if (m.need[q] + m.contrib[q] > 0) r = q + 1; return r; })(),
       rev27: sumY(m.rev_net, 2027), rev28: sumY(m.rev_net, 2028), profit27: sumY(m.profit, 2027), profit28: sumY(m.profit, 2028),
       cumEnd: m.cum_cf[N - 1], cashEnd: m.cash[N - 1], payout: sum(m.payout), maxUtil: Math.max.apply(null, m.line_util), wcMax: Math.max.apply(null, m.wc_cum),
@@ -606,7 +617,7 @@ svg.chart{display:block;width:100%;min-width:640px;height:auto} svg.chart text{f
     s.capex.forEach(c => { if (!(c.month >= 1 && c.month <= N)) al.push({ lvl: 'err', day: 0, text: 'Вложение «' + c.name + '»: месяц оплаты вне периода' }); });
     return { m, d, ev, arrivals, ord, stockEnd, useBy, cnt, k, alerts: al, prices: pr };
   }
-  g.Sim = { N, MONTHS, DAYS, MON, dayOf, dateOf, defaults, sim, prices, pallet, PACK, id, matOn, tara };
+  g.Sim = { N, MONTHS, DAYS, MON, dayOf, dateOf, defaults, sim, prices, pallet, PACK, id, matOn, tara, irrOf, IRR_M };
 })(typeof window !== 'undefined' ? window : globalThis);
 
 /* ===== СПРАВОЧНИК ПАРАМЕТРОВ: подписи, единицы, формат, подсказки (общий для экрана и Excel) ===== */
@@ -935,6 +946,10 @@ svg.chart{display:block;width:100%;min-width:640px;height:auto} svg.chart text{f
     row('inv_cum', 'Внесено инвестором накопленно (факт + план)', '₽', (i, c) => `=SUM($${CF}${R.contrib}:${c}${R.contrib})+SUM($${CF}${R.need}:${c}${R.need})`, 'money', null, 'LAST');
     row('pb_flag', 'Окупились: накопленный поток впервые ≥ 0 (служебная)', '', (i, c, pc) => pc ? `=IF(AND(${X(c, 'cum_cf')}>=0,${X(pc, 'cum_cf')}<0),1,0)` : '=0', '0', null, null);
     row('eb_flag', 'EBITDA впервые > 0 (служебная)', '', (i, c, pc) => `=IF(AND(${X(c, 'ebitda')}>0,${X(c, 'rev')}>0,${pc ? X(pc, 'ebitda') + '<=0' : 'TRUE'}),1,0)`, '0', null, null);
+    // поток для IRR: 26 месяцев модели и дальше до 60-го месяца — среднее последних 12
+    r++; const IR = r, IRN = S.IRR_M; put(ws, 'B' + IR, 'Поток для IRR за 5 лет: 26 месяцев по модели, дальше — среднее последних 12 месяцев (служебная)', { kind: 'note' }); put(ws, 'C' + IR, '₽', { kind: 'note', h: 'center' });
+    for (let i = 1; i <= IRN; i++) put(ws, L(C0 + i - 1) + IR, i <= N ? `=${col(i)}${R.cf}` : `=AVERAGE($${col(N - 11)}$${R.cf}:$${CL}$${R.cf})`, { fmt: 'money' });
+    r++;
     const TEND = r;
     // итоги и проверки справа от пульта
     const rng = k => `$${CF}$${R[k]}:$${CL}$${R[k]}`, labels = `$${CF}$${T0 + 1}:$${CL}$${T0 + 1}`, years = `$${CF}$${YROW}:$${CL}$${YROW}`;
@@ -949,7 +964,11 @@ svg.chart{display:block;width:100%;min-width:640px;height:auto} svg.chart text{f
       ['Прибыль после налогов 2027, ₽', `=SUMIF(${years},2027,${rng('profit')})`, 'money'],
       ['Прибыль после налогов 2028, ₽', `=SUMIF(${years},2028,${rng('profit')})`, 'money'],
       ['Максимальная загрузка линии', `=MAX(${rng('line_util')})`, 'pct'],
-      ['Деньги на счёте на конец 2028, ₽', `=${CL}${R.cash}`, 'money']];
+      ['Деньги на счёте на конец 2028, ₽', `=${CL}${R.cash}`, 'money'],
+      ['EBITDA за 2027, ₽', `=SUMIF(${years},2027,${rng('ebitda')})`, 'money'],
+      ['EBITDA за 2028, ₽', `=SUMIF(${years},2028,${rng('ebitda')})`, 'money'],
+      ['Маржинальность по EBITDA за 2028', `=IF(SUMIF(${years},2028,${rng('rev_net')})>0,SUMIF(${years},2028,${rng('ebitda')})/SUMIF(${years},2028,${rng('rev_net')}),0)`, 'pct1'],
+      ['IRR проекта за 5 лет, годовых', `=IFERROR((1+IRR($${CF}$${IR}:$${L(C0 + IRN - 1)}$${IR},0.02))^12-1,"нет")`, 'pct1']];
     kp.forEach((a, k) => { put(ws, 'P' + (5 + k), a[0]); ws.mergeCells(`P${5 + k}:U${5 + k}`); put(ws, 'V' + (5 + k), a[1], { fmt: a[2], bold: true, color: C.pri, h: 'right' }); ws.mergeCells(`V${5 + k}:Y${5 + k}`); });
     const H0 = 5 + kp.length + 1; band(ws, H0, 'Проверки — во всех строках должно быть OK', 16, 25);
     const rec = y => `SUMIF(${years},${y},${rng('receipts')})`;
@@ -986,7 +1005,8 @@ svg.chart{display:block;width:100%;min-width:640px;height:auto} svg.chart text{f
       put(wsR, 'A1', 'Резюме сценария «' + s.name + '» — что изменено относительно базы и что это даёт', { bold: true, size: 14, color: C.pri });
       put(wsR, 'A2', 'Значения на момент выгрузки. Эффект каждой строки посчитан отдельно: что было бы, если в базовом плане поменять только её.', { kind: 'note' });
       ['Показатель', 'База', 'Этот сценарий', 'Разница'].forEach((t, k) => put(wsR, L(k + 1) + 4, t, { kind: 'head' }));
-      summary.kpi.forEach((r, k) => { const rr = 5 + k, num = typeof r[1] === 'number'; put(wsR, 'A' + rr, r[0]); put(wsR, 'B' + rr, num ? Math.round(r[1]) : r[1], { fmt: 'money', h: 'right' }); put(wsR, 'C' + rr, num ? Math.round(r[2]) : r[2], { fmt: 'money', h: 'right', bold: true }); if (num) put(wsR, 'D' + rr, `=C${rr}-B${rr}`, { fmt: '+#,##0;-#,##0;0', h: 'right' }); });
+      summary.kpi.forEach((r, k) => { const rr = 5 + k, pct = r[3] === 'pct', num = typeof r[1] === 'number' && typeof r[2] === 'number', v = z => z === null ? 'нет' : (typeof z === 'number' && !pct) ? Math.round(z) : z; put(wsR, 'A' + rr, r[0]);
+        put(wsR, 'B' + rr, v(r[1]), { fmt: pct ? '0.0%' : 'money', h: 'right' }); put(wsR, 'C' + rr, v(r[2]), { fmt: pct ? '0.0%' : 'money', h: 'right', bold: true }); if (num) put(wsR, 'D' + rr, `=C${rr}-B${rr}`, { fmt: pct ? '+0.0%;-0.0%;0.0%' : '+#,##0;-#,##0;0', h: 'right' }); });
       const r0 = 5 + summary.kpi.length + 2;
       ['Раздел', 'Что изменено', 'Бюджет инвестора, Δ ₽', 'Поток к концу 2028, Δ ₽'].forEach((t, k) => put(wsR, L(k + 1) + r0, t, { kind: 'head' }));
       (summary.rows || []).forEach((r, k) => { const rr = r0 + 1 + k, tot = r[1] === 'Раздел целиком'; put(wsR, 'A' + rr, r[0], { kind: tot ? 'total' : null }); put(wsR, 'B' + rr, r[1], { kind: tot ? 'total' : null, wrap: true }); put(wsR, 'C' + rr, Math.round(r[2]), { fmt: '+#,##0;-#,##0;0', kind: tot ? 'total' : null, h: 'right' }); put(wsR, 'D' + rr, Math.round(r[3]), { fmt: '+#,##0;-#,##0;0', kind: tot ? 'total' : null, h: 'right' }); });
@@ -1439,22 +1459,31 @@ svg.chart{display:block;width:100%;min-width:640px;height:auto} svg.chart text{f
   }
   const pbTxt = kk => kk.paybackM ? mLabel(kk.paybackM) : kk.paybackEst ? '≈ ' + mLabel(kk.paybackEst) : 'нет';
   function summaryData() { const k = res.k, b = BASE.k, d = diffScenario(st.s);
-    const kpi = [['Вносит инвестор, ₽', b.invest, k.invest], ['Окупаемость', pbTxt(b), pbTxt(k)], ['Пиковая потребность в деньгах, ₽', b.peak, k.peak], ['Накопленный поток к декабрю 2028, ₽', b.cumEnd, k.cumEnd], ['Прибыль после налогов за 2027, ₽', b.profit27, k.profit27], ['Прибыль после налогов за 2028, ₽', b.profit28, k.profit28], ['Вложения в основные средства с резервом, ₽', b.capexTotal, k.capexTotal], ['Зарплаты с взносами за 26 месяцев, ₽', b.fotTotal, k.fotTotal], ['Минимум на счёте, ₽', b.minCash, k.minCash], ['Людей в штате, максимум', b.headMax, k.headMax]];
+    // строка: [показатель, база, сценарий, вид ('pct' — проценты), меньше — лучше]
+    const kpi = [['Вносит инвестор, ₽', b.invest, k.invest, '', true], ['Окупаемость', pbTxt(b), pbTxt(k)], ['IRR проекта за 5 лет, годовых', b.irr, k.irr, 'pct'], ['Пиковая потребность в деньгах, ₽', b.peak, k.peak, '', true], ['Накопленный поток к декабрю 2028, ₽', b.cumEnd, k.cumEnd],
+      ['EBITDA за 2027, ₽', b.ebitda27, k.ebitda27], ['EBITDA за 2028, ₽', b.ebitda28, k.ebitda28], ['Маржинальность по EBITDA за 2028', b.ebm28, k.ebm28, 'pct'],
+      ['Прибыль после налогов за 2027, ₽', b.profit27, k.profit27], ['Прибыль после налогов за 2028, ₽', b.profit28, k.profit28], ['Вложения в основные средства с резервом, ₽', b.capexTotal, k.capexTotal, '', true], ['Зарплаты с взносами за 26 месяцев, ₽', b.fotTotal, k.fotTotal, '', true], ['Минимум на счёте, ₽', b.minCash, k.minCash], ['Людей в штате, максимум', b.headMax, k.headMax]];
     return { kpi, groups: d.groups, all: d.all, pbShift: (k.paybackEst && b.paybackEst) ? k.paybackEst - b.paybackEst : 0 }; }
   function summaryPanel() {
     const sd = summaryData(), k = res.k, b = BASE.k;
     const dm = v => (v > 0 ? '+' : '−') + (Math.abs(v) >= 950000 ? nf1.format(Math.abs(v) / 1e6) + ' млн ₽' : nf0.format(Math.abs(v) / 1e3) + ' тыс. ₽');
     const sg = (v, lessIsGood) => Math.abs(v) < 500 ? '<span class="delta">0</span>' : `<span class="delta ${(v < 0) === !!lessIsGood ? 'good' : 'bad'}">${dm(v)}</span>`;
-    if (!sd.all.length) return `<h3>Резюме сценария «${esc(st.s.name)}»</h3><p>Сценарий совпадает с базовым планом. Сделайте ход — здесь появится, чем он отличается от базы и что это даёт.</p>`;
+    const pc = v => v === null ? 'нет' : nf1.format(v * 100) + ' %';
+    const kpiTable = `<div class="tbl"><table><thead><tr><th>Показатель</th><th class="r">База</th><th class="r">Этот сценарий</th><th class="r">Разница</th></tr></thead><tbody>` +
+        sd.kpi.map(r => { const pct = r[3] === 'pct', num = typeof r[1] === 'number', money = /₽/.test(r[0]), f = v => pct ? pc(v) : money ? mln(v) : (num ? pcs(v) : esc(v));
+          let df; if (pct) { const ok = r[1] !== null && r[2] !== null, pp = ok ? (r[2] - r[1]) * 100 : 0; df = !ok ? (r[1] === r[2] ? '<span class="delta">—</span>' : `<span class="delta ${r[2] !== null ? 'good' : 'bad'}">${r[2] !== null ? 'появилась' : 'пропала'}</span>`) : Math.abs(pp) < 0.05 ? '<span class="delta">0</span>' : `<span class="delta ${pp > 0 ? 'good' : 'bad'}">${pp > 0 ? '+' : '−'}${nf1.format(Math.abs(pp))} п.п.</span>`; }
+          else if (num) df = money ? sg(r[2] - r[1], r[4]) : (r[2] === r[1] ? '<span class="delta">0</span>' : `<span class="delta">${r[2] > r[1] ? '+' : '−'}${Math.abs(r[2] - r[1])}</span>`);
+          else df = sd.pbShift ? `<span class="delta ${sd.pbShift < 0 ? 'good' : 'bad'}">${sd.pbShift < 0 ? 'раньше на ' + (-sd.pbShift) : 'позже на ' + sd.pbShift} мес.</span>` : '<span class="delta">та же</span>';
+          return `<tr><td>${esc(r[0].replace(', ₽', ''))}</td><td class="r calc">${f(r[1])}</td><td class="r">${f(r[2])}</td><td class="r">${df}</td></tr>`; }).join('') + `</tbody></table></div>
+      <p class="tnote2">IRR — годовая доходность проекта за 5 лет: 26 месяцев по модели, дальше денежный поток как в среднем за последние 12 месяцев (сейчас ${mln(k.avg12)} в месяц). EBITDA — выручка без НДС минус операционные расходы, до налога УСН. Маржинальность — EBITDA к выручке без НДС.</p>`;
+    if (!sd.all.length) return `<h3>Резюме сценария «${esc(st.s.name)}»</h3><p>Сценарий совпадает с базовым планом. Сделайте ход — здесь появится, чем он отличается от базы и что это даёт.</p>${kpiTable}`;
     const dInv = k.invest - b.invest, big = x => Math.abs(x.dInv) >= 50000 || Math.abs(x.dCum) >= 50000;
     const verdict = `Инвестор вносит ${mln(k.invest)} вместо ${mln(b.invest)} в базе — ${Math.abs(dInv) < 1 ? 'столько же' : (dInv < 0 ? 'на ' + mln(-dInv) + ' меньше' : 'на ' + mln(dInv) + ' больше')}. Окупаемость: ${pbTxt(k)} против ${pbTxt(b)}${sd.pbShift ? ' — на ' + Math.abs(sd.pbShift) + ' мес. ' + (sd.pbShift < 0 ? 'раньше' : 'позже') : ''}. ${k.paybackM ? 'Цель игры достигнута.' : 'В 26 месяцев проект пока не укладывается.'}`;
     const top = sd.all.slice().sort((x, y) => Math.abs(y.dInv) + Math.abs(y.dCum) / 3 - Math.abs(x.dInv) - Math.abs(x.dCum) / 3).filter(big).slice(0, 5);
     const gBig = sd.groups.filter(big), gZero = sd.groups.filter(g => !big(g));
     return `<h3>Резюме сценария «${esc(st.s.name)}» — что изменено относительно базы и что это даёт</h3>
       <p style="color:var(--ink);font-size:15px;max-width:90ch">${esc(verdict)}</p>
-      <div class="tbl"><table><thead><tr><th>Показатель</th><th class="r">База</th><th class="r">Этот сценарий</th><th class="r">Разница</th></tr></thead><tbody>` +
-        sd.kpi.map((r, i) => { const num = typeof r[1] === 'number', money = /₽/.test(r[0]), f = v => money ? mln(v) : (num ? pcs(v) : esc(v)), lessGood = [0, 2, 6, 7].includes(i);
-          return `<tr><td>${esc(r[0].replace(', ₽', ''))}</td><td class="r calc">${f(r[1])}</td><td class="r">${f(r[2])}</td><td class="r">${num ? (money ? sg(r[2] - r[1], lessGood) : (r[2] === r[1] ? '<span class="delta">0</span>' : `<span class="delta">${r[2] > r[1] ? '+' : '−'}${Math.abs(r[2] - r[1])}</span>`)) : (sd.pbShift ? `<span class="delta ${sd.pbShift < 0 ? 'good' : 'bad'}">${sd.pbShift < 0 ? 'раньше на ' + (-sd.pbShift) : 'позже на ' + sd.pbShift} мес.</span>` : '<span class="delta">та же</span>')}</td></tr>`; }).join('') + `</tbody></table></div>
+      ${kpiTable}
       ${top.length ? `<h3>Пять главных ходов</h3><ol class="tops">${top.map(x => `<li><span>${esc(x.text)}</span><b class="delta ${x.dInv < 0 || (Math.abs(x.dInv) < 500 && x.dCum > 0) ? 'good' : 'bad'}">${Math.abs(x.dInv) >= 500 ? dm(x.dInv) + ' к бюджету' : ''}${Math.abs(x.dInv) >= 500 && Math.abs(x.dCum) >= 500 ? ' · ' : ''}${Math.abs(x.dCum) >= 500 ? dm(x.dCum) + ' к потоку' : ''}</b></li>`).join('')}</ol>` : ''}
       <h3>Что сделано по разделам</h3>
       <p>«Бюджет» — сколько вносит инвестор; «поток» — накопленный денежный поток к декабрю 2028. Эффект раздела посчитан так: в базовом плане меняем только этот раздел. Вместе разделы дают немного другой итог, потому что влияют друг на друга.</p>

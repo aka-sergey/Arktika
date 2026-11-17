@@ -414,22 +414,31 @@
   }
   const pbTxt = kk => kk.paybackM ? mLabel(kk.paybackM) : kk.paybackEst ? '≈ ' + mLabel(kk.paybackEst) : 'нет';
   function summaryData() { const k = res.k, b = BASE.k, d = diffScenario(st.s);
-    const kpi = [['Вносит инвестор, ₽', b.invest, k.invest], ['Окупаемость', pbTxt(b), pbTxt(k)], ['Пиковая потребность в деньгах, ₽', b.peak, k.peak], ['Накопленный поток к декабрю 2028, ₽', b.cumEnd, k.cumEnd], ['Прибыль после налогов за 2027, ₽', b.profit27, k.profit27], ['Прибыль после налогов за 2028, ₽', b.profit28, k.profit28], ['Вложения в основные средства с резервом, ₽', b.capexTotal, k.capexTotal], ['Зарплаты с взносами за 26 месяцев, ₽', b.fotTotal, k.fotTotal], ['Минимум на счёте, ₽', b.minCash, k.minCash], ['Людей в штате, максимум', b.headMax, k.headMax]];
+    // строка: [показатель, база, сценарий, вид ('pct' — проценты), меньше — лучше]
+    const kpi = [['Вносит инвестор, ₽', b.invest, k.invest, '', true], ['Окупаемость', pbTxt(b), pbTxt(k)], ['IRR проекта за 5 лет, годовых', b.irr, k.irr, 'pct'], ['Пиковая потребность в деньгах, ₽', b.peak, k.peak, '', true], ['Накопленный поток к декабрю 2028, ₽', b.cumEnd, k.cumEnd],
+      ['EBITDA за 2027, ₽', b.ebitda27, k.ebitda27], ['EBITDA за 2028, ₽', b.ebitda28, k.ebitda28], ['Маржинальность по EBITDA за 2028', b.ebm28, k.ebm28, 'pct'],
+      ['Прибыль после налогов за 2027, ₽', b.profit27, k.profit27], ['Прибыль после налогов за 2028, ₽', b.profit28, k.profit28], ['Вложения в основные средства с резервом, ₽', b.capexTotal, k.capexTotal, '', true], ['Зарплаты с взносами за 26 месяцев, ₽', b.fotTotal, k.fotTotal, '', true], ['Минимум на счёте, ₽', b.minCash, k.minCash], ['Людей в штате, максимум', b.headMax, k.headMax]];
     return { kpi, groups: d.groups, all: d.all, pbShift: (k.paybackEst && b.paybackEst) ? k.paybackEst - b.paybackEst : 0 }; }
   function summaryPanel() {
     const sd = summaryData(), k = res.k, b = BASE.k;
     const dm = v => (v > 0 ? '+' : '−') + (Math.abs(v) >= 950000 ? nf1.format(Math.abs(v) / 1e6) + ' млн ₽' : nf0.format(Math.abs(v) / 1e3) + ' тыс. ₽');
     const sg = (v, lessIsGood) => Math.abs(v) < 500 ? '<span class="delta">0</span>' : `<span class="delta ${(v < 0) === !!lessIsGood ? 'good' : 'bad'}">${dm(v)}</span>`;
-    if (!sd.all.length) return `<h3>Резюме сценария «${esc(st.s.name)}»</h3><p>Сценарий совпадает с базовым планом. Сделайте ход — здесь появится, чем он отличается от базы и что это даёт.</p>`;
+    const pc = v => v === null ? 'нет' : nf1.format(v * 100) + ' %';
+    const kpiTable = `<div class="tbl"><table><thead><tr><th>Показатель</th><th class="r">База</th><th class="r">Этот сценарий</th><th class="r">Разница</th></tr></thead><tbody>` +
+        sd.kpi.map(r => { const pct = r[3] === 'pct', num = typeof r[1] === 'number', money = /₽/.test(r[0]), f = v => pct ? pc(v) : money ? mln(v) : (num ? pcs(v) : esc(v));
+          let df; if (pct) { const ok = r[1] !== null && r[2] !== null, pp = ok ? (r[2] - r[1]) * 100 : 0; df = !ok ? (r[1] === r[2] ? '<span class="delta">—</span>' : `<span class="delta ${r[2] !== null ? 'good' : 'bad'}">${r[2] !== null ? 'появилась' : 'пропала'}</span>`) : Math.abs(pp) < 0.05 ? '<span class="delta">0</span>' : `<span class="delta ${pp > 0 ? 'good' : 'bad'}">${pp > 0 ? '+' : '−'}${nf1.format(Math.abs(pp))} п.п.</span>`; }
+          else if (num) df = money ? sg(r[2] - r[1], r[4]) : (r[2] === r[1] ? '<span class="delta">0</span>' : `<span class="delta">${r[2] > r[1] ? '+' : '−'}${Math.abs(r[2] - r[1])}</span>`);
+          else df = sd.pbShift ? `<span class="delta ${sd.pbShift < 0 ? 'good' : 'bad'}">${sd.pbShift < 0 ? 'раньше на ' + (-sd.pbShift) : 'позже на ' + sd.pbShift} мес.</span>` : '<span class="delta">та же</span>';
+          return `<tr><td>${esc(r[0].replace(', ₽', ''))}</td><td class="r calc">${f(r[1])}</td><td class="r">${f(r[2])}</td><td class="r">${df}</td></tr>`; }).join('') + `</tbody></table></div>
+      <p class="tnote2">IRR — годовая доходность проекта за 5 лет: 26 месяцев по модели, дальше денежный поток как в среднем за последние 12 месяцев (сейчас ${mln(k.avg12)} в месяц). EBITDA — выручка без НДС минус операционные расходы, до налога УСН. Маржинальность — EBITDA к выручке без НДС.</p>`;
+    if (!sd.all.length) return `<h3>Резюме сценария «${esc(st.s.name)}»</h3><p>Сценарий совпадает с базовым планом. Сделайте ход — здесь появится, чем он отличается от базы и что это даёт.</p>${kpiTable}`;
     const dInv = k.invest - b.invest, big = x => Math.abs(x.dInv) >= 50000 || Math.abs(x.dCum) >= 50000;
     const verdict = `Инвестор вносит ${mln(k.invest)} вместо ${mln(b.invest)} в базе — ${Math.abs(dInv) < 1 ? 'столько же' : (dInv < 0 ? 'на ' + mln(-dInv) + ' меньше' : 'на ' + mln(dInv) + ' больше')}. Окупаемость: ${pbTxt(k)} против ${pbTxt(b)}${sd.pbShift ? ' — на ' + Math.abs(sd.pbShift) + ' мес. ' + (sd.pbShift < 0 ? 'раньше' : 'позже') : ''}. ${k.paybackM ? 'Цель игры достигнута.' : 'В 26 месяцев проект пока не укладывается.'}`;
     const top = sd.all.slice().sort((x, y) => Math.abs(y.dInv) + Math.abs(y.dCum) / 3 - Math.abs(x.dInv) - Math.abs(x.dCum) / 3).filter(big).slice(0, 5);
     const gBig = sd.groups.filter(big), gZero = sd.groups.filter(g => !big(g));
     return `<h3>Резюме сценария «${esc(st.s.name)}» — что изменено относительно базы и что это даёт</h3>
       <p style="color:var(--ink);font-size:15px;max-width:90ch">${esc(verdict)}</p>
-      <div class="tbl"><table><thead><tr><th>Показатель</th><th class="r">База</th><th class="r">Этот сценарий</th><th class="r">Разница</th></tr></thead><tbody>` +
-        sd.kpi.map((r, i) => { const num = typeof r[1] === 'number', money = /₽/.test(r[0]), f = v => money ? mln(v) : (num ? pcs(v) : esc(v)), lessGood = [0, 2, 6, 7].includes(i);
-          return `<tr><td>${esc(r[0].replace(', ₽', ''))}</td><td class="r calc">${f(r[1])}</td><td class="r">${f(r[2])}</td><td class="r">${num ? (money ? sg(r[2] - r[1], lessGood) : (r[2] === r[1] ? '<span class="delta">0</span>' : `<span class="delta">${r[2] > r[1] ? '+' : '−'}${Math.abs(r[2] - r[1])}</span>`)) : (sd.pbShift ? `<span class="delta ${sd.pbShift < 0 ? 'good' : 'bad'}">${sd.pbShift < 0 ? 'раньше на ' + (-sd.pbShift) : 'позже на ' + sd.pbShift} мес.</span>` : '<span class="delta">та же</span>')}</td></tr>`; }).join('') + `</tbody></table></div>
+      ${kpiTable}
       ${top.length ? `<h3>Пять главных ходов</h3><ol class="tops">${top.map(x => `<li><span>${esc(x.text)}</span><b class="delta ${x.dInv < 0 || (Math.abs(x.dInv) < 500 && x.dCum > 0) ? 'good' : 'bad'}">${Math.abs(x.dInv) >= 500 ? dm(x.dInv) + ' к бюджету' : ''}${Math.abs(x.dInv) >= 500 && Math.abs(x.dCum) >= 500 ? ' · ' : ''}${Math.abs(x.dCum) >= 500 ? dm(x.dCum) + ' к потоку' : ''}</b></li>`).join('')}</ol>` : ''}
       <h3>Что сделано по разделам</h3>
       <p>«Бюджет» — сколько вносит инвестор; «поток» — накопленный денежный поток к декабрю 2028. Эффект раздела посчитан так: в базовом плане меняем только этот раздел. Вместе разделы дают немного другой итог, потому что влияют друг на друга.</p>

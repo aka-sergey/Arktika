@@ -220,6 +220,10 @@
     row('inv_cum', 'Внесено инвестором накопленно (факт + план)', '₽', (i, c) => `=SUM($${CF}${R.contrib}:${c}${R.contrib})+SUM($${CF}${R.need}:${c}${R.need})`, 'money', null, 'LAST');
     row('pb_flag', 'Окупились: накопленный поток впервые ≥ 0 (служебная)', '', (i, c, pc) => pc ? `=IF(AND(${X(c, 'cum_cf')}>=0,${X(pc, 'cum_cf')}<0),1,0)` : '=0', '0', null, null);
     row('eb_flag', 'EBITDA впервые > 0 (служебная)', '', (i, c, pc) => `=IF(AND(${X(c, 'ebitda')}>0,${X(c, 'rev')}>0,${pc ? X(pc, 'ebitda') + '<=0' : 'TRUE'}),1,0)`, '0', null, null);
+    // поток для IRR: 26 месяцев модели и дальше до 60-го месяца — среднее последних 12
+    r++; const IR = r, IRN = S.IRR_M; put(ws, 'B' + IR, 'Поток для IRR за 5 лет: 26 месяцев по модели, дальше — среднее последних 12 месяцев (служебная)', { kind: 'note' }); put(ws, 'C' + IR, '₽', { kind: 'note', h: 'center' });
+    for (let i = 1; i <= IRN; i++) put(ws, L(C0 + i - 1) + IR, i <= N ? `=${col(i)}${R.cf}` : `=AVERAGE($${col(N - 11)}$${R.cf}:$${CL}$${R.cf})`, { fmt: 'money' });
+    r++;
     const TEND = r;
     // итоги и проверки справа от пульта
     const rng = k => `$${CF}$${R[k]}:$${CL}$${R[k]}`, labels = `$${CF}$${T0 + 1}:$${CL}$${T0 + 1}`, years = `$${CF}$${YROW}:$${CL}$${YROW}`;
@@ -234,7 +238,11 @@
       ['Прибыль после налогов 2027, ₽', `=SUMIF(${years},2027,${rng('profit')})`, 'money'],
       ['Прибыль после налогов 2028, ₽', `=SUMIF(${years},2028,${rng('profit')})`, 'money'],
       ['Максимальная загрузка линии', `=MAX(${rng('line_util')})`, 'pct'],
-      ['Деньги на счёте на конец 2028, ₽', `=${CL}${R.cash}`, 'money']];
+      ['Деньги на счёте на конец 2028, ₽', `=${CL}${R.cash}`, 'money'],
+      ['EBITDA за 2027, ₽', `=SUMIF(${years},2027,${rng('ebitda')})`, 'money'],
+      ['EBITDA за 2028, ₽', `=SUMIF(${years},2028,${rng('ebitda')})`, 'money'],
+      ['Маржинальность по EBITDA за 2028', `=IF(SUMIF(${years},2028,${rng('rev_net')})>0,SUMIF(${years},2028,${rng('ebitda')})/SUMIF(${years},2028,${rng('rev_net')}),0)`, 'pct1'],
+      ['IRR проекта за 5 лет, годовых', `=IFERROR((1+IRR($${CF}$${IR}:$${L(C0 + IRN - 1)}$${IR},0.02))^12-1,"нет")`, 'pct1']];
     kp.forEach((a, k) => { put(ws, 'P' + (5 + k), a[0]); ws.mergeCells(`P${5 + k}:U${5 + k}`); put(ws, 'V' + (5 + k), a[1], { fmt: a[2], bold: true, color: C.pri, h: 'right' }); ws.mergeCells(`V${5 + k}:Y${5 + k}`); });
     const H0 = 5 + kp.length + 1; band(ws, H0, 'Проверки — во всех строках должно быть OK', 16, 25);
     const rec = y => `SUMIF(${years},${y},${rng('receipts')})`;
@@ -271,7 +279,8 @@
       put(wsR, 'A1', 'Резюме сценария «' + s.name + '» — что изменено относительно базы и что это даёт', { bold: true, size: 14, color: C.pri });
       put(wsR, 'A2', 'Значения на момент выгрузки. Эффект каждой строки посчитан отдельно: что было бы, если в базовом плане поменять только её.', { kind: 'note' });
       ['Показатель', 'База', 'Этот сценарий', 'Разница'].forEach((t, k) => put(wsR, L(k + 1) + 4, t, { kind: 'head' }));
-      summary.kpi.forEach((r, k) => { const rr = 5 + k, num = typeof r[1] === 'number'; put(wsR, 'A' + rr, r[0]); put(wsR, 'B' + rr, num ? Math.round(r[1]) : r[1], { fmt: 'money', h: 'right' }); put(wsR, 'C' + rr, num ? Math.round(r[2]) : r[2], { fmt: 'money', h: 'right', bold: true }); if (num) put(wsR, 'D' + rr, `=C${rr}-B${rr}`, { fmt: '+#,##0;-#,##0;0', h: 'right' }); });
+      summary.kpi.forEach((r, k) => { const rr = 5 + k, pct = r[3] === 'pct', num = typeof r[1] === 'number' && typeof r[2] === 'number', v = z => z === null ? 'нет' : (typeof z === 'number' && !pct) ? Math.round(z) : z; put(wsR, 'A' + rr, r[0]);
+        put(wsR, 'B' + rr, v(r[1]), { fmt: pct ? '0.0%' : 'money', h: 'right' }); put(wsR, 'C' + rr, v(r[2]), { fmt: pct ? '0.0%' : 'money', h: 'right', bold: true }); if (num) put(wsR, 'D' + rr, `=C${rr}-B${rr}`, { fmt: pct ? '+0.0%;-0.0%;0.0%' : '+#,##0;-#,##0;0', h: 'right' }); });
       const r0 = 5 + summary.kpi.length + 2;
       ['Раздел', 'Что изменено', 'Бюджет инвестора, Δ ₽', 'Поток к концу 2028, Δ ₽'].forEach((t, k) => put(wsR, L(k + 1) + r0, t, { kind: 'head' }));
       (summary.rows || []).forEach((r, k) => { const rr = r0 + 1 + k, tot = r[1] === 'Раздел целиком'; put(wsR, 'A' + rr, r[0], { kind: tot ? 'total' : null }); put(wsR, 'B' + rr, r[1], { kind: tot ? 'total' : null, wrap: true }); put(wsR, 'C' + rr, Math.round(r[2]), { fmt: '+#,##0;-#,##0;0', kind: tot ? 'total' : null, h: 'right' }); put(wsR, 'D' + rr, Math.round(r[3]), { fmt: '+#,##0;-#,##0;0', kind: tot ? 'total' : null, h: 'right' }); });
