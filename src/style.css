@@ -178,7 +178,12 @@ table.pal th.gh{text-align:left;border-left:1px solid var(--line);color:var(--in
 .wlim{color:var(--red);font-weight:600} .bwarn{margin:6px 0 4px;font-size:12.5px;line-height:1.4;color:var(--ink);border-left:2px solid var(--red);padding-left:8px}
 .catn{margin-left:10px;color:var(--muted);font-weight:400;font-family:var(--mono);font-size:11.5px}
 .dmc{display:inline-flex;align-items:center;gap:5px;margin-left:12px;font-family:var(--mono);font-size:11px;font-weight:500;color:var(--muted)} .dmc::before{content:"";width:8px;height:8px;border-radius:50%;background:var(--accent)}
-table.cx tr.sub td.name{padding-left:28px}
+table.cx tr.sub td.name{padding-left:6px}
+.nm{display:flex;align-items:center;gap:6px;min-width:0} .nm>.in{flex:1;width:auto;min-width:0} .nm .in>input.ttl:first-child{margin-left:-4px}
+.grip{flex:0 0 auto;width:18px;height:28px;border:0;background:transparent;padding:0;display:grid;place-items:center;color:var(--muted);cursor:grab;touch-action:none;border-radius:5px;opacity:.65}
+.grip:hover,.grip:focus-visible{opacity:1;color:var(--ink);background:var(--sunken)} .grip:focus-visible{outline:2px solid var(--field-hot);outline-offset:1px}
+tr.rowdrag td{opacity:.45} tr.dropb td{box-shadow:inset 0 2px 0 var(--water)} tr.dropa td{box-shadow:inset 0 -2px 0 var(--water)}
+body.rowdragging{cursor:grabbing;user-select:none} body.rowdragging .grip{cursor:grabbing}
 td.act{white-space:nowrap;text-align:right;width:1%} td.act .in{display:inline-flex;width:auto;vertical-align:middle}
 .rowmenu{position:relative;display:inline-block;width:28px;height:28px;border-radius:6px;flex:0 0 auto} .rowmenu::after{content:"⋯";position:absolute;inset:0;display:grid;place-items:center;color:var(--muted);font-weight:700;pointer-events:none}
 .rowmenu:hover{background:var(--sunken)} .rowmenu:hover::after{color:var(--ink)} .rowmenu:focus-within{box-shadow:0 0 0 2px var(--field-hot)}
