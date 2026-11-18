@@ -1,5 +1,7 @@
 import io
 r=lambda f: open(f,encoding='utf-8').read()
+# библиотека PDF встроена в страницу: презентация не зависит от того, открывается ли у посетителя CDN
+jspdf=r('lib/jspdf.umd.min.js').replace('</script','<\\/script').replace('//# sourceMappingURL=jspdf.umd.min.js.map','')
 html=f'''<title>Завод воды АРКТИКА</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Golos+Text:wght@400;500;600;700&family=JetBrains+Mono:wght@500;700&display=swap">
@@ -9,7 +11,9 @@ html=f'''<title>Завод воды АРКТИКА</title>
 {r('body.html')}
 <script src="https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.4.0/exceljs.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
-<script async src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.2/jspdf.umd.min.js"></script>
+<script>
+{jspdf}
+</script>
 <script>
 {r('engine.js')}
 {r('meta.js')}
