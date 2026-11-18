@@ -90,7 +90,7 @@ input[type=checkbox]{accent-color:var(--accent);width:16px;height:16px}
 .chip{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line);border-radius:999px;padding:4px 10px 4px 6px;font-size:13px;background:var(--surface);color:var(--muted)}
 .chip i{width:16px;height:16px;border-radius:50%;border:1.5px solid var(--line);display:inline-grid;place-items:center;font-style:normal;font-size:10px;line-height:1}
 .chip.done{color:var(--ink);border-color:var(--brand)} .chip.done i{background:var(--brand);border-color:var(--brand);color:var(--on-brand)}
-.chip.record{border-color:var(--field-line);color:var(--ink)} .chip.record i{background:var(--ink);border-color:var(--ink);color:var(--surface)}
+
 .alerts{display:flex;flex-direction:column;gap:6px} .alerts:empty{display:none}
 /* подсказка у плитки прибыли */
 .qd{position:absolute;right:10px;top:38px} .qd summary{list-style:none;cursor:pointer;width:20px;height:20px;border-radius:50%;border:1px solid var(--field-line);color:var(--muted);font-family:var(--mono);font-size:11.5px;font-weight:600;display:grid;place-items:center;background:var(--surface)} .qd summary::-webkit-details-marker{display:none}
@@ -110,7 +110,7 @@ input[type=checkbox]{accent-color:var(--accent);width:16px;height:16px}
 @keyframes ffl{0%{box-shadow:0 0 0 3px var(--water);background-color:color-mix(in srgb,var(--water) 24%,var(--field))}100%{box-shadow:0 0 0 3px transparent}}
 .rv{animation:rvl .18s ease-out 1} @keyframes rvl{from{opacity:0;transform:translateY(-5px)}to{opacity:1;transform:none}}
 .closing{opacity:0!important;transform:translateY(-5px);transition:opacity .18s ease,transform .18s ease}
-#tl-svg{overflow:hidden;transition:height .18s ease} .tl-labels{transition:height .18s ease}
+#tl-svg{overflow:hidden;width:max-content;min-width:100%;transition:height .18s ease} .tl-labels{transition:height .18s ease}
 .alert{border-radius:8px;padding:8px 12px;font-size:14px;display:flex;gap:10px;align-items:baseline;background:var(--amber-soft);color:var(--ink);border:1px solid color-mix(in srgb,var(--amber) 35%,transparent)}
 .alert.err{background:var(--red-soft);border-color:color-mix(in srgb,var(--red) 40%,transparent)}
 .alert b{color:var(--amber);font-size:13px;font-weight:600;white-space:nowrap} .alert.err b{color:var(--red)}
@@ -1227,7 +1227,6 @@ svg.chart{display:block;width:100%;min-width:640px;height:auto} svg.chart text{f
   const dMoney = v => (v > 0 ? '+' : '−') + (Math.abs(v) >= 950000 ? nf1.format(Math.abs(v) / 1e6) + ' млн' : nf0.format(Math.abs(v) / 1e3) + ' тыс.');
   let shown = null, mv = null, mvT = 0, lastOk = null, reveal = null, FV = null, FVtab = '', CHn = null, CHp = null;
   function afterChange() {
-    if (res.k.paybackM > 0 && res.alerts.every(a => a.lvl !== 'err') && (!st.best || res.k.invest < st.best.invest - 1)) st.best = { invest: res.k.invest, name: st.s.name, pb: res.k.paybackM };
     persist(); setTimeout(rerender, 0);
   }
   function rerender() { const a = document.activeElement, fid = focusId || (a && a.id), sel = !!focusId; focusId = ''; render(); if (fid) { const e = $(fid); if (e && e.focus) { e.focus(); if (sel && e.select) e.select(); } } }
@@ -1333,7 +1332,7 @@ svg.chart{display:block;width:100%;min-width:640px;height:auto} svg.chart text{f
       ['Продано всё по плану', k.lostL <= 1], ['Линия успевает', k.maxUtil <= 1.0001], ['Инвестору возвращено всё вложенное', k.payout >= k.invest && k.invest > 0]];
     const done = ms.filter(a => a[1]).length;
     $('missions').innerHTML = `<div class="missrow"><button type="button" class="missbtn" data-act="ui:miss" aria-expanded="${!!ui.miss}"><span class="chev">${ui.miss ? '▾' : '▸'}</span>Задания: <b>${done} из ${ms.length}</b><span class="pips" aria-hidden="true">${ms.map(a => `<i class="${a[1] ? 'on' : ''}"></i>`).join('')}</span></button>` +
-      (st.best ? `<span class="chip record"><i>★</i>Рекорд: ${mln(st.best.invest)} при окупаемости в ${esc(mLabel(st.best.pb))} («${esc(st.best.name)}»)</span>` : '') + `</div>` +
+      `</div>` +
       (ui.miss ? `<div class="misslist${reveal === 'miss' ? ' rv' : ''}">${ms.map(a => `<span class="chip ${a[1] ? 'done' : ''}"><i>${a[1] ? '✓' : ''}</i>${esc(a[0])}</span>`).join('')}</div>` : '');
     $('alerts').innerHTML = res.alerts.map(a => `<div class="alert ${a.lvl === 'err' ? 'err' : ''}"><b>${a.lvl === 'err' ? 'Ошибка' : 'Внимание'}</b><span>${esc(a.text)}</span></div>`).join('');
   }
@@ -1678,29 +1677,25 @@ svg.chart{display:block;width:100%;min-width:640px;height:auto} svg.chart text{f
     if (k.paybackM) { const i = k.paybackM - 1; g += `<path d="${star(X(i), y0, 11)}" fill="var(--brand)" stroke="var(--ink)" stroke-width="1.2"/><text x="${X(i)}" y="${y0 - 16}" text-anchor="middle" class="t-ink t-b">Окупаемость: ${mLabel(k.paybackM)}</text>`; }
     else g += `<text x="${W - R - 4}" y="${Y(cum[N - 1]) - 10}" text-anchor="end" class="t-ink t-b">${ENDL}: −${mln(-cum[N - 1])}${k.paybackEst ? '; по темпу окупится ≈ ' + mLabel(k.paybackEst) : ''}</text>`;
     cum.forEach((v, i) => { g += `<rect x="${X(i) - pw / N / 2}" y="${T}" width="${pw / N}" height="${ph}" fill="transparent"><title>${mm_(i)}: накоплено ${v < 0 ? '−' : '+'}${mln(Math.abs(v))}, за месяц ${cf[i] < 0 ? '−' : '+'}${mln(Math.abs(cf[i]))}</title></rect>`; });
-    const upto = (st.tmAll || !k.lastInvM) ? N : k.lastInvM, items = spend(upto, st.s, res), tot = items.reduce((a, b) => a + b[2], 0), delta = st.tmCol === 'delta';
-    const base = {}; spend(upto, BASE_S, BASE).forEach(a => { base[a[0]] = a[2]; }); const baseTot = Object.keys(base).reduce((a, n) => a + base[n], 0);
-    const dOf = a => base[a[0]] ? (a[2] - base[a[0]]) / base[a[0]] : 1;
-    const colOf = a => { if (!delta) return mix(SZ()[0], SZ()[1], clamp(Math.log10(Math.max(1, a[2] / tot * 100)) / Math.log10(25), 0, 1)); const d = dOf(a); return Math.abs(d) < 0.0005 ? HNeutral() : mix(HNeutral(), d > 0 ? HR : HG, clamp(Math.abs(d) / 0.10, 0.25, 1)); };
+    const upto = (st.tmAll || !k.lastInvM) ? N : k.lastInvM, items = spend(upto, st.s, res), tot = items.reduce((a, b) => a + b[2], 0);
+    const colOf = a => mix(SZ()[0], SZ()[1], clamp(Math.log10(Math.max(1, a[2] / tot * 100)) / Math.log10(25), 0, 1));
     const boxes = squarify(items.map(a => ({ n: a[0], g: a[1], v: a[2], a })), 0, 0, 100, 26);
     const groups = {}; items.forEach(a => { groups[a[1]] = (groups[a[1]] || 0) + a[2]; });
-    const sgn = d => Math.abs(d) < 0.0005 ? '0 %' : (d > 0 ? '+' : '−') + (Math.abs(d) * 100 < 10 ? (Math.abs(d) * 100).toFixed(1).replace('.', ',') : Math.round(Math.abs(d) * 100)) + ' %';
-    const TMH = 26, anyD = items.some(a => Math.abs(dOf(a)) >= 0.0005);
+    const TMH = 26;
     return `<h3>Окупаемость: накопленный денежный поток без денег инвестора</h3>
       ` + intro(`Линия — накопленный поток с первого дня: пересекла ноль — вложения вернулись.`, `<p>Красная зона — проект должен инвестору; самая глубокая точка — максимум вложенного. Столбики — денежный поток каждого месяца; наведите на месяц, чтобы увидеть цифры.</p>`) + `
       <div class="chartbox"><svg viewBox="0 0 ${W} ${H}" class="chart" role="img" aria-label="График окупаемости"><text x="${L - 8}" y="14" text-anchor="end">млн ₽</text>${g}</svg></div>
       <h3>Куда уходят деньги</h3>
-      <p>Площадь плитки — доля в общих тратах. ${delta ? 'Цвет — изменение к базовому сценарию: зелёная плитка стала дешевле, красная — дороже, серая не изменилась.' : 'Цвет — размер траты: чем больше денег съедает статья, тем насыщеннее плитка.'}</p>
+      <p>Площадь плитки — доля в общих тратах. Цвет — размер траты: чем больше денег съедает статья, тем насыщеннее плитка.</p>
       <div class="row"><div class="seg" role="group" aria-label="Период"><button data-act="tm:0" aria-pressed="${!st.tmAll}">Пока вносит инвестор: ${MONTHS[0].label} — ${mLabel(k.lastInvM || N)}</button><button data-act="tm:1" aria-pressed="${!!st.tmAll}">Все ${N} месяцев</button></div>
-        <div class="seg" role="group" aria-label="Цвет плиток"><button data-act="tmc:heat" aria-pressed="${!delta}">Цвет: размер траты</button><button data-act="tmc:delta" aria-pressed="${delta}">Цвет: изменение к базе</button></div>
-        <span class="heatleg">${delta ? 'дешевле' : 'мало'}<i style="background:linear-gradient(90deg,${delta ? rgb(HG) + ',' + rgb(HNeutral()) + ',' + rgb(HR) : rgb(SZ()[0]) + ',' + rgb(SZ()[1])})"></i>${delta ? 'дороже' : 'много'}</span></div>
-      <p class="total">Всего за период: <b>${mln(tot)}</b>${delta && baseTot ? '<span>к базе ' + sgn((tot - baseTot) / baseTot) + ' (' + ((tot - baseTot) >= 0 ? '+' : '−') + mln(Math.abs(tot - baseTot)) + ')</span>' : ''}</p>
-      <div class="treemap">` + boxes.map(b => { const big = b.w > 11 && b.h > 7.2, mid = b.w > 5.5 && b.h > 3.6, col = colOf(b.it.a), d = dOf(b.it.a);
-        return `<div class="tm ${big ? 'big' : mid ? 'mid' : 'tiny'}" style="left:${b.x.toFixed(3)}%;top:${(b.y / TMH * 100).toFixed(3)}%;width:${Math.min(b.w, 100 - b.x).toFixed(3)}%;height:${(Math.min(b.h, TMH - b.y) / TMH * 100).toFixed(3)}%;background:${rgb(col)};color:${inkOn(col)}" title="${esc(b.it.n)} — ${mln(b.it.v)} (${(b.it.v / tot * 100).toFixed(1)} % всех трат), к базе ${sgn(d)}">${big || mid ? `<b>${esc(b.it.n)}</b><em style="font-size:min(${big ? 30 : 13}px,${(b.w * 0.19).toFixed(2)}cqw)">${nf1.format(b.it.v / 1e6)} млн</em><span>${delta ? sgn(d) + ' к базе' : Math.round(b.it.v / tot * 100) + ' %'}</span>` : ''}</div>`; }).join('') + `</div>
+        <span class="heatleg">мало<i style="background:linear-gradient(90deg,${rgb(SZ()[0])},${rgb(SZ()[1])})"></i>много</span></div>
+      <p class="total">Всего за период: <b>${mln(tot)}</b></p>
+      <div class="treemap">` + boxes.map(b => { const big = b.w > 11 && b.h > 7.2, mid = b.w > 5.5 && b.h > 3.6, col = colOf(b.it.a);
+        return `<div class="tm ${big ? 'big' : mid ? 'mid' : 'tiny'}" style="left:${b.x.toFixed(3)}%;top:${(b.y / TMH * 100).toFixed(3)}%;width:${Math.min(b.w, 100 - b.x).toFixed(3)}%;height:${(Math.min(b.h, TMH - b.y) / TMH * 100).toFixed(3)}%;background:${rgb(col)};color:${inkOn(col)}" title="${esc(b.it.n)} — ${mln(b.it.v)} (${(b.it.v / tot * 100).toFixed(1)} % всех трат)">${big || mid ? `<b>${esc(b.it.n)}</b><em style="font-size:min(${big ? 30 : 13}px,${(b.w * 0.19).toFixed(2)}cqw)">${nf1.format(b.it.v / 1e6)} млн</em><span>${Math.round(b.it.v / tot * 100)} %</span>` : ''}</div>`; }).join('') + `</div>
       <ul class="grpsum">${Object.keys(groups).sort((a, b) => groups[b] - groups[a]).map(n => `<li><b>${n.charAt(0).toUpperCase() + n.slice(1)}</b><span>${nf1.format(groups[n] / 1e6)} млн ₽ (${Math.round(groups[n] / tot * 100)} %)</span></li>`).join('')}</ul>
       <div class="row"><button type="button" class="btn sm" data-act="tmtbl" aria-expanded="${!!st.tmTbl}">${st.tmTbl ? 'Скрыть таблицу' : 'Показать таблицу — ' + items.length + ' ' + plur(items.length, 'статья', 'статьи', 'статей')}</button></div>` + (!st.tmTbl ? '' : `
-      <div class="tbl"><table><thead><tr><th>№</th><th>Статья</th><th>Группа</th><th class="r">Сумма</th><th class="r">Доля</th><th class="r">Накоплено</th>${anyD ? '<th class="r">К базе</th>' : ''}</tr></thead><tbody>` +
-        (() => { let acc = 0; return items.map((a, i) => { acc += a[2]; const d = dOf(a); return `<tr><td class="calc">${i + 1}</td><td>${esc(a[0])}</td><td class="calc">${a[1]}</td><td class="r">${mln(a[2])}</td><td class="r calc">${(a[2] / tot * 100).toFixed(1).replace('.', ',')} %</td><td class="r calc">${Math.round(acc / tot * 100)} %</td>${anyD ? `<td class="r" style="color:${Math.abs(d) < 0.0005 ? 'var(--muted)' : d > 0 ? 'var(--red)' : 'var(--brand)'}">${sgn(d)}</td>` : ''}</tr>`; }).join(''); })() + `</tbody></table></div>`);
+      <div class="tbl"><table><thead><tr><th>№</th><th>Статья</th><th>Группа</th><th class="r">Сумма</th><th class="r">Доля</th><th class="r">Накоплено</th></tr></thead><tbody>` +
+        (() => { let acc = 0; return items.map((a, i) => { acc += a[2]; return `<tr><td class="calc">${i + 1}</td><td>${esc(a[0])}</td><td class="calc">${a[1]}</td><td class="r">${mln(a[2])}</td><td class="r calc">${(a[2] / tot * 100).toFixed(1).replace('.', ',')} %</td><td class="r calc">${Math.round(acc / tot * 100)} %</td></tr>`; }).join(''); })() + `</tbody></table></div>`);
   }
   const mm_ = i => MONTHS[i].label;
   function panel() {
@@ -1966,7 +1961,7 @@ svg.chart{display:block;width:100%;min-width:640px;height:auto} svg.chart text{f
       case 'savecancel': $('savebox').hidden = true; $('b-save').hidden = false; break;
       case 'saveok': case 'savepub': { const n = $('scnname').value.trim(); if (!n || n === 'База') { toast('Дайте сценарию своё название'); break; }
         const code = $('scncode').hidden ? '' : $('scncode').value.trim(); if (a[0] === 'savepub' && remote.needCode && !code) { toast('Впишите код команды'); break; }
-        s.name = n; st.saved[n] = clone(s); if (st.best && res.k.paybackM && Math.abs(st.best.invest - res.k.invest) < 1) st.best.name = n; persist();
+        s.name = n; st.saved[n] = clone(s); persist();
         if (a[0] === 'savepub') { render(); $('savebox').hidden = false; $('b-save').hidden = true; webPublish(n, code, $('b-savepub')); break; }
         $('savebox').hidden = true; $('b-save').hidden = false; render(); toast('Сценарий «' + n + '» сохранён'); break; }
       case 'delscn': if (st.saved[s.name]) { const n = s.name; delete st.saved[n]; persist(); render(); toast('Сценарий «' + n + '» удалён из сохранённых'); } break;
@@ -1981,7 +1976,6 @@ svg.chart{display:block;width:100%;min-width:640px;height:auto} svg.chart text{f
         if (cxOpen.has(cat)) closeThen(t.parentNode.querySelectorAll('tr.sub'), () => { cxOpen.delete(cat); if (st.tab === 'capex') renderTabs(); }); else { cxOpen.add(cat); reveal = 'cx:' + cat; renderTabs(); reveal = null; } break; }
       case 'cxall': { const used = capCats(s), all = used.every(cat => cxOpen.has(cat));
         if (all) closeThen($('panel').querySelectorAll('tr.sub'), () => { used.forEach(cat => cxOpen.delete(cat)); if (st.tab === 'capex') renderTabs(); }); else { used.forEach(cat => cxOpen.add(cat)); reveal = 'cxall'; renderTabs(); reveal = null; } break; }
-      case 'tmc': st.tmCol = a[1]; renderTabs(); break;
       case 'rev': { const kind = a[1], id = a[2], field = a[3], r = baseOf(kind, id, field); if (!r || r.added) break; const f = kind === 'p' ? Meta.by[id].fmt : ({ salary: 'money', amount: 'money', ship: 'money', price: 'money', from: 'month', to: 'month', month: 'month', first: 'month', group: 'group', reserve: 'bool' }[field] || 'int');
         const sh = v => kind === 'p' ? dvP(id, v) : (field === 'name' || field === 'cat') ? v : field === 'type' ? tOf(BASE_S, v).name : disp(v, f);
         if (kind === 'p') act(`Возврат к базе — ${Meta.by[id].label}: ${sh(r.cur)} → ${sh(r.base)}`, () => { s.p[id] = BASE_S.p[id]; });
