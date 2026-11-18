@@ -126,7 +126,7 @@
     chart(MX, 182, W - 2 * MX, 314, { n, months: mm, bars: [], lines: [{ name: 'Внесено инвестором накопленно', data: d.s.invCum, color: C.red }, { name: 'Деньги на счёте на конец месяца', data: d.s.cash, color: C.blue }] });
 
     /* 6. Выручка, расходы, EBITDA */
-    slide('Выручка, расходы и EBITDA', 'По месяцам. EBITDA — выручка без НДС минус операционные расходы, до налога УСН');
+    slide('Выручка, расходы и EBITDA', 'По месяцам. EBITDA — выручка без НДС минус операционные расходы, до налога на прибыль или УСН');
     stats([['Выручка без НДС за 5 лет', mln(k.rev), ''], ['EBITDA за 5 лет', mln(k.ebitda), 'маржа ' + pct(k.ebm), k.ebitda < 0 ? C.red : C.ink], ['EBITDA в плюсе', k.ebLabel || 'не за 5 лет', k.ebLabel ? 'с этого месяца' : ''], ['Прибыль за 5 лет', mln(k.profit), 'после налогов', k.profit < 0 ? C.red : C.ink]], MX, 96, W - 2 * MX, 72);
     chart(MX, 182, W - 2 * MX, 314, { n, months: mm, bars: [{ name: 'EBITDA', data: d.s.ebitda, color: C.green2, neg: '#E8A2AD' }], lines: [{ name: 'Выручка без НДС', data: d.s.rev, color: C.brand }, { name: 'Операционные расходы', data: d.s.opex, color: C.red }] });
 

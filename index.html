@@ -776,7 +776,7 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
         pilots: 120000, pilots_m: 4,
         tax_k: 1.13, rent: 350000, rent_start: 1, maint: 250000, maint_start: 3, other: 133000,
         idx_m: 15, idx_rep: 0, cost_idx: 0.08, price_idx: 0.05, contingency: 0.10,
-        vat_thr: 20000000, vat_rate: 0.05, usn_rate: 0.05, usn_min: 0.01, vat7_thr: 250000000, usn_lim: 450000000,
+        vat_thr: 20000000, vat_rate: 0.05, usn_rate: 0.05, usn_min: 0.01, vat7_thr: 250000000, vat7_rate: 0.07, usn_lim: 450000000, osn_vat: 0.22, osn_tax: 0.25, osn_in: 0.8,
         reserve_m: 1, payout_on: 0, payout_keep: 3,
         pal_w: 800, pal_h: 1600, pal_kg: 1000, d03: 60, h03: 170, pk03: 12, d05: 65, h05: 215, pk05: 12, d10: 82, h10: 270, pk10: 6,
         pallet_price: 450, stretch_per: 0.35, stretch_price: 300,
@@ -885,7 +885,7 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
     const p = s.p, pr = prices(p), bpl = pr.bpl;
     const Z = () => new Array(N).fill(0);
     const keys = ['startL', 'pallets', 'newL', 'cap_l', 'plan_l', 'prod_l', 'sold_l', 'fg_l', 'lost_l', 'line_util', 'b03', 'b05', 'b10', 'bottles', 'prod_b', 'use_pcs',
-      'rev', 'receipts', 'rec_ytd', 'vat_rate', 'vat', 'rev_net', 'materials', 'energy', 'staff', 'rent', 'maint', 'other', 'mkt', 'logist', 'returns', 'opex', 'ebitda', 'usn', 'profit',
+      'rev', 'receipts', 'rec_ytd', 'osn', 'vat_rate', 'vat', 'vat_in', 'rev_net', 'materials', 'energy', 'staff', 'rent', 'maint', 'other', 'mkt', 'logist', 'returns', 'opex', 'ebitda', 'usn', 'profit',
       'capex_sched', 'new_pay', 'contingency', 'capex', 'wc_pay', 'wc_use', 'wc', 'wc_cum', 'cf', 'cum_cf', 'contrib', 'reserve', 'fixed', 'need', 'payout', 'cash', 'inv_cum', 'headcount'];
     const m = {}; keys.forEach(k => m[k] = Z());
     const yr = i => MONTHS[i - 1].y;
@@ -941,10 +941,15 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
     let prevRev = 0, ytd = 0, cash = 0, cum = 0, wcc = 0, inv = 0;
     const recYear = {};
     for (let i = 1; i <= N; i++) { const k = i - 1; m.receipts[k] = m.rev[k] * (1 - p.defer) + prevRev * p.defer; prevRev = m.rev[k]; recYear[yr(i)] = (recYear[yr(i)] || 0) + m.receipts[k]; }
+    let osn = false;
     for (let i = 1; i <= N; i++) {
       const k = i - 1, ic = idxc(i);
       const ytdPrev = (i > 1 && yr(i) === yr(i - 1)) ? ytd : 0; ytd = ytdPrev + m.receipts[k]; m.rec_ytd[k] = ytd;
-      m.vat_rate[k] = i === 1 ? 0 : ((ytdPrev > p.vat_thr || (recYear[yr(i) - 1] || 0) > p.vat_thr) ? p.vat_rate : 0);
+      /* налоговый режим. УСН: НДС нет, пока поступления за год не выше порога; дальше 5 %, а после второго порога — 7 % (со следующего месяца или с января, если порог пройден в прошлом году).
+         Поступления за год выше лимита УСН — с этого месяца и до конца общий режим: НДС с вычетом входящего и налог на прибыль */
+      if (ytd > p.usn_lim) osn = true; m.osn[k] = osn ? 1 : 0;
+      const prevY = recYear[yr(i) - 1] || 0;
+      m.vat_rate[k] = osn ? p.osn_vat : (i === 1 ? 0 : ((ytdPrev > p.vat_thr || prevY > p.vat_thr) ? ((ytdPrev > p.vat7_thr || prevY > p.vat7_thr) ? p.vat7_rate : p.vat_rate) : 0));
       m.vat[k] = m.rev[k] * m.vat_rate[k] / (1 + m.vat_rate[k]); m.rev_net[k] = m.rev[k] - m.vat[k];
       const pb = [m.prod_l[k] * p.sh03 / 0.3, m.prod_l[k] * p.sh05 / 0.5, m.prod_l[k] * p.sh10];
       m.materials[k] = (pb[0] * pr.m[0] + pb[1] * pr.m[1] + pb[2] * pr.m[2]) / (1 - p.waste) * ic + (i === p.pilots_m ? p.pilots : 0) + m.pallets[k] * (p.pallet_price + p.stretch_per * p.stretch_price) * ic;
@@ -955,8 +960,9 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
       m.mkt[k] = ((p.mkt_n > 0 && i >= p.mkt_start && i < p.mkt_start + p.mkt_n) ? p.mkt_launch / p.mkt_n : 0) + m.rev_net[k] * p.mkt_pct;
       m.logist[k] = m.rev[k] * p.logist; m.returns[k] = m.rev[k] * p.returns;
       m.opex[k] = m.materials[k] + m.energy[k] + m.staff[k] + m.rent[k] + m.maint[k] + m.other[k] + m.mkt[k] + m.logist[k] + m.returns[k];
-      m.ebitda[k] = m.rev_net[k] - m.opex[k];
-      m.usn[k] = Math.max(p.usn_rate * Math.max(0, m.ebitda[k]), p.usn_min * m.receipts[k]);
+      m.vat_in[k] = osn ? (m.materials[k] + m.energy[k] + m.rent[k] + m.maint[k] + m.other[k] + m.mkt[k] + m.logist[k]) * p.osn_in * p.osn_vat / (1 + p.osn_vat) : 0; // входящий НДС к вычету — только на общем режиме
+      m.ebitda[k] = m.rev_net[k] - m.opex[k] + m.vat_in[k];
+      m.usn[k] = osn ? p.osn_tax * Math.max(0, m.ebitda[k]) : Math.max(p.usn_rate * Math.max(0, m.ebitda[k]), p.usn_min * m.receipts[k]); // УСН или налог на прибыль
       m.profit[k] = m.ebitda[k] - m.usn[k];
       let sched = 0, schedRes = 0; s.capex.forEach(c => { if (c.month === i) { const a = capexAmt(c); sched += a; if (c.reserve) schedRes += a; } });
       let np = 0; s.batches.forEach(b => { const a = 0.5 * b.qty * bP(b); if (b.month === i) np += a; if (b.month === i + p.lead) np += a; if (i === 1 && b.month >= 1 && b.month <= p.lead) np += a; });
@@ -964,7 +970,7 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
       let pay = 0, used = 0;
       s.mats.forEach(mt => { const q = ord[mt.key][k]; pay += q * pr.mat[mt.key] * ic + ((q > 0 && i > mt.first) ? (+mt.ship || 0) : 0); used += useBy[mt.key][k] * pr.mat[mt.key]; });
       m.wc_pay[k] = pay; m.wc_use[k] = used * ic; m.wc[k] = pay - m.wc_use[k]; wcc += m.wc[k]; m.wc_cum[k] = wcc;
-      m.cf[k] = m.receipts[k] - m.opex[k] - m.vat[k] - m.usn[k] - m.capex[k] - m.wc[k]; cum += m.cf[k]; m.cum_cf[k] = cum;
+      m.cf[k] = m.receipts[k] - m.opex[k] - m.vat[k] + m.vat_in[k] - m.usn[k] - m.capex[k] - m.wc[k]; cum += m.cf[k]; m.cum_cf[k] = cum;
       m.fixed[k] = m.staff[k] + m.rent[k] + m.maint[k] + m.other[k]; m.reserve[k] = p.reserve_m * m.fixed[k];
       m.contrib[k] = +s.contrib[i] || 0;
       m.need[k] = Math.max(0, m.reserve[k] - (cash + m.cf[k] + m.contrib[k]));
@@ -983,7 +989,7 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
       if (m.payout[k] > 0) add(dayOf(i, 31), -m.payout[k], 'payout', 'Возврат инвестору');
       if (m.staff[k]) { add(dayOf(i, 10), -m.staff[k] / 2, 'pay', 'Зарплата и взносы (1-я половина)'); add(dayOf(i, 25), -m.staff[k] / 2, 'pay', 'Зарплата и взносы (2-я половина)'); }
       if (m.rent[k]) add(dayOf(i, 1), -m.rent[k], 'pay', 'Аренда');
-      if (m.vat[k] + m.usn[k]) add(dayOf(i, 28), -(m.vat[k] + m.usn[k]), 'pay', 'Налоги (НДС и УСН)');
+      if (m.vat[k] - m.vat_in[k] + m.usn[k]) add(dayOf(i, 28), -(m.vat[k] - m.vat_in[k] + m.usn[k]), 'pay', 'Налоги');
       s.capex.forEach(c => { if (c.month === i && capexAmt(c)) add(dayOf(i, c.day || 10), -capexAmt(c), 'capex', c.name, c.id); });
       s.batches.forEach(b => { const a = 0.5 * b.qty * bP(b); if (!a) return;
         if (b.month === i) add(dayOf(i, 10), -a, 'capex', 'Новые установки ×' + b.qty + ' — 50 % при запуске', b.id);
@@ -1029,7 +1035,7 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
       lastInvM: (() => { let r = 0; for (let q = 0; q < N; q++) if (m.need[q] + m.contrib[q] > 0) r = q + 1; return r; })(),
       cumEnd: m.cum_cf[N - 1], cashEnd: m.cash[N - 1], payout: sum(m.payout), maxUtil: Math.max.apply(null, m.line_util), wcMax: Math.max.apply(null, m.wc_cum),
       opexTotal: sum(m.opex), capexTotal: sum(m.capex), fotTotal: sum(m.staff), headMax: Math.max.apply(null, m.headcount),
-      lostL: sum(m.lost_l), sharesOk: Math.abs(p.sh03 + p.sh05 + p.sh10 - 1) < 1e-4,
+      osnM: firstIdx(q => m.osn[q] > 0), vat7M: firstIdx(q => !m.osn[q] && m.vat_rate[q] > p.vat_rate + 1e-9), lostL: sum(m.lost_l), sharesOk: Math.abs(p.sh03 + p.sh05 + p.sh10 - 1) < 1e-4,
       cost: pr, lineCapB
     };
     const al = [];
@@ -1039,9 +1045,9 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
     { const q = firstIdx(z => m.lost_l[z] > 1 && z + 1 > p.start_m); if (q) al.push({ lvl: 'warn', day: dayOf(q, 1), text: 'С ' + MONTHS[q - 1].label + ' план продаж выше производства — недопродано ' + Math.round(k.lostL).toLocaleString('ru-RU') + ' л за период' }); }
     { const q = firstIdx(z => m.fg_l[z] > 2 * Math.max(1, m.plan_l[z]) && m.plan_l[z] > 0); if (q) al.push({ lvl: 'warn', day: dayOf(q, 1), text: 'Склад готовой воды больше двух месяцев продаж с ' + MONTHS[q - 1].label }); }
     if (minCash < -1) al.push({ lvl: 'warn', day: minCashDay, text: 'Кассовый разрыв внутри месяца: ' + dateOf(minCashDay).text + ' на счёте ' + Math.round(minCash / 1000).toLocaleString('ru-RU') + ' тыс. ₽ — увеличьте неснижаемый остаток' });
-    const recMax = Math.max.apply(null, years.map(y => y.rec));
-    if (recMax > p.usn_lim) al.push({ lvl: 'err', day: 0, text: 'Доход за год выше лимита УСН — налоги в расчёте занижены' });
-    else if (recMax > p.vat7_thr) al.push({ lvl: 'warn', day: 0, text: 'Доход за год выше порога — НДС будет 7 %, поменяйте ставку' });
+    const pcT = v => String(Math.round(v * 1000) / 10).replace('.', ',') + ' %';
+    if (k.vat7M) al.push({ lvl: 'warn', day: dayOf(k.vat7M, 1), text: 'С ' + MONTHS[k.vat7M - 1].label + ' НДС ' + pcT(p.vat7_rate) + ' вместо ' + pcT(p.vat_rate) + ': доход за год выше ' + Math.round(p.vat7_thr / 1e6) + ' млн ₽. Это учтено в расчёте' });
+    if (k.osnM) al.push({ lvl: 'warn', day: dayOf(k.osnM, 1), text: 'С ' + MONTHS[k.osnM - 1].label + ' доход за год выше лимита УСН (' + Math.round(p.usn_lim / 1e6) + ' млн ₽): дальше налоги считаются по общему режиму — НДС ' + pcT(p.osn_vat) + ' с вычетом входящего и налог на прибыль ' + pcT(p.osn_tax) });
     s.capex.forEach(c => { if (!(c.month >= 1 && c.month <= N)) al.push({ lvl: 'err', day: 0, text: 'Вложение «' + c.name + '»: месяц оплаты вне периода' }); });
     return { m, d, ev, arrivals, ord, stockEnd, useBy, cnt, k, alerts: al, prices: pr };
   }
@@ -1056,7 +1062,7 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
     s.capex.forEach(c => { if (c.month >= 1 && c.month <= T) cap[CAP_MAIN.indexOf(c.cat) >= 0 ? c.cat : 'Прочее'] += amt(c) * (1 + (c.reserve ? p.contingency : 0)); });
     const np = sumT(m.new_pay) * (1 + p.contingency); cap['Установки очистки'] += np;
     const capT = sumT(m.capex), tara = sumT(m.materials) + sumT(m.wc), fot = sumT(m.staff);
-    const oth = sumT(m.energy) + sumT(m.rent) + sumT(m.maint) + sumT(m.other) + sumT(m.mkt) + sumT(m.logist) + sumT(m.returns) + sumT(m.vat) + sumT(m.usn);
+    const oth = sumT(m.energy) + sumT(m.rent) + sumT(m.maint) + sumT(m.other) + sumT(m.mkt) + sumT(m.logist) + sumT(m.returns) + sumT(m.vat) - sumT(m.vat_in) + sumT(m.usn);
     const rec = sumT(m.receipts), pay = sumT(m.payout), cash = m.cash[T - 1], opx = tara + fot + oth - rec;
     return { T, cap, capT, np, tara, fot, oth, rec, opx, cash, pay, capAfter: all(m.capex) - capT, check: capT + opx + cash + pay - k.invest };
   }
@@ -1136,8 +1142,12 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
       ['vat_rate', 'Ставка НДС на УСН', 'доля', 'pct', ''],
       ['usn_rate', 'УСН «доходы минус расходы»', 'доля', 'pct', 'Ивановская область'],
       ['usn_min', 'Минимальный налог УСН', '% поступлений', 'pct', ''],
-      ['vat7_thr', 'Доход за год, выше которого НДС 7 %', '₽', 'money', 'Без индексации'],
-      ['usn_lim', 'Доход за год, выше которого УСН теряется', '₽', 'money', 'Без индексации'],
+      ['vat7_thr', 'Доход за год, выше которого НДС на УСН выше', '₽', 'money', 'В законе 250 млн ₽ с ежегодной индексацией (на 2026 год — 272,5 млн ₽); здесь без индексации'],
+      ['vat7_rate', 'Ставка НДС на УСН выше этого дохода', 'доля', 'pct', 'Применяется со следующего месяца после превышения'],
+      ['usn_lim', 'Доход за год, выше которого УСН теряется', '₽', 'money', 'В законе 450 млн ₽ с индексацией (на 2026 год — 490,5 млн ₽); здесь без индексации'],
+      ['osn_vat', 'Общий режим: ставка НДС', 'доля', 'pct', 'С месяца, когда доход за год превысил лимит УСН, и до конца расчёта'],
+      ['osn_tax', 'Общий режим: налог на прибыль', 'доля', 'pct', ''],
+      ['osn_in', 'Общий режим: доля расходов с входящим НДС', 'доля', 'pct', 'НДС в материалах, аренде, энергии, логистике и маркетинге принимается к вычету. Не все поставщики работают с НДС, поэтому меньше 100 %'],
       ['reserve_m', 'Неснижаемый остаток на счёте', 'мес. постоянных расходов', 'int', 'Зарплата + аренда + обслуживание + прочие'],
       ['payout_on', 'Возвращать инвестору свободные деньги', '1 = да, 0 = нет', 'int', 'Всё, что сверх подушки, уходит инвестору в конце месяца'],
       ['payout_keep', 'Подушка перед возвратом инвестору', 'мес. постоянных расходов', 'int', '']] },
@@ -1163,6 +1173,7 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
   ['gb03', 'gb05', 'gb10', 'gw03', 'gw05', 'gw10', 'gcap', 'gd03', 'gh03', 'gpk03', 'gd05', 'gh05', 'gpk05', 'gd10', 'gh10', 'gpk10'].forEach(k => { TARA[k] = 'glass'; });
   ['pal_w', 'pal_h', 'pal_kg', 'pallet_price', 'stretch_per', 'stretch_price'].forEach(k => { SUB[k] = 'Паллета и стрейч-плёнка'; });
   ['d03', 'h03', 'pk03', 'd05', 'h05', 'pk05', 'd10', 'h10', 'pk10', 'gd03', 'gh03', 'gpk03', 'gd05', 'gh05', 'gpk05', 'gd10', 'gh10', 'gpk10', 'gb03', 'gb05', 'gb10', 'gw03', 'gw05', 'gw10', 'glass'].forEach(k => { SUB[k] = 'Бутылки'; });
+  ['vat7_rate', 'osn_vat', 'osn_tax', 'osn_in'].forEach(k => { SUB[k] = 'Налоги'; });
   SUB.gcap = 'Крышка'; SUB.pf_kg = 'Преформа'; ['label', 'pack', 'tray', 'waste'].forEach(k => { SUB[k] = 'Этикетка, упаковка, брак'; });
   const BY = {}; M.forEach(gr => gr.items.forEach(it => { BY[it[0]] = { key: it[0], label: it[1], unit: it[2], fmt: it[3], hint: it[4], group: gr.id, sub: SUB[it[0]] || gr.title, opts: OPTS[it[0]], tara: TARA[it[0]] || '', short: it[1].replace(/^(ПЭТ|Стекло)\. /, '') }; }));
   g.Meta = { groups: M, by: BY, opts: OPTS };
@@ -1347,8 +1358,11 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
     row('rev', 'Выручка с НДС', '₽', (i, c) => `=(${X(c, 'b03')}*${P.p03}+${X(c, 'b05')}*${P.p05}+${X(c, 'b10')}*${P.p10})*${idp(c)}`, 'money', 'total');
     row('receipts', 'Поступления денег', '₽', (i, c, pc) => `=${X(c, 'rev')}*(1-${P.defer})` + (pc ? `+${X(pc, 'rev')}*${P.defer}` : ''));
     row('rec_ytd', 'Поступления с начала года', '₽', (i, c, pc) => pc ? `=IF(${Y(c)}=${Y(pc)},${pc}${r},0)+${X(c, 'receipts')}` : `=${X(c, 'receipts')}`, 'money', null, null);
-    row('vat_rate', 'Ставка НДС в этом месяце', '%', (i, c, pc) => pc ? `=IF(OR(IF(${Y(c)}=${Y(pc)},${X(pc, 'rec_ytd')},0)>${P.vat_thr},SUMIF($${CF}$${YROW}:$${CL}$${YROW},${Y(c)}-1,$${CF}$${R.receipts}:$${CL}$${R.receipts})>${P.vat_thr}),${P.vat_rate},0)` : '=0', 'pct', null, null);
-    row('vat', 'НДС к уплате', '₽', (i, c) => `=${X(c, 'rev')}*${X(c, 'vat_rate')}/(1+${X(c, 'vat_rate')})`);
+    row('osn', 'Общий режим налогов (1 — да): доход с начала года превысил лимит УСН', '0/1', (i, c, pc) => pc ? `=IF(OR(${pc}${r}=1,${X(c, 'rec_ytd')}>${P.usn_lim}),1,0)` : `=IF(${X(c, 'rec_ytd')}>${P.usn_lim},1,0)`, 'int', null, null);
+    row('vat_rate', 'Ставка НДС в этом месяце', '%', (i, c, pc) => { if (!pc) return `=IF(${X(c, 'osn')}=1,${P.osn_vat},0)`;
+      const ytdP = `IF(${Y(c)}=${Y(pc)},${X(pc, 'rec_ytd')},0)`, prevY = `SUMIF($${CF}$${YROW}:$${CL}$${YROW},${Y(c)}-1,$${CF}$${R.receipts}:$${CL}$${R.receipts})`;
+      return `=IF(${X(c, 'osn')}=1,${P.osn_vat},IF(OR(${ytdP}>${P.vat_thr},${prevY}>${P.vat_thr}),IF(OR(${ytdP}>${P.vat7_thr},${prevY}>${P.vat7_thr}),${P.vat7_rate},${P.vat_rate}),0))`; }, 'pct', null, null);
+    row('vat', 'НДС с выручки', '₽', (i, c) => `=${X(c, 'rev')}*${X(c, 'vat_rate')}/(1+${X(c, 'vat_rate')})`);
     row('rev_net', 'Выручка без НДС', '₽', (i, c) => `=${X(c, 'rev')}-${X(c, 'vat')}`, 'money', 'total');
     sub('Расходы');
     row('materials', 'Материалы на разлитое (с браком и боем), паллеты, стрейч и пилотные партии', '₽', (i, c) => `=${X(c, 'prod_l')}*(${P.sh03}/0.3*${P.m03}+${P.sh05}/0.5*${P.m05}+${P.sh10}/1*${P.m10})/(1-${P.waste})*${idc(c)}+IF(${M(c)}=${P.pilots_m},${P.pilots},0)+${X(c, 'pallets')}*(${P.pallet_price}+${P.stretch_per}*${P.stretch_price})*${idc(c)}`);
@@ -1361,8 +1375,9 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
     row('logist', 'Логистика и бонусы сетям', '₽', (i, c) => `=${X(c, 'rev')}*${P.logist}`);
     row('returns', 'Возвраты и списания', '₽', (i, c) => `=${X(c, 'rev')}*${P.returns}`);
     row('opex', 'ИТОГО операционные расходы', '₽', (i, c) => `=SUM(${X(c, 'materials')}:${X(c, 'returns')})`, 'money', 'total');
-    row('ebitda', 'EBITDA (выручка без НДС − расходы)', '₽', (i, c) => `=${X(c, 'rev_net')}-${X(c, 'opex')}`, 'money', 'total');
-    row('usn', 'УСН', '₽', (i, c) => `=MAX(${P.usn_rate}*MAX(0,${X(c, 'ebitda')}),${P.usn_min}*${X(c, 'receipts')})`);
+    row('vat_in', 'НДС к вычету по расходам (только на общем режиме)', '₽', (i, c) => `=IF(${X(c, 'osn')}=1,(${X(c, 'materials')}+${X(c, 'energy')}+${X(c, 'rent')}+${X(c, 'maint')}+${X(c, 'other')}+${X(c, 'mkt')}+${X(c, 'logist')})*${P.osn_in}*${P.osn_vat}/(1+${P.osn_vat}),0)`);
+    row('ebitda', 'EBITDA (выручка без НДС − расходы + НДС к вычету)', '₽', (i, c) => `=${X(c, 'rev_net')}-${X(c, 'opex')}+${X(c, 'vat_in')}`, 'money', 'total');
+    row('usn', 'Налог: УСН, а на общем режиме — налог на прибыль', '₽', (i, c) => `=IF(${X(c, 'osn')}=1,${P.osn_tax}*MAX(0,${X(c, 'ebitda')}),MAX(${P.usn_rate}*MAX(0,${X(c, 'ebitda')}),${P.usn_min}*${X(c, 'receipts')}))`);
     row('profit', 'ПРИБЫЛЬ после налогов', '₽', (i, c) => `=${X(c, 'ebitda')}-${X(c, 'usn')}`, 'money', 'total');
     sub('Вложения в основные средства');
     row('capex_sched', 'Вложения по списку (лист «Вложения»)', '₽', (i, c) => `=SUMIF(${V('D')},${M(c)},${V('C')})`);
@@ -1379,7 +1394,7 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
     row('wc', 'ИЗМЕНЕНИЕ ЗАПАСА за месяц (плюс — докупили, минус — израсходовали больше)', '₽', (i, c) => `=${X(c, 'wc_pay')}-${X(c, 'wc_use')}`, 'money', 'total');
     row('wc_cum', 'Деньги в запасе материалов (накопленно)', '₽', (i, c, pc) => (pc ? `=${pc}${r}+` : '=') + X(c, 'wc'), 'money', null, 'MAX');
     sub('Деньги и взносы инвестора');
-    row('cf', 'Денежный поток (поступления − расходы − налоги − вложения − запас)', '₽', (i, c) => `=${X(c, 'receipts')}-${X(c, 'opex')}-${X(c, 'vat')}-${X(c, 'usn')}-${X(c, 'capex')}-${X(c, 'wc')}`, 'money', 'total');
+    row('cf', 'Денежный поток (поступления − расходы − налоги − вложения − запас)', '₽', (i, c) => `=${X(c, 'receipts')}-${X(c, 'opex')}-${X(c, 'vat')}+${X(c, 'vat_in')}-${X(c, 'usn')}-${X(c, 'capex')}-${X(c, 'wc')}`, 'money', 'total');
     row('cum_cf', 'Накопленный денежный поток (без денег инвестора)', '₽', (i, c, pc) => (pc ? `=${pc}${r}+` : '=') + X(c, 'cf'), 'money', null, 'MIN');
     row('contrib', 'Инвестор уже внёс — факт (вписывайте сюда)', '₽', (i) => +s.contrib[i] || 0, 'money', 'input');
     row('fixed', 'Постоянные расходы месяца (персонал, аренда, обслуживание, прочие)', '₽', (i, c) => `=${X(c, 'staff')}+${X(c, 'rent')}+${X(c, 'maint')}+${X(c, 'other')}`);
@@ -1426,14 +1441,13 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
     put(ws, 'P' + YT, 'Итого', { kind: 'total' }); put(ws, 'Q' + YT, `=SUM(Q${YH + 2}:Q${YT - 1})`, { kind: 'total', fmt: 'int' });
     ['R', 'S', 'U', 'V'].forEach(c => put(ws, c + YT, `=SUM(${c}${YH + 2}:${c}${YT - 1})`, { kind: 'total', fmt: 'money' })); put(ws, 'T' + YT, `=IF(R${YT}>0,S${YT}/R${YT},0)`, { kind: 'total', fmt: 'pct1' }); put(ws, 'W' + YT, `=W${YT - 1}`, { kind: 'total', fmt: 'money' });
     const H0 = YT + 2; band(ws, H0, 'Проверки — во всех строках должно быть OK', 16, 25);
-    const recMax = `MAX(${YS.map(y => `SUMIF(${years},${y},${rng('receipts')})`).join(',')})`;
     const ch = [
       ['Доли бутылок в сумме 100 %', `=IF(ABS(${P.sh03}+${P.sh05}+${P.sh10}-1)<0.0001,"OK","ОШИБКА: сумма долей не 100 %")`],
       ['Все вложения попали в график оплат', `=IF(ABS(SUM(${rng('capex_sched')})-SUM(${V('C')}))<1,"OK","ОШИБКА: месяц оплаты пустой или вне 1–${N}")`],
       ...s.mats.map(mt => [mt.name + ': запас не уходит в минус', `=IF(MIN(${rng(mt.key + '_stock')})<-0.5,"ОШИБКА: не хватает — партия или месяц 1-го заказа","OK")`]),
       ['Линия розлива успевает', `=IF(MAX(${rng('line_util')})>1.0001,"ВНИМАНИЕ: линия не успевает","OK")`],
       ['План продаж обеспечен производством', `=IF(SUM(${rng('lost_l')})>1,"ВНИМАНИЕ: план выше производства","OK")`],
-      ['Доход за год в пределах УСН и НДС 5 %', `=IF(${recMax}>${P.usn_lim},"ВНИМАНИЕ: выше лимита УСН",IF(${recMax}>${P.vat7_thr},"ВНИМАНИЕ: НДС будет 7 %","OK"))`]];
+      ['Налоговый режим: УСН с базовой ставкой НДС', `=IF(SUM(${rng('osn')})>0,"ВНИМАНИЕ: с "&INDEX(${labels},MATCH(1,${rng('osn')},0))&" общий режим — НДС и налог на прибыль",IF(MAX(${rng('vat_rate')})>${P.vat_rate},"ВНИМАНИЕ: НДС на УСН по повышенной ставке","OK"))`]];
     ch.forEach((a, k) => { put(ws, 'P' + (H0 + 1 + k), a[0]); ws.mergeCells(`P${H0 + 1 + k}:U${H0 + 1 + k}`); put(ws, 'V' + (H0 + 1 + k), a[1], { bold: true, h: 'left' }); ws.mergeCells(`V${H0 + 1 + k}:Y${H0 + 1 + k}`); });
     ws.addConditionalFormatting({ ref: `V${H0 + 1}:V${H0 + ch.length}`, rules: [{ type: 'cellIs', operator: 'notEqual', formulae: ['"OK"'], priority: 1, style: { fill: { type: 'pattern', pattern: 'solid', bgColor: { argb: C.err } }, font: { color: { argb: 'FFB00020' }, bold: true } } }] });
     ws.addConditionalFormatting({ ref: `${CF}${R.need}:${CL}${R.need}`, rules: [{ type: 'cellIs', operator: 'greaterThan', formulae: [0], priority: 2, style: { fill: { type: 'pattern', pattern: 'solid', bgColor: { argb: 'FFC6E0B4' } }, font: { bold: true } } }] });
@@ -1700,7 +1714,7 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
     chart(MX, 182, W - 2 * MX, 314, { n, months: mm, bars: [], lines: [{ name: 'Внесено инвестором накопленно', data: d.s.invCum, color: C.red }, { name: 'Деньги на счёте на конец месяца', data: d.s.cash, color: C.blue }] });
 
     /* 6. Выручка, расходы, EBITDA */
-    slide('Выручка, расходы и EBITDA', 'По месяцам. EBITDA — выручка без НДС минус операционные расходы, до налога УСН');
+    slide('Выручка, расходы и EBITDA', 'По месяцам. EBITDA — выручка без НДС минус операционные расходы, до налога на прибыль или УСН');
     stats([['Выручка без НДС за 5 лет', mln(k.rev), ''], ['EBITDA за 5 лет', mln(k.ebitda), 'маржа ' + pct(k.ebm), k.ebitda < 0 ? C.red : C.ink], ['EBITDA в плюсе', k.ebLabel || 'не за 5 лет', k.ebLabel ? 'с этого месяца' : ''], ['Прибыль за 5 лет', mln(k.profit), 'после налогов', k.profit < 0 ? C.red : C.ink]], MX, 96, W - 2 * MX, 72);
     chart(MX, 182, W - 2 * MX, 314, { n, months: mm, bars: [{ name: 'EBITDA', data: d.s.ebitda, color: C.green2, neg: '#E8A2AD' }], lines: [{ name: 'Выручка без НДС', data: d.s.rev, color: C.brand }, { name: 'Операционные расходы', data: d.s.opex, color: C.red }] });
 
@@ -1765,6 +1779,9 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
     return s;
   }
   try { const o = JSON.parse(localStorage.getItem(LS) || 'null'); if (o && o.s && o.s.p && o.s.staff && o.s.capex && o.s.mats) { Object.assign(st, o); migrate(st.s); Object.keys(st.saved || {}).forEach(n => migrate(st.saved[n])); } } catch (e) { st.s = clone(BASE_S); }
+  /* По умолчанию открывается общий сценарий с этим названием (из scenarios.json). «Свежий» посетитель — тот, у кого на экране нетронутая встроенная база и нет ссылки на сценарий */
+  const DEF_SHARED = 'Базовый сценарий';
+  let fresh = st.s.name === 'База' && !(st.journal || []).length && JSON.stringify(st.s.p) === JSON.stringify(BASE_S.p) && st.s.capex.length === BASE_S.capex.length && st.s.staff.length === BASE_S.staff.length && !/^#(s|id)=/.test(location.hash || '');
   let res = S.sim(st.s);
   /* что раскрыто на экране — хранится отдельно от сценариев */
   const UKEY = 'vodaGame.ui'; let ui = { mat: false, staff: false, miss: false, hint: false, last: {} };
@@ -1796,7 +1813,9 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
   const unb64 = t => { const s = atob(t), a = new Uint8Array(s.length); for (let i = 0; i < s.length; i++) a[i] = s.charCodeAt(i); return a; };
   const scnFile = map => JSON.stringify({ version: 1, updated: new Date().toISOString(), scenarios: map }, null, 1);
   function readScnFile(j) { const out = {}; const src = j && j.scenarios ? j.scenarios : {}; Object.keys(src).forEach(n => { const s = src[n]; if (s && s.p && s.staff && s.capex && s.mats) { try { out[n] = migrate(clone(s)); out[n].name = n; } catch (e) { } } }); return out; }
-  function loadShared() { fetch('scenarios.json?t=' + Date.now()).then(r => r.ok ? r.json() : null).then(j => { if (!j) return; shared = readScnFile(j); sharedAt = j.updated || ''; renderHeader(); if (st.tab === 'scn') renderTabs(); }).catch(() => { }); }
+  function loadShared() { fetch('scenarios.json?t=' + Date.now()).then(r => r.ok ? r.json() : null).then(j => { if (!j) return; shared = readScnFile(j); sharedAt = j.updated || '';
+      if (fresh && shared[DEF_SHARED]) { fresh = false; st.s = migrate(clone(shared[DEF_SHARED])); st.s.name = DEF_SHARED; st.journal = []; undo = []; res = S.sim(st.s); afterChange(); return; }
+      fresh = false; renderHeader(); if (st.tab === 'scn') renderTabs(); }).catch(() => { fresh = false; }); }
   async function publish(map, msg) { // запись scenarios.json в репозиторий через GitHub API; токен хранится только в браузере владельца
     const tok = getTok(); if (!tok) { toast('Сначала вставьте токен GitHub в поле ниже и нажмите «Запомнить»'); return false; }
     const api = `https://api.github.com/repos/${GH.owner}/${GH.repo}/contents/scenarios.json`, H = { Authorization: 'Bearer ' + tok, Accept: 'application/vnd.github+json' };
@@ -1884,7 +1903,7 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
       tween('score', 380, e => vals.forEach((v, i) => { if (from[i] !== v && !(i === 1 && !(from[i] && v))) put(i, fm[i](from[i] + (v - from[i]) * e)); }), () => vals.forEach((v, i) => put(i, fm[i](v))), 1.5); }
     shown = vals;
     const ms = [
-      ['Проект окупается за 5 лет', k.paybackM > 0], ['Бюджет ниже базового', k.invest < b.invest - 1], ['EBITDA в плюсе в первые 3 месяца продаж', k.ebitdaM > 0 && k.ebitdaM <= st.s.p.start_m + 2],
+      ['Проект окупается за 5 лет', k.paybackM > 0], ['EBITDA в плюсе в первые 3 месяца продаж', k.ebitdaM > 0 && k.ebitdaM <= st.s.p.start_m + 2],
       ['Склад материалов без дефицита', !res.alerts.some(a => a.lvl === 'err' && /закончились/.test(a.text))], ['Без кассовых разрывов', k.minCash >= 0],
       ['Продано всё по плану', k.lostL <= 1], ['Линия успевает', k.maxUtil <= 1.0001], ['Инвестору возвращено всё вложенное', k.payout >= k.invest && k.invest > 0]];
     const done = ms.filter(a => a[1]).length;
@@ -2176,7 +2195,7 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
     const kpiTable = `<h3>Показатели сценария</h3><div class="tbl"><table class="kpit"><thead><tr><th>Показатель</th><th class="r">Значение</th></tr></thead><tbody>` +
         sd.kpi.map(r => { const pct = r[2] === 'pct', num = typeof r[1] === 'number', money = /₽/.test(r[0]);
           return `<tr><td>${esc(r[0].replace(', ₽', ''))}</td><td class="r">${(pct ? pc(r[1]) : money ? mln(r[1]) : num ? pcs(r[1]) : esc(r[1])).replace('-', '−')}</td></tr>`; }).join('') + `</tbody></table></div>
-      <p class="tnote2">Расчёт идёт 5 лет — ${N} месяцев, с ${MONTHS[0].label} по ${ENDL}. IRR — годовая доходность проекта по денежному потоку всех ${N} месяцев. EBITDA — выручка без НДС минус операционные расходы, до налога УСН. Маржинальность — EBITDA к выручке без НДС.</p>`;
+      <p class="tnote2">Расчёт идёт 5 лет — ${N} месяцев, с ${MONTHS[0].label} по ${ENDL}. IRR — годовая доходность проекта по денежному потоку всех ${N} месяцев. EBITDA — выручка без НДС минус операционные расходы, до налога (УСН, а на общем режиме — налога на прибыль). Маржинальность — EBITDA к выручке без НДС.</p>`;
     const sg = v => mln(v).replace('-', '−');
     const yearTable = `<h3>По годам</h3><div class="tbl"><table class="yrt"><thead><tr><th>Год</th><th class="r">Месяцев</th><th class="r">Выручка без НДС</th><th class="r">EBITDA</th><th class="r">Маржа</th><th class="r">Прибыль после налогов</th><th class="r">Денежный поток</th><th class="r">Накопленный поток</th></tr></thead><tbody>` +
         sd.years.map(y => `<tr${k.paybackM && MONTHS[k.paybackM - 1].y === y[0] ? ' class="pb"' : ''}><td><b>${y[0]}</b>${k.paybackM && MONTHS[k.paybackM - 1].y === y[0] ? ' <small>окупаемость</small>' : ''}</td><td class="r calc">${y[1]}</td><td class="r">${sg(y[2])}</td><td class="r">${sg(y[3])}</td><td class="r calc">${y[2] > 0 ? pc(y[4]).replace('-', '−') : '—'}</td><td class="r">${sg(y[5])}</td><td class="r">${sg(y[6])}</td><td class="r">${sg(y[7])}</td></tr>`).join('') +
@@ -2211,7 +2230,7 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
     out.push(['Запас материалов на складе', 'Материалы', Math.max(0, sumTo(m.wc))]);
     out.push(['Логистика и бонусы сетям', 'Продажи', sumTo(m.logist)], ['Маркетинг', 'Продажи', sumTo(m.mkt)], ['Возвраты и списания', 'Продажи', sumTo(m.returns)]);
     out.push(['Аренда', 'Постоянные', sumTo(m.rent)], ['Электричество и вода', 'Постоянные', sumTo(m.energy)], ['Обслуживание производства', 'Постоянные', sumTo(m.maint)], ['Прочие расходы', 'Постоянные', sumTo(m.other)]);
-    out.push(['Налоги (НДС и УСН)', 'Налоги', sumTo(m.vat) + sumTo(m.usn)]);
+    out.push(['Налоги', 'Налоги', sumTo(m.vat) - sumTo(m.vat_in) + sumTo(m.usn)]);
     return out.filter(a => a[2] > 0.5).sort((a, b) => b[2] - a[2]);
   }
   function chartsPanel() {
@@ -2412,7 +2431,7 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
     <div><h3>Как считаются деньги</h3><ul><li>Инвестор вносит 1-го числа ровно столько, чтобы в конце месяца на счёте остался неснижаемый остаток.</li><li>Зарплата и взносы — 10-го и 25-го. Аренда — 1-го. Партии материалов — 15-го. Налоги — 28-го.</li><li>Выручка приходит равномерно по дням; часть — в следующем месяце (отсрочка покупателям).</li><li>Материалы попадают в расходы, когда воду разлили, а деньги уходят, когда оплатили партию.</li><li>«Резерв» у строки вложений добавляет к ней процент на непредвиденное; платится в том же месяце.</li><li>Окупаемость — месяц, когда накопленный денежный поток без денег инвестора стал неотрицательным.</li></ul></div>
     <div><h3>Производство и продажи</h3><ul><li>Мощность = сумма по типам (штук × литров в сутки) × коэффициент использования × дни.</li><li>Завод разливает столько, сколько нужно по плану продаж плюс целевой запас, но не больше мощности воды и линии.</li><li>Продано = меньшее из плана и того, что есть на складе с учётом розлива.</li><li>Докупили установки, но не подняли план продаж — мощность простаивает, деньги потрачены зря.</li></ul></div>
     <div><h3>Паллеты</h3><ul><li>Бутылок на паллете = упаковок в слое × штук в упаковке × слоёв.</li><li>Упаковок в слое — сколько прямоугольников упаковки встаёт рядами на 1200 × 800 или 1200 × 1000.</li><li>Слоёв — сколько проходит и по высоте груза, и по весу.</li><li>Паллеты и стрейч-плёнка расходуются на каждую разлитую паллету и покупаются партиями, как крышки.</li></ul></div>
-    <div><h3>Тревоги</h3><ul><li><b>Материал закончился</b> — заказ сделан поздно или партия мала.</li><li><b>Кассовый разрыв</b> — в середине месяца на счёте минус, хотя в конце плюс. Увеличьте неснижаемый остаток.</li><li><b>Линия не успевает</b> — нужна вторая смена.</li><li><b>План выше производства</b> — не хватает воды или линии.</li><li><b>Лимиты УСН</b> — доход за год вышел за порог, налоги будут выше.</li></ul></div>
+    <div><h3>Тревоги</h3><ul><li><b>Материал закончился</b> — заказ сделан поздно или партия мала.</li><li><b>Кассовый разрыв</b> — в середине месяца на счёте минус, хотя в конце плюс. Увеличьте неснижаемый остаток.</li><li><b>Линия не успевает</b> — нужна вторая смена.</li><li><b>План выше производства</b> — не хватает воды или линии.</li><li><b>Лимиты УСН</b> — доход за год вышел за порог. Расчёт сам переходит на повышенную ставку НДС, а выше лимита УСН — на общий режим: НДС с вычетом входящего и налог на прибыль. Ставки и пороги — в «Ежем. расходы и др.».</li></ul></div>
     <div><h3>Excel, презентация и допущения</h3><ul><li>«Скачать презентацию» собирает PDF на 8 слайдов по текущему сценарию: итог в цифрах, на что идут деньги инвестора, графики окупаемости, итоги по годам и главные допущения.</li><li>«Скачать Excel» выгружает текущий сценарий: «Кейс» с формулами, «Персонал», «Вложения», «Установки» (типы и партии), «Продажи», «Графики» с диаграммами окупаемости, подневные остатки, журнал и справку. Итоги в файле и на экране совпадают.</li><li>Обратно из Excel сценарий не загружается — правьте здесь, выгружайте заново.</li><li>Оклады по ролям, размеры бутылок, цены паллет и стрейч-плёнки — оценки; пресс-формы бутылок и транспорт крышек стоят нулями.</li><li>Амортизации нет: игра считает деньги, а не бухгалтерскую прибыль.</li></ul></div></div>`;
 
   const GROUPS = [['prod', 'Производство', ['capex', 'units', 'people']], ['tara', 'Тара', ['bottle', 'stock']], ['sales', 'Продажи', ['sales']], ['fin', 'Ежем. расходы и др.', ['costs', 'money']], ['total', 'Итог', ['summary', 'charts', 'levers']], ['model', 'Моделирование', ['scn', 'journal', 'rules']]];
@@ -2515,7 +2534,7 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
       { title: 'Производство', col: 1, rows: [['Установки очистки на старте', units.join(', ') || 'нет'], ['Докупка установок', bought ? bought + ' шт., ' + s.batches.length + ' ' + plur(s.batches.length, 'партия', 'партии', 'партий') : 'не планируется'], ['Мощность очистки в ' + ENDL, pcs(m.cap_l[N - 1]) + ' л в месяц'], ['Линия розлива', pcs(p.bph) + ' бутылок в час, ' + p.hours + ' ч × ' + p.shifts + ' ' + plur(p.shifts, 'смена', 'смены', 'смен')], ['Наибольшая загрузка линии', pc0(k.maxUtil)]] },
       { title: 'Продажи', col: 0, rows: [['Первый месяц продаж', mLabel(p.start_m)], ['План продаж в ' + ENDL, pcs(m.plan_l[N - 1]) + ' л в месяц'], ['Продаём от плана', pc0(p.caution)], ['Оплата покупателей', pc0(p.defer) + ' выручки приходит в следующем месяце']] },
       { title: 'Расходы', col: 1, rows: [['Штат', 'до ' + k.headMax + ' ' + plur(k.headMax, 'человека', 'человек', 'человек') + ', ФОТ ' + mln(m.staff[N - 1]) + ' в месяц'], ['Аренда', rub(p.rent) + ' в месяц'], ['Логистика и бонусы сетям', dvP('logist', p.logist) + ' выручки'], ['Маркетинг', dvP('mkt_pct', p.mkt_pct) + ' выручки и ' + mln(p.mkt_launch) + ' на запуск']] },
-      { title: 'Налоги и деньги', col: 2, rows: [['УСН «доходы минус расходы»', dvP('usn_rate', p.usn_rate) + ', не меньше ' + dvP('usn_min', p.usn_min) + ' поступлений'], ['НДС на УСН', dvP('vat_rate', p.vat_rate) + ' после ' + mln(p.vat_thr) + ' поступлений за год'], ['Индексация', 'с ' + mLabel(p.idx_m) + ': цены +' + pc0(p.price_idx) + ', затраты +' + pc0(p.cost_idx) + ', ' + (p.idx_rep ? 'каждый год' : 'один раз')], ['Резерв на непредвиденное', dvP('contingency', p.contingency) + ' к вложениям'], ['Неснижаемый остаток на счёте', p.reserve_m + ' мес. постоянных расходов'], ['Возврат свободных денег инвестору', p.payout_on ? 'да' : 'нет']] }];
+      { title: 'Налоги и деньги', col: 2, rows: [['УСН «доходы минус расходы»', dvP('usn_rate', p.usn_rate) + ', не меньше ' + dvP('usn_min', p.usn_min) + ' поступлений'], ['НДС на УСН', dvP('vat_rate', p.vat_rate) + ' после ' + mln(p.vat_thr) + ' поступлений за год'], ['Налоговый режим', k.osnM ? 'с ' + mLabel(k.osnM) + ' общий: НДС ' + dvP('osn_vat', p.osn_vat) + ', налог на прибыль ' + dvP('osn_tax', p.osn_tax) : k.vat7M ? 'УСН; с ' + mLabel(k.vat7M) + ' НДС ' + dvP('vat7_rate', p.vat7_rate) : 'УСН весь срок'], ['Индексация', 'с ' + mLabel(p.idx_m) + ': цены +' + pc0(p.price_idx) + ', затраты +' + pc0(p.cost_idx) + ', ' + (p.idx_rep ? 'каждый год' : 'один раз')], ['Резерв на непредвиденное', dvP('contingency', p.contingency) + ' к вложениям'], ['Неснижаемый остаток на счёте', p.reserve_m + ' мес. постоянных расходов'], ['Возврат свободных денег инвестору', p.payout_on ? 'да' : 'нет']] }];
     return { name: s.name, today: new Date().toLocaleDateString('ru-RU'), period: MFULL[MONTHS[0].m] + ' ' + MONTHS[0].y + ' — ' + MFULL[MONTHS[N - 1].m] + ' ' + MONTHS[N - 1].y, lead,
       k: { invest: k.invest, lastInv: k.lastInvM ? mLabel(k.lastInvM) : '', pbN: k.paybackM || 0, pbLabel: k.paybackM ? mLabel(k.paybackM) : '', pbYear: k.paybackM ? MONTHS[k.paybackM - 1].y : 0, pbEst: k.paybackEst ? mLabel(k.paybackEst) : '', irr: k.irr, profit: k.profitTotal, ebitda: k.ebitdaTotal, ebm: k.ebm, rev: k.revTotal,
         minCash: k.minCash, minCashDate: S.dateOf(k.minCashDay).text, cumEnd: k.cumEnd, cashEnd: k.cashEnd, payout: k.payout, ebLabel: k.ebitdaM ? mLabel(k.ebitdaM) : '' },
@@ -2547,7 +2566,7 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
       case 'theme': theme = theme === 'dark' ? 'light' : 'dark'; try { localStorage.setItem(TKEY, theme); } catch (x) { } applyTheme(); render(); break;
       case 'pan': { const sc = $('tl-scroll'); stopPlay(); sc.scrollBy({ left: +a[1] * sc.clientWidth * 0.8, behavior: 'smooth' }); break; }
       case 'undo': if (undo.length) { const o = JSON.parse(undo.pop()), was = res.k; st.s = o.s; st.journal = o.journal; res = S.sim(st.s); mv = { t: Date.now(), from: was }; persist(); render(); toast('Ход отменён'); } break;
-      case 'reset': loadScn('База'); break;
+      case 'reset': loadScn(shared[DEF_SHARED] ? 'pub:' + DEF_SHARED : 'База'); break;
       case 'open': loadScn(a.slice(1).join(':')); break;
       case 'save': $('savebox').hidden = false; $('b-save').hidden = true; $('scnname').value = s.name === 'База' ? '' : s.name; $('b-savepub').hidden = !remote.on; $('scncode').hidden = !(remote.on && remote.needCode); $('scncode').value = lsGet('vodaGame.team'); $('scnname').focus(); break;
       case 'savecancel': $('savebox').hidden = true; $('b-save').hidden = false; break;

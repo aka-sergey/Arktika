@@ -177,8 +177,11 @@
     row('rev', 'Выручка с НДС', '₽', (i, c) => `=(${X(c, 'b03')}*${P.p03}+${X(c, 'b05')}*${P.p05}+${X(c, 'b10')}*${P.p10})*${idp(c)}`, 'money', 'total');
     row('receipts', 'Поступления денег', '₽', (i, c, pc) => `=${X(c, 'rev')}*(1-${P.defer})` + (pc ? `+${X(pc, 'rev')}*${P.defer}` : ''));
     row('rec_ytd', 'Поступления с начала года', '₽', (i, c, pc) => pc ? `=IF(${Y(c)}=${Y(pc)},${pc}${r},0)+${X(c, 'receipts')}` : `=${X(c, 'receipts')}`, 'money', null, null);
-    row('vat_rate', 'Ставка НДС в этом месяце', '%', (i, c, pc) => pc ? `=IF(OR(IF(${Y(c)}=${Y(pc)},${X(pc, 'rec_ytd')},0)>${P.vat_thr},SUMIF($${CF}$${YROW}:$${CL}$${YROW},${Y(c)}-1,$${CF}$${R.receipts}:$${CL}$${R.receipts})>${P.vat_thr}),${P.vat_rate},0)` : '=0', 'pct', null, null);
-    row('vat', 'НДС к уплате', '₽', (i, c) => `=${X(c, 'rev')}*${X(c, 'vat_rate')}/(1+${X(c, 'vat_rate')})`);
+    row('osn', 'Общий режим налогов (1 — да): доход с начала года превысил лимит УСН', '0/1', (i, c, pc) => pc ? `=IF(OR(${pc}${r}=1,${X(c, 'rec_ytd')}>${P.usn_lim}),1,0)` : `=IF(${X(c, 'rec_ytd')}>${P.usn_lim},1,0)`, 'int', null, null);
+    row('vat_rate', 'Ставка НДС в этом месяце', '%', (i, c, pc) => { if (!pc) return `=IF(${X(c, 'osn')}=1,${P.osn_vat},0)`;
+      const ytdP = `IF(${Y(c)}=${Y(pc)},${X(pc, 'rec_ytd')},0)`, prevY = `SUMIF($${CF}$${YROW}:$${CL}$${YROW},${Y(c)}-1,$${CF}$${R.receipts}:$${CL}$${R.receipts})`;
+      return `=IF(${X(c, 'osn')}=1,${P.osn_vat},IF(OR(${ytdP}>${P.vat_thr},${prevY}>${P.vat_thr}),IF(OR(${ytdP}>${P.vat7_thr},${prevY}>${P.vat7_thr}),${P.vat7_rate},${P.vat_rate}),0))`; }, 'pct', null, null);
+    row('vat', 'НДС с выручки', '₽', (i, c) => `=${X(c, 'rev')}*${X(c, 'vat_rate')}/(1+${X(c, 'vat_rate')})`);
     row('rev_net', 'Выручка без НДС', '₽', (i, c) => `=${X(c, 'rev')}-${X(c, 'vat')}`, 'money', 'total');
     sub('Расходы');
     row('materials', 'Материалы на разлитое (с браком и боем), паллеты, стрейч и пилотные партии', '₽', (i, c) => `=${X(c, 'prod_l')}*(${P.sh03}/0.3*${P.m03}+${P.sh05}/0.5*${P.m05}+${P.sh10}/1*${P.m10})/(1-${P.waste})*${idc(c)}+IF(${M(c)}=${P.pilots_m},${P.pilots},0)+${X(c, 'pallets')}*(${P.pallet_price}+${P.stretch_per}*${P.stretch_price})*${idc(c)}`);
@@ -191,8 +194,9 @@
     row('logist', 'Логистика и бонусы сетям', '₽', (i, c) => `=${X(c, 'rev')}*${P.logist}`);
     row('returns', 'Возвраты и списания', '₽', (i, c) => `=${X(c, 'rev')}*${P.returns}`);
     row('opex', 'ИТОГО операционные расходы', '₽', (i, c) => `=SUM(${X(c, 'materials')}:${X(c, 'returns')})`, 'money', 'total');
-    row('ebitda', 'EBITDA (выручка без НДС − расходы)', '₽', (i, c) => `=${X(c, 'rev_net')}-${X(c, 'opex')}`, 'money', 'total');
-    row('usn', 'УСН', '₽', (i, c) => `=MAX(${P.usn_rate}*MAX(0,${X(c, 'ebitda')}),${P.usn_min}*${X(c, 'receipts')})`);
+    row('vat_in', 'НДС к вычету по расходам (только на общем режиме)', '₽', (i, c) => `=IF(${X(c, 'osn')}=1,(${X(c, 'materials')}+${X(c, 'energy')}+${X(c, 'rent')}+${X(c, 'maint')}+${X(c, 'other')}+${X(c, 'mkt')}+${X(c, 'logist')})*${P.osn_in}*${P.osn_vat}/(1+${P.osn_vat}),0)`);
+    row('ebitda', 'EBITDA (выручка без НДС − расходы + НДС к вычету)', '₽', (i, c) => `=${X(c, 'rev_net')}-${X(c, 'opex')}+${X(c, 'vat_in')}`, 'money', 'total');
+    row('usn', 'Налог: УСН, а на общем режиме — налог на прибыль', '₽', (i, c) => `=IF(${X(c, 'osn')}=1,${P.osn_tax}*MAX(0,${X(c, 'ebitda')}),MAX(${P.usn_rate}*MAX(0,${X(c, 'ebitda')}),${P.usn_min}*${X(c, 'receipts')}))`);
     row('profit', 'ПРИБЫЛЬ после налогов', '₽', (i, c) => `=${X(c, 'ebitda')}-${X(c, 'usn')}`, 'money', 'total');
     sub('Вложения в основные средства');
     row('capex_sched', 'Вложения по списку (лист «Вложения»)', '₽', (i, c) => `=SUMIF(${V('D')},${M(c)},${V('C')})`);
@@ -209,7 +213,7 @@
     row('wc', 'ИЗМЕНЕНИЕ ЗАПАСА за месяц (плюс — докупили, минус — израсходовали больше)', '₽', (i, c) => `=${X(c, 'wc_pay')}-${X(c, 'wc_use')}`, 'money', 'total');
     row('wc_cum', 'Деньги в запасе материалов (накопленно)', '₽', (i, c, pc) => (pc ? `=${pc}${r}+` : '=') + X(c, 'wc'), 'money', null, 'MAX');
     sub('Деньги и взносы инвестора');
-    row('cf', 'Денежный поток (поступления − расходы − налоги − вложения − запас)', '₽', (i, c) => `=${X(c, 'receipts')}-${X(c, 'opex')}-${X(c, 'vat')}-${X(c, 'usn')}-${X(c, 'capex')}-${X(c, 'wc')}`, 'money', 'total');
+    row('cf', 'Денежный поток (поступления − расходы − налоги − вложения − запас)', '₽', (i, c) => `=${X(c, 'receipts')}-${X(c, 'opex')}-${X(c, 'vat')}+${X(c, 'vat_in')}-${X(c, 'usn')}-${X(c, 'capex')}-${X(c, 'wc')}`, 'money', 'total');
     row('cum_cf', 'Накопленный денежный поток (без денег инвестора)', '₽', (i, c, pc) => (pc ? `=${pc}${r}+` : '=') + X(c, 'cf'), 'money', null, 'MIN');
     row('contrib', 'Инвестор уже внёс — факт (вписывайте сюда)', '₽', (i) => +s.contrib[i] || 0, 'money', 'input');
     row('fixed', 'Постоянные расходы месяца (персонал, аренда, обслуживание, прочие)', '₽', (i, c) => `=${X(c, 'staff')}+${X(c, 'rent')}+${X(c, 'maint')}+${X(c, 'other')}`);
@@ -256,14 +260,13 @@
     put(ws, 'P' + YT, 'Итого', { kind: 'total' }); put(ws, 'Q' + YT, `=SUM(Q${YH + 2}:Q${YT - 1})`, { kind: 'total', fmt: 'int' });
     ['R', 'S', 'U', 'V'].forEach(c => put(ws, c + YT, `=SUM(${c}${YH + 2}:${c}${YT - 1})`, { kind: 'total', fmt: 'money' })); put(ws, 'T' + YT, `=IF(R${YT}>0,S${YT}/R${YT},0)`, { kind: 'total', fmt: 'pct1' }); put(ws, 'W' + YT, `=W${YT - 1}`, { kind: 'total', fmt: 'money' });
     const H0 = YT + 2; band(ws, H0, 'Проверки — во всех строках должно быть OK', 16, 25);
-    const recMax = `MAX(${YS.map(y => `SUMIF(${years},${y},${rng('receipts')})`).join(',')})`;
     const ch = [
       ['Доли бутылок в сумме 100 %', `=IF(ABS(${P.sh03}+${P.sh05}+${P.sh10}-1)<0.0001,"OK","ОШИБКА: сумма долей не 100 %")`],
       ['Все вложения попали в график оплат', `=IF(ABS(SUM(${rng('capex_sched')})-SUM(${V('C')}))<1,"OK","ОШИБКА: месяц оплаты пустой или вне 1–${N}")`],
       ...s.mats.map(mt => [mt.name + ': запас не уходит в минус', `=IF(MIN(${rng(mt.key + '_stock')})<-0.5,"ОШИБКА: не хватает — партия или месяц 1-го заказа","OK")`]),
       ['Линия розлива успевает', `=IF(MAX(${rng('line_util')})>1.0001,"ВНИМАНИЕ: линия не успевает","OK")`],
       ['План продаж обеспечен производством', `=IF(SUM(${rng('lost_l')})>1,"ВНИМАНИЕ: план выше производства","OK")`],
-      ['Доход за год в пределах УСН и НДС 5 %', `=IF(${recMax}>${P.usn_lim},"ВНИМАНИЕ: выше лимита УСН",IF(${recMax}>${P.vat7_thr},"ВНИМАНИЕ: НДС будет 7 %","OK"))`]];
+      ['Налоговый режим: УСН с базовой ставкой НДС', `=IF(SUM(${rng('osn')})>0,"ВНИМАНИЕ: с "&INDEX(${labels},MATCH(1,${rng('osn')},0))&" общий режим — НДС и налог на прибыль",IF(MAX(${rng('vat_rate')})>${P.vat_rate},"ВНИМАНИЕ: НДС на УСН по повышенной ставке","OK"))`]];
     ch.forEach((a, k) => { put(ws, 'P' + (H0 + 1 + k), a[0]); ws.mergeCells(`P${H0 + 1 + k}:U${H0 + 1 + k}`); put(ws, 'V' + (H0 + 1 + k), a[1], { bold: true, h: 'left' }); ws.mergeCells(`V${H0 + 1 + k}:Y${H0 + 1 + k}`); });
     ws.addConditionalFormatting({ ref: `V${H0 + 1}:V${H0 + ch.length}`, rules: [{ type: 'cellIs', operator: 'notEqual', formulae: ['"OK"'], priority: 1, style: { fill: { type: 'pattern', pattern: 'solid', bgColor: { argb: C.err } }, font: { color: { argb: 'FFB00020' }, bold: true } } }] });
     ws.addConditionalFormatting({ ref: `${CF}${R.need}:${CL}${R.need}`, rules: [{ type: 'cellIs', operator: 'greaterThan', formulae: [0], priority: 2, style: { fill: { type: 'pattern', pattern: 'solid', bgColor: { argb: 'FFC6E0B4' } }, font: { bold: true } } }] });

@@ -41,6 +41,9 @@
     return s;
   }
   try { const o = JSON.parse(localStorage.getItem(LS) || 'null'); if (o && o.s && o.s.p && o.s.staff && o.s.capex && o.s.mats) { Object.assign(st, o); migrate(st.s); Object.keys(st.saved || {}).forEach(n => migrate(st.saved[n])); } } catch (e) { st.s = clone(BASE_S); }
+  /* По умолчанию открывается общий сценарий с этим названием (из scenarios.json). «Свежий» посетитель — тот, у кого на экране нетронутая встроенная база и нет ссылки на сценарий */
+  const DEF_SHARED = 'Базовый сценарий';
+  let fresh = st.s.name === 'База' && !(st.journal || []).length && JSON.stringify(st.s.p) === JSON.stringify(BASE_S.p) && st.s.capex.length === BASE_S.capex.length && st.s.staff.length === BASE_S.staff.length && !/^#(s|id)=/.test(location.hash || '');
   let res = S.sim(st.s);
   /* что раскрыто на экране — хранится отдельно от сценариев */
   const UKEY = 'vodaGame.ui'; let ui = { mat: false, staff: false, miss: false, hint: false, last: {} };
@@ -72,7 +75,9 @@
   const unb64 = t => { const s = atob(t), a = new Uint8Array(s.length); for (let i = 0; i < s.length; i++) a[i] = s.charCodeAt(i); return a; };
   const scnFile = map => JSON.stringify({ version: 1, updated: new Date().toISOString(), scenarios: map }, null, 1);
   function readScnFile(j) { const out = {}; const src = j && j.scenarios ? j.scenarios : {}; Object.keys(src).forEach(n => { const s = src[n]; if (s && s.p && s.staff && s.capex && s.mats) { try { out[n] = migrate(clone(s)); out[n].name = n; } catch (e) { } } }); return out; }
-  function loadShared() { fetch('scenarios.json?t=' + Date.now()).then(r => r.ok ? r.json() : null).then(j => { if (!j) return; shared = readScnFile(j); sharedAt = j.updated || ''; renderHeader(); if (st.tab === 'scn') renderTabs(); }).catch(() => { }); }
+  function loadShared() { fetch('scenarios.json?t=' + Date.now()).then(r => r.ok ? r.json() : null).then(j => { if (!j) return; shared = readScnFile(j); sharedAt = j.updated || '';
+      if (fresh && shared[DEF_SHARED]) { fresh = false; st.s = migrate(clone(shared[DEF_SHARED])); st.s.name = DEF_SHARED; st.journal = []; undo = []; res = S.sim(st.s); afterChange(); return; }
+      fresh = false; renderHeader(); if (st.tab === 'scn') renderTabs(); }).catch(() => { fresh = false; }); }
   async function publish(map, msg) { // запись scenarios.json в репозиторий через GitHub API; токен хранится только в браузере владельца
     const tok = getTok(); if (!tok) { toast('Сначала вставьте токен GitHub в поле ниже и нажмите «Запомнить»'); return false; }
     const api = `https://api.github.com/repos/${GH.owner}/${GH.repo}/contents/scenarios.json`, H = { Authorization: 'Bearer ' + tok, Accept: 'application/vnd.github+json' };
@@ -160,7 +165,7 @@
       tween('score', 380, e => vals.forEach((v, i) => { if (from[i] !== v && !(i === 1 && !(from[i] && v))) put(i, fm[i](from[i] + (v - from[i]) * e)); }), () => vals.forEach((v, i) => put(i, fm[i](v))), 1.5); }
     shown = vals;
     const ms = [
-      ['Проект окупается за 5 лет', k.paybackM > 0], ['Бюджет ниже базового', k.invest < b.invest - 1], ['EBITDA в плюсе в первые 3 месяца продаж', k.ebitdaM > 0 && k.ebitdaM <= st.s.p.start_m + 2],
+      ['Проект окупается за 5 лет', k.paybackM > 0], ['EBITDA в плюсе в первые 3 месяца продаж', k.ebitdaM > 0 && k.ebitdaM <= st.s.p.start_m + 2],
       ['Склад материалов без дефицита', !res.alerts.some(a => a.lvl === 'err' && /закончились/.test(a.text))], ['Без кассовых разрывов', k.minCash >= 0],
       ['Продано всё по плану', k.lostL <= 1], ['Линия успевает', k.maxUtil <= 1.0001], ['Инвестору возвращено всё вложенное', k.payout >= k.invest && k.invest > 0]];
     const done = ms.filter(a => a[1]).length;
@@ -452,7 +457,7 @@
     const kpiTable = `<h3>Показатели сценария</h3><div class="tbl"><table class="kpit"><thead><tr><th>Показатель</th><th class="r">Значение</th></tr></thead><tbody>` +
         sd.kpi.map(r => { const pct = r[2] === 'pct', num = typeof r[1] === 'number', money = /₽/.test(r[0]);
           return `<tr><td>${esc(r[0].replace(', ₽', ''))}</td><td class="r">${(pct ? pc(r[1]) : money ? mln(r[1]) : num ? pcs(r[1]) : esc(r[1])).replace('-', '−')}</td></tr>`; }).join('') + `</tbody></table></div>
-      <p class="tnote2">Расчёт идёт 5 лет — ${N} месяцев, с ${MONTHS[0].label} по ${ENDL}. IRR — годовая доходность проекта по денежному потоку всех ${N} месяцев. EBITDA — выручка без НДС минус операционные расходы, до налога УСН. Маржинальность — EBITDA к выручке без НДС.</p>`;
+      <p class="tnote2">Расчёт идёт 5 лет — ${N} месяцев, с ${MONTHS[0].label} по ${ENDL}. IRR — годовая доходность проекта по денежному потоку всех ${N} месяцев. EBITDA — выручка без НДС минус операционные расходы, до налога (УСН, а на общем режиме — налога на прибыль). Маржинальность — EBITDA к выручке без НДС.</p>`;
     const sg = v => mln(v).replace('-', '−');
     const yearTable = `<h3>По годам</h3><div class="tbl"><table class="yrt"><thead><tr><th>Год</th><th class="r">Месяцев</th><th class="r">Выручка без НДС</th><th class="r">EBITDA</th><th class="r">Маржа</th><th class="r">Прибыль после налогов</th><th class="r">Денежный поток</th><th class="r">Накопленный поток</th></tr></thead><tbody>` +
         sd.years.map(y => `<tr${k.paybackM && MONTHS[k.paybackM - 1].y === y[0] ? ' class="pb"' : ''}><td><b>${y[0]}</b>${k.paybackM && MONTHS[k.paybackM - 1].y === y[0] ? ' <small>окупаемость</small>' : ''}</td><td class="r calc">${y[1]}</td><td class="r">${sg(y[2])}</td><td class="r">${sg(y[3])}</td><td class="r calc">${y[2] > 0 ? pc(y[4]).replace('-', '−') : '—'}</td><td class="r">${sg(y[5])}</td><td class="r">${sg(y[6])}</td><td class="r">${sg(y[7])}</td></tr>`).join('') +
@@ -487,7 +492,7 @@
     out.push(['Запас материалов на складе', 'Материалы', Math.max(0, sumTo(m.wc))]);
     out.push(['Логистика и бонусы сетям', 'Продажи', sumTo(m.logist)], ['Маркетинг', 'Продажи', sumTo(m.mkt)], ['Возвраты и списания', 'Продажи', sumTo(m.returns)]);
     out.push(['Аренда', 'Постоянные', sumTo(m.rent)], ['Электричество и вода', 'Постоянные', sumTo(m.energy)], ['Обслуживание производства', 'Постоянные', sumTo(m.maint)], ['Прочие расходы', 'Постоянные', sumTo(m.other)]);
-    out.push(['Налоги (НДС и УСН)', 'Налоги', sumTo(m.vat) + sumTo(m.usn)]);
+    out.push(['Налоги', 'Налоги', sumTo(m.vat) - sumTo(m.vat_in) + sumTo(m.usn)]);
     return out.filter(a => a[2] > 0.5).sort((a, b) => b[2] - a[2]);
   }
   function chartsPanel() {
@@ -688,7 +693,7 @@
     <div><h3>Как считаются деньги</h3><ul><li>Инвестор вносит 1-го числа ровно столько, чтобы в конце месяца на счёте остался неснижаемый остаток.</li><li>Зарплата и взносы — 10-го и 25-го. Аренда — 1-го. Партии материалов — 15-го. Налоги — 28-го.</li><li>Выручка приходит равномерно по дням; часть — в следующем месяце (отсрочка покупателям).</li><li>Материалы попадают в расходы, когда воду разлили, а деньги уходят, когда оплатили партию.</li><li>«Резерв» у строки вложений добавляет к ней процент на непредвиденное; платится в том же месяце.</li><li>Окупаемость — месяц, когда накопленный денежный поток без денег инвестора стал неотрицательным.</li></ul></div>
     <div><h3>Производство и продажи</h3><ul><li>Мощность = сумма по типам (штук × литров в сутки) × коэффициент использования × дни.</li><li>Завод разливает столько, сколько нужно по плану продаж плюс целевой запас, но не больше мощности воды и линии.</li><li>Продано = меньшее из плана и того, что есть на складе с учётом розлива.</li><li>Докупили установки, но не подняли план продаж — мощность простаивает, деньги потрачены зря.</li></ul></div>
     <div><h3>Паллеты</h3><ul><li>Бутылок на паллете = упаковок в слое × штук в упаковке × слоёв.</li><li>Упаковок в слое — сколько прямоугольников упаковки встаёт рядами на 1200 × 800 или 1200 × 1000.</li><li>Слоёв — сколько проходит и по высоте груза, и по весу.</li><li>Паллеты и стрейч-плёнка расходуются на каждую разлитую паллету и покупаются партиями, как крышки.</li></ul></div>
-    <div><h3>Тревоги</h3><ul><li><b>Материал закончился</b> — заказ сделан поздно или партия мала.</li><li><b>Кассовый разрыв</b> — в середине месяца на счёте минус, хотя в конце плюс. Увеличьте неснижаемый остаток.</li><li><b>Линия не успевает</b> — нужна вторая смена.</li><li><b>План выше производства</b> — не хватает воды или линии.</li><li><b>Лимиты УСН</b> — доход за год вышел за порог, налоги будут выше.</li></ul></div>
+    <div><h3>Тревоги</h3><ul><li><b>Материал закончился</b> — заказ сделан поздно или партия мала.</li><li><b>Кассовый разрыв</b> — в середине месяца на счёте минус, хотя в конце плюс. Увеличьте неснижаемый остаток.</li><li><b>Линия не успевает</b> — нужна вторая смена.</li><li><b>План выше производства</b> — не хватает воды или линии.</li><li><b>Лимиты УСН</b> — доход за год вышел за порог. Расчёт сам переходит на повышенную ставку НДС, а выше лимита УСН — на общий режим: НДС с вычетом входящего и налог на прибыль. Ставки и пороги — в «Ежем. расходы и др.».</li></ul></div>
     <div><h3>Excel, презентация и допущения</h3><ul><li>«Скачать презентацию» собирает PDF на 8 слайдов по текущему сценарию: итог в цифрах, на что идут деньги инвестора, графики окупаемости, итоги по годам и главные допущения.</li><li>«Скачать Excel» выгружает текущий сценарий: «Кейс» с формулами, «Персонал», «Вложения», «Установки» (типы и партии), «Продажи», «Графики» с диаграммами окупаемости, подневные остатки, журнал и справку. Итоги в файле и на экране совпадают.</li><li>Обратно из Excel сценарий не загружается — правьте здесь, выгружайте заново.</li><li>Оклады по ролям, размеры бутылок, цены паллет и стрейч-плёнки — оценки; пресс-формы бутылок и транспорт крышек стоят нулями.</li><li>Амортизации нет: игра считает деньги, а не бухгалтерскую прибыль.</li></ul></div></div>`;
 
   const GROUPS = [['prod', 'Производство', ['capex', 'units', 'people']], ['tara', 'Тара', ['bottle', 'stock']], ['sales', 'Продажи', ['sales']], ['fin', 'Ежем. расходы и др.', ['costs', 'money']], ['total', 'Итог', ['summary', 'charts', 'levers']], ['model', 'Моделирование', ['scn', 'journal', 'rules']]];
@@ -791,7 +796,7 @@
       { title: 'Производство', col: 1, rows: [['Установки очистки на старте', units.join(', ') || 'нет'], ['Докупка установок', bought ? bought + ' шт., ' + s.batches.length + ' ' + plur(s.batches.length, 'партия', 'партии', 'партий') : 'не планируется'], ['Мощность очистки в ' + ENDL, pcs(m.cap_l[N - 1]) + ' л в месяц'], ['Линия розлива', pcs(p.bph) + ' бутылок в час, ' + p.hours + ' ч × ' + p.shifts + ' ' + plur(p.shifts, 'смена', 'смены', 'смен')], ['Наибольшая загрузка линии', pc0(k.maxUtil)]] },
       { title: 'Продажи', col: 0, rows: [['Первый месяц продаж', mLabel(p.start_m)], ['План продаж в ' + ENDL, pcs(m.plan_l[N - 1]) + ' л в месяц'], ['Продаём от плана', pc0(p.caution)], ['Оплата покупателей', pc0(p.defer) + ' выручки приходит в следующем месяце']] },
       { title: 'Расходы', col: 1, rows: [['Штат', 'до ' + k.headMax + ' ' + plur(k.headMax, 'человека', 'человек', 'человек') + ', ФОТ ' + mln(m.staff[N - 1]) + ' в месяц'], ['Аренда', rub(p.rent) + ' в месяц'], ['Логистика и бонусы сетям', dvP('logist', p.logist) + ' выручки'], ['Маркетинг', dvP('mkt_pct', p.mkt_pct) + ' выручки и ' + mln(p.mkt_launch) + ' на запуск']] },
-      { title: 'Налоги и деньги', col: 2, rows: [['УСН «доходы минус расходы»', dvP('usn_rate', p.usn_rate) + ', не меньше ' + dvP('usn_min', p.usn_min) + ' поступлений'], ['НДС на УСН', dvP('vat_rate', p.vat_rate) + ' после ' + mln(p.vat_thr) + ' поступлений за год'], ['Индексация', 'с ' + mLabel(p.idx_m) + ': цены +' + pc0(p.price_idx) + ', затраты +' + pc0(p.cost_idx) + ', ' + (p.idx_rep ? 'каждый год' : 'один раз')], ['Резерв на непредвиденное', dvP('contingency', p.contingency) + ' к вложениям'], ['Неснижаемый остаток на счёте', p.reserve_m + ' мес. постоянных расходов'], ['Возврат свободных денег инвестору', p.payout_on ? 'да' : 'нет']] }];
+      { title: 'Налоги и деньги', col: 2, rows: [['УСН «доходы минус расходы»', dvP('usn_rate', p.usn_rate) + ', не меньше ' + dvP('usn_min', p.usn_min) + ' поступлений'], ['НДС на УСН', dvP('vat_rate', p.vat_rate) + ' после ' + mln(p.vat_thr) + ' поступлений за год'], ['Налоговый режим', k.osnM ? 'с ' + mLabel(k.osnM) + ' общий: НДС ' + dvP('osn_vat', p.osn_vat) + ', налог на прибыль ' + dvP('osn_tax', p.osn_tax) : k.vat7M ? 'УСН; с ' + mLabel(k.vat7M) + ' НДС ' + dvP('vat7_rate', p.vat7_rate) : 'УСН весь срок'], ['Индексация', 'с ' + mLabel(p.idx_m) + ': цены +' + pc0(p.price_idx) + ', затраты +' + pc0(p.cost_idx) + ', ' + (p.idx_rep ? 'каждый год' : 'один раз')], ['Резерв на непредвиденное', dvP('contingency', p.contingency) + ' к вложениям'], ['Неснижаемый остаток на счёте', p.reserve_m + ' мес. постоянных расходов'], ['Возврат свободных денег инвестору', p.payout_on ? 'да' : 'нет']] }];
     return { name: s.name, today: new Date().toLocaleDateString('ru-RU'), period: MFULL[MONTHS[0].m] + ' ' + MONTHS[0].y + ' — ' + MFULL[MONTHS[N - 1].m] + ' ' + MONTHS[N - 1].y, lead,
       k: { invest: k.invest, lastInv: k.lastInvM ? mLabel(k.lastInvM) : '', pbN: k.paybackM || 0, pbLabel: k.paybackM ? mLabel(k.paybackM) : '', pbYear: k.paybackM ? MONTHS[k.paybackM - 1].y : 0, pbEst: k.paybackEst ? mLabel(k.paybackEst) : '', irr: k.irr, profit: k.profitTotal, ebitda: k.ebitdaTotal, ebm: k.ebm, rev: k.revTotal,
         minCash: k.minCash, minCashDate: S.dateOf(k.minCashDay).text, cumEnd: k.cumEnd, cashEnd: k.cashEnd, payout: k.payout, ebLabel: k.ebitdaM ? mLabel(k.ebitdaM) : '' },
@@ -823,7 +828,7 @@
       case 'theme': theme = theme === 'dark' ? 'light' : 'dark'; try { localStorage.setItem(TKEY, theme); } catch (x) { } applyTheme(); render(); break;
       case 'pan': { const sc = $('tl-scroll'); stopPlay(); sc.scrollBy({ left: +a[1] * sc.clientWidth * 0.8, behavior: 'smooth' }); break; }
       case 'undo': if (undo.length) { const o = JSON.parse(undo.pop()), was = res.k; st.s = o.s; st.journal = o.journal; res = S.sim(st.s); mv = { t: Date.now(), from: was }; persist(); render(); toast('Ход отменён'); } break;
-      case 'reset': loadScn('База'); break;
+      case 'reset': loadScn(shared[DEF_SHARED] ? 'pub:' + DEF_SHARED : 'База'); break;
       case 'open': loadScn(a.slice(1).join(':')); break;
       case 'save': $('savebox').hidden = false; $('b-save').hidden = true; $('scnname').value = s.name === 'База' ? '' : s.name; $('b-savepub').hidden = !remote.on; $('scncode').hidden = !(remote.on && remote.needCode); $('scncode').value = lsGet('vodaGame.team'); $('scnname').focus(); break;
       case 'savecancel': $('savebox').hidden = true; $('b-save').hidden = false; break;

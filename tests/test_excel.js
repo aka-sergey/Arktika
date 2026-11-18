@@ -20,6 +20,9 @@ const SC={
  idx_year: mk(s=>{s.p.idx_rep=1; s.p.idx_m=9; s.p.cost_idx=0.09; s.p.price_idx=0.06;}),
  nopay: mk(s=>{s.plan=[{id:'a',month:1,liters:9000}];}),
  late: mk(s=>{s.batches.push(B('B',6,40)); s.plan.push({id:'p9',month:40,liters:45000}); s.capex.push({id:'c9',cat:'Прочее',name:'Вторая очередь склада',amount:4000000,month:38,day:10,reserve:true}); s.staff.push({id:'e9',name:'Оператор линии 3',group:'prod',salary:70000,from:40,to:60});}),
+ vat7: mk(s=>{s.batches.push(B('B',16,12)); s.plan.push({id:'p7',month:13,liters:85000});}),
+ osn: mk(s=>{s.batches.push(B('B',50,14)); s.plan.push({id:'p8',month:15,liters:210900}); s.p.shifts=2;}),
+ osn_mid: mk(s=>{s.batches.push(B('B',30,20)); s.plan.push({id:'p9',month:21,liters:150000}); s.p.osn_in=0.6; s.p.idx_rep=1;}),
  pallets: mk(s=>{Object.assign(s.p,{pal_w:1000,pal_h:1400,pal_kg:600,d03:58,h03:180,pk03:20,d05:68,h05:230,pk05:6,d10:88,h10:290,pk10:8,pallet_price:700,stretch_per:0.5,stretch_price:350,sh03:0.3,sh05:0.3,sh10:0.4});}),
 };
 (async()=>{ const out={};

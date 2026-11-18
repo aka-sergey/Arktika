@@ -27,7 +27,7 @@
         pilots: 120000, pilots_m: 4,
         tax_k: 1.13, rent: 350000, rent_start: 1, maint: 250000, maint_start: 3, other: 133000,
         idx_m: 15, idx_rep: 0, cost_idx: 0.08, price_idx: 0.05, contingency: 0.10,
-        vat_thr: 20000000, vat_rate: 0.05, usn_rate: 0.05, usn_min: 0.01, vat7_thr: 250000000, usn_lim: 450000000,
+        vat_thr: 20000000, vat_rate: 0.05, usn_rate: 0.05, usn_min: 0.01, vat7_thr: 250000000, vat7_rate: 0.07, usn_lim: 450000000, osn_vat: 0.22, osn_tax: 0.25, osn_in: 0.8,
         reserve_m: 1, payout_on: 0, payout_keep: 3,
         pal_w: 800, pal_h: 1600, pal_kg: 1000, d03: 60, h03: 170, pk03: 12, d05: 65, h05: 215, pk05: 12, d10: 82, h10: 270, pk10: 6,
         pallet_price: 450, stretch_per: 0.35, stretch_price: 300,
@@ -136,7 +136,7 @@
     const p = s.p, pr = prices(p), bpl = pr.bpl;
     const Z = () => new Array(N).fill(0);
     const keys = ['startL', 'pallets', 'newL', 'cap_l', 'plan_l', 'prod_l', 'sold_l', 'fg_l', 'lost_l', 'line_util', 'b03', 'b05', 'b10', 'bottles', 'prod_b', 'use_pcs',
-      'rev', 'receipts', 'rec_ytd', 'vat_rate', 'vat', 'rev_net', 'materials', 'energy', 'staff', 'rent', 'maint', 'other', 'mkt', 'logist', 'returns', 'opex', 'ebitda', 'usn', 'profit',
+      'rev', 'receipts', 'rec_ytd', 'osn', 'vat_rate', 'vat', 'vat_in', 'rev_net', 'materials', 'energy', 'staff', 'rent', 'maint', 'other', 'mkt', 'logist', 'returns', 'opex', 'ebitda', 'usn', 'profit',
       'capex_sched', 'new_pay', 'contingency', 'capex', 'wc_pay', 'wc_use', 'wc', 'wc_cum', 'cf', 'cum_cf', 'contrib', 'reserve', 'fixed', 'need', 'payout', 'cash', 'inv_cum', 'headcount'];
     const m = {}; keys.forEach(k => m[k] = Z());
     const yr = i => MONTHS[i - 1].y;
@@ -192,10 +192,15 @@
     let prevRev = 0, ytd = 0, cash = 0, cum = 0, wcc = 0, inv = 0;
     const recYear = {};
     for (let i = 1; i <= N; i++) { const k = i - 1; m.receipts[k] = m.rev[k] * (1 - p.defer) + prevRev * p.defer; prevRev = m.rev[k]; recYear[yr(i)] = (recYear[yr(i)] || 0) + m.receipts[k]; }
+    let osn = false;
     for (let i = 1; i <= N; i++) {
       const k = i - 1, ic = idxc(i);
       const ytdPrev = (i > 1 && yr(i) === yr(i - 1)) ? ytd : 0; ytd = ytdPrev + m.receipts[k]; m.rec_ytd[k] = ytd;
-      m.vat_rate[k] = i === 1 ? 0 : ((ytdPrev > p.vat_thr || (recYear[yr(i) - 1] || 0) > p.vat_thr) ? p.vat_rate : 0);
+      /* налоговый режим. УСН: НДС нет, пока поступления за год не выше порога; дальше 5 %, а после второго порога — 7 % (со следующего месяца или с января, если порог пройден в прошлом году).
+         Поступления за год выше лимита УСН — с этого месяца и до конца общий режим: НДС с вычетом входящего и налог на прибыль */
+      if (ytd > p.usn_lim) osn = true; m.osn[k] = osn ? 1 : 0;
+      const prevY = recYear[yr(i) - 1] || 0;
+      m.vat_rate[k] = osn ? p.osn_vat : (i === 1 ? 0 : ((ytdPrev > p.vat_thr || prevY > p.vat_thr) ? ((ytdPrev > p.vat7_thr || prevY > p.vat7_thr) ? p.vat7_rate : p.vat_rate) : 0));
       m.vat[k] = m.rev[k] * m.vat_rate[k] / (1 + m.vat_rate[k]); m.rev_net[k] = m.rev[k] - m.vat[k];
       const pb = [m.prod_l[k] * p.sh03 / 0.3, m.prod_l[k] * p.sh05 / 0.5, m.prod_l[k] * p.sh10];
       m.materials[k] = (pb[0] * pr.m[0] + pb[1] * pr.m[1] + pb[2] * pr.m[2]) / (1 - p.waste) * ic + (i === p.pilots_m ? p.pilots : 0) + m.pallets[k] * (p.pallet_price + p.stretch_per * p.stretch_price) * ic;
@@ -206,8 +211,9 @@
       m.mkt[k] = ((p.mkt_n > 0 && i >= p.mkt_start && i < p.mkt_start + p.mkt_n) ? p.mkt_launch / p.mkt_n : 0) + m.rev_net[k] * p.mkt_pct;
       m.logist[k] = m.rev[k] * p.logist; m.returns[k] = m.rev[k] * p.returns;
       m.opex[k] = m.materials[k] + m.energy[k] + m.staff[k] + m.rent[k] + m.maint[k] + m.other[k] + m.mkt[k] + m.logist[k] + m.returns[k];
-      m.ebitda[k] = m.rev_net[k] - m.opex[k];
-      m.usn[k] = Math.max(p.usn_rate * Math.max(0, m.ebitda[k]), p.usn_min * m.receipts[k]);
+      m.vat_in[k] = osn ? (m.materials[k] + m.energy[k] + m.rent[k] + m.maint[k] + m.other[k] + m.mkt[k] + m.logist[k]) * p.osn_in * p.osn_vat / (1 + p.osn_vat) : 0; // входящий НДС к вычету — только на общем режиме
+      m.ebitda[k] = m.rev_net[k] - m.opex[k] + m.vat_in[k];
+      m.usn[k] = osn ? p.osn_tax * Math.max(0, m.ebitda[k]) : Math.max(p.usn_rate * Math.max(0, m.ebitda[k]), p.usn_min * m.receipts[k]); // УСН или налог на прибыль
       m.profit[k] = m.ebitda[k] - m.usn[k];
       let sched = 0, schedRes = 0; s.capex.forEach(c => { if (c.month === i) { const a = capexAmt(c); sched += a; if (c.reserve) schedRes += a; } });
       let np = 0; s.batches.forEach(b => { const a = 0.5 * b.qty * bP(b); if (b.month === i) np += a; if (b.month === i + p.lead) np += a; if (i === 1 && b.month >= 1 && b.month <= p.lead) np += a; });
@@ -215,7 +221,7 @@
       let pay = 0, used = 0;
       s.mats.forEach(mt => { const q = ord[mt.key][k]; pay += q * pr.mat[mt.key] * ic + ((q > 0 && i > mt.first) ? (+mt.ship || 0) : 0); used += useBy[mt.key][k] * pr.mat[mt.key]; });
       m.wc_pay[k] = pay; m.wc_use[k] = used * ic; m.wc[k] = pay - m.wc_use[k]; wcc += m.wc[k]; m.wc_cum[k] = wcc;
-      m.cf[k] = m.receipts[k] - m.opex[k] - m.vat[k] - m.usn[k] - m.capex[k] - m.wc[k]; cum += m.cf[k]; m.cum_cf[k] = cum;
+      m.cf[k] = m.receipts[k] - m.opex[k] - m.vat[k] + m.vat_in[k] - m.usn[k] - m.capex[k] - m.wc[k]; cum += m.cf[k]; m.cum_cf[k] = cum;
       m.fixed[k] = m.staff[k] + m.rent[k] + m.maint[k] + m.other[k]; m.reserve[k] = p.reserve_m * m.fixed[k];
       m.contrib[k] = +s.contrib[i] || 0;
       m.need[k] = Math.max(0, m.reserve[k] - (cash + m.cf[k] + m.contrib[k]));
@@ -234,7 +240,7 @@
       if (m.payout[k] > 0) add(dayOf(i, 31), -m.payout[k], 'payout', 'Возврат инвестору');
       if (m.staff[k]) { add(dayOf(i, 10), -m.staff[k] / 2, 'pay', 'Зарплата и взносы (1-я половина)'); add(dayOf(i, 25), -m.staff[k] / 2, 'pay', 'Зарплата и взносы (2-я половина)'); }
       if (m.rent[k]) add(dayOf(i, 1), -m.rent[k], 'pay', 'Аренда');
-      if (m.vat[k] + m.usn[k]) add(dayOf(i, 28), -(m.vat[k] + m.usn[k]), 'pay', 'Налоги (НДС и УСН)');
+      if (m.vat[k] - m.vat_in[k] + m.usn[k]) add(dayOf(i, 28), -(m.vat[k] - m.vat_in[k] + m.usn[k]), 'pay', 'Налоги');
       s.capex.forEach(c => { if (c.month === i && capexAmt(c)) add(dayOf(i, c.day || 10), -capexAmt(c), 'capex', c.name, c.id); });
       s.batches.forEach(b => { const a = 0.5 * b.qty * bP(b); if (!a) return;
         if (b.month === i) add(dayOf(i, 10), -a, 'capex', 'Новые установки ×' + b.qty + ' — 50 % при запуске', b.id);
@@ -280,7 +286,7 @@
       lastInvM: (() => { let r = 0; for (let q = 0; q < N; q++) if (m.need[q] + m.contrib[q] > 0) r = q + 1; return r; })(),
       cumEnd: m.cum_cf[N - 1], cashEnd: m.cash[N - 1], payout: sum(m.payout), maxUtil: Math.max.apply(null, m.line_util), wcMax: Math.max.apply(null, m.wc_cum),
       opexTotal: sum(m.opex), capexTotal: sum(m.capex), fotTotal: sum(m.staff), headMax: Math.max.apply(null, m.headcount),
-      lostL: sum(m.lost_l), sharesOk: Math.abs(p.sh03 + p.sh05 + p.sh10 - 1) < 1e-4,
+      osnM: firstIdx(q => m.osn[q] > 0), vat7M: firstIdx(q => !m.osn[q] && m.vat_rate[q] > p.vat_rate + 1e-9), lostL: sum(m.lost_l), sharesOk: Math.abs(p.sh03 + p.sh05 + p.sh10 - 1) < 1e-4,
       cost: pr, lineCapB
     };
     const al = [];
@@ -290,9 +296,9 @@
     { const q = firstIdx(z => m.lost_l[z] > 1 && z + 1 > p.start_m); if (q) al.push({ lvl: 'warn', day: dayOf(q, 1), text: 'С ' + MONTHS[q - 1].label + ' план продаж выше производства — недопродано ' + Math.round(k.lostL).toLocaleString('ru-RU') + ' л за период' }); }
     { const q = firstIdx(z => m.fg_l[z] > 2 * Math.max(1, m.plan_l[z]) && m.plan_l[z] > 0); if (q) al.push({ lvl: 'warn', day: dayOf(q, 1), text: 'Склад готовой воды больше двух месяцев продаж с ' + MONTHS[q - 1].label }); }
     if (minCash < -1) al.push({ lvl: 'warn', day: minCashDay, text: 'Кассовый разрыв внутри месяца: ' + dateOf(minCashDay).text + ' на счёте ' + Math.round(minCash / 1000).toLocaleString('ru-RU') + ' тыс. ₽ — увеличьте неснижаемый остаток' });
-    const recMax = Math.max.apply(null, years.map(y => y.rec));
-    if (recMax > p.usn_lim) al.push({ lvl: 'err', day: 0, text: 'Доход за год выше лимита УСН — налоги в расчёте занижены' });
-    else if (recMax > p.vat7_thr) al.push({ lvl: 'warn', day: 0, text: 'Доход за год выше порога — НДС будет 7 %, поменяйте ставку' });
+    const pcT = v => String(Math.round(v * 1000) / 10).replace('.', ',') + ' %';
+    if (k.vat7M) al.push({ lvl: 'warn', day: dayOf(k.vat7M, 1), text: 'С ' + MONTHS[k.vat7M - 1].label + ' НДС ' + pcT(p.vat7_rate) + ' вместо ' + pcT(p.vat_rate) + ': доход за год выше ' + Math.round(p.vat7_thr / 1e6) + ' млн ₽. Это учтено в расчёте' });
+    if (k.osnM) al.push({ lvl: 'warn', day: dayOf(k.osnM, 1), text: 'С ' + MONTHS[k.osnM - 1].label + ' доход за год выше лимита УСН (' + Math.round(p.usn_lim / 1e6) + ' млн ₽): дальше налоги считаются по общему режиму — НДС ' + pcT(p.osn_vat) + ' с вычетом входящего и налог на прибыль ' + pcT(p.osn_tax) });
     s.capex.forEach(c => { if (!(c.month >= 1 && c.month <= N)) al.push({ lvl: 'err', day: 0, text: 'Вложение «' + c.name + '»: месяц оплаты вне периода' }); });
     return { m, d, ev, arrivals, ord, stockEnd, useBy, cnt, k, alerts: al, prices: pr };
   }
@@ -307,7 +313,7 @@
     s.capex.forEach(c => { if (c.month >= 1 && c.month <= T) cap[CAP_MAIN.indexOf(c.cat) >= 0 ? c.cat : 'Прочее'] += amt(c) * (1 + (c.reserve ? p.contingency : 0)); });
     const np = sumT(m.new_pay) * (1 + p.contingency); cap['Установки очистки'] += np;
     const capT = sumT(m.capex), tara = sumT(m.materials) + sumT(m.wc), fot = sumT(m.staff);
-    const oth = sumT(m.energy) + sumT(m.rent) + sumT(m.maint) + sumT(m.other) + sumT(m.mkt) + sumT(m.logist) + sumT(m.returns) + sumT(m.vat) + sumT(m.usn);
+    const oth = sumT(m.energy) + sumT(m.rent) + sumT(m.maint) + sumT(m.other) + sumT(m.mkt) + sumT(m.logist) + sumT(m.returns) + sumT(m.vat) - sumT(m.vat_in) + sumT(m.usn);
     const rec = sumT(m.receipts), pay = sumT(m.payout), cash = m.cash[T - 1], opx = tara + fot + oth - rec;
     return { T, cap, capT, np, tara, fot, oth, rec, opx, cash, pay, capAfter: all(m.capex) - capT, check: capT + opx + cash + pay - k.invest };
   }
