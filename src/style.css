@@ -171,7 +171,9 @@ td.r,th.r{text-align:right} td.r{font-family:var(--mono);font-size:13px} td.calc
 td input,td select{width:100%} td input[type=checkbox]{width:auto}
 td.name{min-width:240px;width:60%} td.n{width:1%;white-space:nowrap} td.n .in{justify-content:flex-end} td.n input.num{width:118px} td.n.day input.num{width:88px} td.mo{width:1%} td.mo select{width:136px}
 tfoot td{font-weight:600;border-bottom:0;white-space:nowrap}
-.intro{display:flex;flex-direction:column;gap:10px} .intro>p{max-width:78ch;font-size:15px} .intro .more{display:flex;flex-direction:column;gap:10px;border-left:2px solid var(--line);padding-left:14px}
+.intro{display:flex;flex-direction:column;gap:10px} .intro>p{max-width:78ch;font-size:15px}
+.panel p,.panel li,.tnote2,.alert,.chip{text-wrap:pretty} .intro>p{text-wrap:balance}
+.bar .btn .sm{display:none} @media (max-width:640px){ .bar .btn .lg{display:none} .bar .btn .sm{display:inline} } .intro .more{display:flex;flex-direction:column;gap:10px;border-left:2px solid var(--line);padding-left:14px}
 .lnk{border:0;background:transparent;padding:0;margin-left:4px;font:inherit;color:var(--water);cursor:pointer;text-decoration:underline dotted;text-underline-offset:3px;white-space:nowrap} .lnk:hover{color:var(--ink)}
 /* название строки — как текст: рамка появляется только при вводе */
 input.ttl{width:100%;border-color:transparent;background:transparent;font-weight:500;color:var(--ink);text-overflow:ellipsis;cursor:text}

@@ -9,10 +9,13 @@ html=f'''<title>Завод воды АРКТИКА</title>
 {r('body.html')}
 <script src="https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.4.0/exceljs.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<script async src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.2/jspdf.umd.min.js"></script>
 <script>
 {r('engine.js')}
 {r('meta.js')}
 {r('excel.js')}
+{r('pdffont.js')}
+{r('pdf.js')}
 {r('ui.js')}
 </script>
 '''

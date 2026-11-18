@@ -8,7 +8,8 @@
       <span class="namebox" id="savebox" hidden><input id="scnname" placeholder="Название сценария" maxlength="60"><input id="scncode" type="password" autocomplete="off" placeholder="Код команды" aria-label="Код команды" style="width:130px" hidden><button class="btn sm pri" data-act="saveok">Сохранить</button><button class="btn sm" data-act="savepub" id="b-savepub" hidden>Опубликовать на сайте</button><button class="btn sm" data-act="savecancel">Отмена</button></span>
       <button class="btn pri" data-act="save" id="b-save">Сохранить сценарий</button>
       <button class="btn" data-act="undo" id="b-undo">Отменить ход</button>
-      <button class="btn" data-act="xlsx" id="b-xlsx">Скачать Excel</button>
+      <button class="btn" data-act="xlsx" id="b-xlsx" aria-label="Скачать Excel"><span class="lg">Скачать </span>Excel</button>
+      <button class="btn" data-act="pdf" id="b-pdf" aria-label="Скачать презентацию в PDF"><span class="lg">Скачать презентацию</span><span class="sm">Презентация</span></button>
       <details class="more" id="more"><summary class="btn icon" aria-label="Ещё действия" title="Ещё действия">⋯</summary><div class="menu"><button data-act="delscn" id="b-del">Удалить сценарий</button><button data-act="reset" id="b-reset">Начать с базы</button></div></details>
       <button class="btn icon" data-act="theme" id="b-theme" aria-label="Переключить тему"></button>
     </div>

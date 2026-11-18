@@ -443,7 +443,7 @@
   function summaryPanel() {
     const sd = summaryData(), k = res.k, sp = sd.sp, pc = v => v === null ? 'нет' : nf1.format(v * 100) + ' %';
     const pbS = k.paybackM ? 'Вложения возвращаются в ' + mLabel(k.paybackM) + ' — на ' + ord(k.paybackM) + ' месяце.' : k.paybackEst ? 'За 5 лет вложения не возвращаются; по текущему темпу это ' + mLabel(k.paybackEst) + '.' : 'Проект не выходит в плюс.';
-    const lead = sp ? `Инвестор вносит ${mln(k.invest)}; последний взнос — ${mLabel(sp.T)}, дальше проект покрывает расходы сам. ${pbS}` : `Взносы инвестора в этом сценарии не нужны. ${pbS}`;
+    const lead = !sp ? `Взносы инвестора в этом сценарии не нужны. ${pbS}` : sp.T >= N ? `Инвестор вносит ${mln(k.invest)} и доплачивает до конца расчёта: за 5 лет проект не начинает покрывать расходы сам. ${pbS}` : `Инвестор вносит ${mln(k.invest)}; последний взнос — ${mLabel(sp.T)}, дальше проект покрывает расходы сам. ${pbS}`;
     const share = v => k.invest > 0 ? nf1.format(v / k.invest * 100) + ' %' : '';
     const invTable = !sp ? '' : `<h3>На что идут деньги инвестора</h3>
       <div class="tbl"><table class="invt"><thead><tr><th>Статья</th><th class="r">Сумма</th><th class="r">Доля взносов</th></tr></thead><tbody>` +
@@ -689,7 +689,7 @@
     <div><h3>Производство и продажи</h3><ul><li>Мощность = сумма по типам (штук × литров в сутки) × коэффициент использования × дни.</li><li>Завод разливает столько, сколько нужно по плану продаж плюс целевой запас, но не больше мощности воды и линии.</li><li>Продано = меньшее из плана и того, что есть на складе с учётом розлива.</li><li>Докупили установки, но не подняли план продаж — мощность простаивает, деньги потрачены зря.</li></ul></div>
     <div><h3>Паллеты</h3><ul><li>Бутылок на паллете = упаковок в слое × штук в упаковке × слоёв.</li><li>Упаковок в слое — сколько прямоугольников упаковки встаёт рядами на 1200 × 800 или 1200 × 1000.</li><li>Слоёв — сколько проходит и по высоте груза, и по весу.</li><li>Паллеты и стрейч-плёнка расходуются на каждую разлитую паллету и покупаются партиями, как крышки.</li></ul></div>
     <div><h3>Тревоги</h3><ul><li><b>Материал закончился</b> — заказ сделан поздно или партия мала.</li><li><b>Кассовый разрыв</b> — в середине месяца на счёте минус, хотя в конце плюс. Увеличьте неснижаемый остаток.</li><li><b>Линия не успевает</b> — нужна вторая смена.</li><li><b>План выше производства</b> — не хватает воды или линии.</li><li><b>Лимиты УСН</b> — доход за год вышел за порог, налоги будут выше.</li></ul></div>
-    <div><h3>Excel и допущения</h3><ul><li>«Скачать Excel» выгружает текущий сценарий: «Кейс» с формулами, «Персонал», «Вложения», «Установки» (типы и партии), «Продажи», «Графики» с диаграммами окупаемости, подневные остатки, журнал и справку. Итоги в файле и на экране совпадают.</li><li>Обратно из Excel сценарий не загружается — правьте здесь, выгружайте заново.</li><li>Оклады по ролям, размеры бутылок, цены паллет и стрейч-плёнки — оценки; пресс-формы бутылок и транспорт крышек стоят нулями.</li><li>Амортизации нет: игра считает деньги, а не бухгалтерскую прибыль.</li></ul></div></div>`;
+    <div><h3>Excel, презентация и допущения</h3><ul><li>«Скачать презентацию» собирает PDF на 8 слайдов по текущему сценарию: итог в цифрах, на что идут деньги инвестора, графики окупаемости, итоги по годам и главные допущения.</li><li>«Скачать Excel» выгружает текущий сценарий: «Кейс» с формулами, «Персонал», «Вложения», «Установки» (типы и партии), «Продажи», «Графики» с диаграммами окупаемости, подневные остатки, журнал и справку. Итоги в файле и на экране совпадают.</li><li>Обратно из Excel сценарий не загружается — правьте здесь, выгружайте заново.</li><li>Оклады по ролям, размеры бутылок, цены паллет и стрейч-плёнки — оценки; пресс-формы бутылок и транспорт крышек стоят нулями.</li><li>Амортизации нет: игра считает деньги, а не бухгалтерскую прибыль.</li></ul></div></div>`;
 
   const GROUPS = [['prod', 'Производство', ['capex', 'units', 'people']], ['tara', 'Тара', ['bottle', 'stock']], ['sales', 'Продажи', ['sales']], ['fin', 'Ежем. расходы и др.', ['costs', 'money']], ['total', 'Итог', ['summary', 'charts', 'levers']], ['model', 'Моделирование', ['scn', 'journal', 'rules']]];
   const TABN = {}; TABS.forEach(a => { TABN[a[0]] = a[1]; }); const grpOf = t => GROUPS.find(g => g[2].includes(t)) || GROUPS[0];
@@ -773,6 +773,41 @@
     } catch (err) { toast(err && err.code === 'declined' ? 'Сохранение отменено' : 'Не удалось сохранить файл' + (err && err.code ? ': ' + err.code : '')); }
     finally { btn.disabled = false; }
   }
+  /* ---------- типографика: предлог не висит в конце строки, тире не уезжает в начало следующей, число не отрывается от единицы ---------- */
+  const TY_SHORT = /(^|[\s(«„])(в|во|на|не|ни|и|а|с|со|к|ко|у|о|об|от|до|за|из|по|но|же|ли|бы|то|для|при|без|над|под|про|или) (?=\S)/gi;
+  const typoText = v => v.replace(TY_SHORT, '$1$2\u00A0').replace(TY_SHORT, '$1$2\u00A0').replace(/(\S) ([—–])(?= )/g, '$1\u00A0$2').replace(/(\d) (?=(?:%|₽|млн|тыс|л\b|шт|мес|месяц|лет|год|дн|кг|г\b|ч\b))/g, '$1\u00A0');
+  function typo(root) { if (!root) return; if (root.nodeType === 3) { const p = root.parentNode; if (p && !(p.closest && p.closest('svg,select,textarea,script,style,input,[contenteditable]'))) { const v = root.nodeValue, w = typoText(v); if (w !== v) root.nodeValue = w; } return; }
+    if (root.nodeType !== 1 || root.closest('svg,select,textarea,script,style')) return;
+    const tw = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, null), list = []; let nd; while ((nd = tw.nextNode())) list.push(nd); list.forEach(typo); }
+  try { typo(document.body); new MutationObserver(ms => ms.forEach(mu => mu.addedNodes.forEach(typo))).observe(document.body, { childList: true, subtree: true }); } catch (e) { }
+  /* ---------- презентация PDF ---------- */
+  const MFULL = ['январь', 'февраль', 'март', 'апрель', 'май', 'июнь', 'июль', 'август', 'сентябрь', 'октябрь', 'ноябрь', 'декабрь'];
+  function presData() { const s = st.s, p = s.p, k = res.k, m = res.m, sd = summaryData(), sp = sd.sp, c = k.cost, pc0 = v => nf0.format(Math.round(v * 100)) + ' %', r1 = v => nf1.format(v);
+    const pbS = k.paybackM ? 'Вложения возвращаются в ' + mLabel(k.paybackM) + ' — на ' + ord(k.paybackM) + ' месяце.' : k.paybackEst ? 'За 5 лет вложения не возвращаются; по текущему темпу это ' + mLabel(k.paybackEst) + '.' : 'Проект не выходит в плюс.';
+    const lead = !sp ? `Взносы инвестора в этом сценарии не нужны. ${pbS}` : sp.T >= N ? `Инвестор вносит ${mln(k.invest)} и доплачивает до конца расчёта: за 5 лет проект не начинает покрывать расходы сам. ${pbS}` : `Инвестор вносит ${mln(k.invest)}; последний взнос — ${mLabel(sp.T)}, дальше проект покрывает расходы сам. ${pbS}`;
+    const units = s.utypes.filter(t => +t.start > 0).map(t => t.start + ' × ' + t.name), bought = s.batches.reduce((q, b) => q + (+b.qty || 0), 0);
+    const assume = [
+      { title: 'Продукт и цены', col: 0, rows: [['Тара', dvP('glass', p.glass ? 1 : 0)], ['Доли по литрам: 0,3 / 0,5 / 1,0 л', [p.sh03, p.sh05, p.sh10].map(pc0).join(' / ')], ['Цена с завода с НДС: 0,3 / 0,5 / 1,0 л', [p.p03, p.p05, p.p10].map(v => nf0.format(v)).join(' / ') + ' ₽'], ['Материалы на бутылку: 0,3 / 0,5 / 1,0 л', c.m.map(r1).join(' / ') + ' ₽']] },
+      { title: 'Производство', col: 1, rows: [['Установки очистки на старте', units.join(', ') || 'нет'], ['Докупка установок', bought ? bought + ' шт., ' + s.batches.length + ' ' + plur(s.batches.length, 'партия', 'партии', 'партий') : 'не планируется'], ['Мощность очистки в ' + ENDL, pcs(m.cap_l[N - 1]) + ' л в месяц'], ['Линия розлива', pcs(p.bph) + ' бутылок в час, ' + p.hours + ' ч × ' + p.shifts + ' ' + plur(p.shifts, 'смена', 'смены', 'смен')], ['Наибольшая загрузка линии', pc0(k.maxUtil)]] },
+      { title: 'Продажи', col: 0, rows: [['Первый месяц продаж', mLabel(p.start_m)], ['План продаж в ' + ENDL, pcs(m.plan_l[N - 1]) + ' л в месяц'], ['Продаём от плана', pc0(p.caution)], ['Оплата покупателей', pc0(p.defer) + ' выручки приходит в следующем месяце']] },
+      { title: 'Расходы', col: 1, rows: [['Штат', 'до ' + k.headMax + ' ' + plur(k.headMax, 'человека', 'человек', 'человек') + ', ФОТ ' + mln(m.staff[N - 1]) + ' в месяц'], ['Аренда', rub(p.rent) + ' в месяц'], ['Логистика и бонусы сетям', dvP('logist', p.logist) + ' выручки'], ['Маркетинг', dvP('mkt_pct', p.mkt_pct) + ' выручки и ' + mln(p.mkt_launch) + ' на запуск']] },
+      { title: 'Налоги и деньги', col: 2, rows: [['УСН «доходы минус расходы»', dvP('usn_rate', p.usn_rate) + ', не меньше ' + dvP('usn_min', p.usn_min) + ' поступлений'], ['НДС на УСН', dvP('vat_rate', p.vat_rate) + ' после ' + mln(p.vat_thr) + ' поступлений за год'], ['Индексация', 'с ' + mLabel(p.idx_m) + ': цены +' + pc0(p.price_idx) + ', затраты +' + pc0(p.cost_idx) + ', ' + (p.idx_rep ? 'каждый год' : 'один раз')], ['Резерв на непредвиденное', dvP('contingency', p.contingency) + ' к вложениям'], ['Неснижаемый остаток на счёте', p.reserve_m + ' мес. постоянных расходов'], ['Возврат свободных денег инвестору', p.payout_on ? 'да' : 'нет']] }];
+    return { name: s.name, today: new Date().toLocaleDateString('ru-RU'), period: MFULL[MONTHS[0].m] + ' ' + MONTHS[0].y + ' — ' + MFULL[MONTHS[N - 1].m] + ' ' + MONTHS[N - 1].y, lead,
+      k: { invest: k.invest, lastInv: k.lastInvM ? mLabel(k.lastInvM) : '', pbN: k.paybackM || 0, pbLabel: k.paybackM ? mLabel(k.paybackM) : '', pbYear: k.paybackM ? MONTHS[k.paybackM - 1].y : 0, pbEst: k.paybackEst ? mLabel(k.paybackEst) : '', irr: k.irr, profit: k.profitTotal, ebitda: k.ebitdaTotal, ebm: k.ebm, rev: k.revTotal,
+        minCash: k.minCash, minCashDate: S.dateOf(k.minCashDay).text, cumEnd: k.cumEnd, cashEnd: k.cashEnd, payout: k.payout, ebLabel: k.ebitdaM ? mLabel(k.ebitdaM) : '' },
+      inv: sd.inv, invNote: sp ? 'Тара и материалы — вместе с запасом на складе. Часть расходов проект уже закрыл деньгами покупателей, поэтому они вычтены.' + (sp.capAfter > 500 ? ' Вложения после ' + mLabel(sp.T) + ' — ' + mln(sp.capAfter) + ' — оплачиваются из денег самого проекта.' : '') : '',
+      years: sd.years, months: MONTHS.map(x => ({ y: x.y, m: x.m, label: x.label })), s: { cf: m.cf, cum: m.cum_cf, cash: m.cash, invCum: m.inv_cum, rev: m.rev_net, opex: m.opex, ebitda: m.ebitda }, assume }; }
+  const loadScript = url => new Promise((ok, no) => { const sc = document.createElement('script'); sc.src = url; sc.onload = ok; sc.onerror = no; document.head.appendChild(sc); });
+  async function pdf() {
+    const btn = $('b-pdf'); btn.disabled = true;
+    try {
+      if (!(window.jspdf && window.jspdf.jsPDF)) { try { await loadScript('https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.2/jspdf.umd.min.js'); } catch (e) { } }
+      if (!(window.jspdf && window.jspdf.jsPDF)) { toast('Не загрузилась библиотека PDF. Проверьте интернет и обновите страницу.'); return; }
+      const doc = window.Pres.build(window.jspdf.jsPDF, window.PresFont, presData()), blob = doc.output('blob');
+      if (await saveFile('АРКТИКА_' + st.s.name.replace(/[^0-9A-Za-zА-Яа-яЁё-]+/g, '_') + '_презентация.pdf', blob)) toast('Презентация сохранена: 8 слайдов');
+    } catch (err) { toast(err && err.code === 'declined' ? 'Сохранение отменено' : 'Не удалось собрать презентацию' + (err && err.code ? ': ' + err.code : '')); if (!(err && err.code)) console.error(err); }
+    finally { btn.disabled = false; }
+  }
   /* после смены вкладки при прилипшем меню — к началу вкладки */
   function tabTop() { const sb = $('sbar'), off = sb.hidden ? 0 : sb.offsetHeight, r = $('tabcard').getBoundingClientRect(); if (r.top < off) window.scrollBy(0, r.top - off); }
   document.addEventListener('click', e => {
@@ -799,6 +834,7 @@
         $('savebox').hidden = true; $('b-save').hidden = false; render(); toast('Сценарий «' + n + '» сохранён'); break; }
       case 'delscn': if (st.saved[s.name]) { const n = s.name; delete st.saved[n]; persist(); render(); toast('Сценарий «' + n + '» удалён из сохранённых'); } break;
       case 'xlsx': xlsx(); break;
+      case 'pdf': pdf(); break;
       case 'clearj': st.journal = []; persist(); renderTabs(); break;
       case 'tm': st.tmAll = a[1] === '1'; renderTabs(); break;
       case 'tmtbl': st.tmTbl = !st.tmTbl; renderTabs(); break;
