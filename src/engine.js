@@ -21,20 +21,20 @@
         k_use: 0.95, days: 30, lead: 2,
         bph: 1000, hours: 8, shifts: 1, wdays: 21, eff: 0.85,
         start_m: 4, first_share: 0.5, ramp1: 0.30, ramp2: 1, ramp3: 1, caution: 1,
-        sh03: 0.16, sh05: 0.46, sh10: 0.38, p03: 100, p05: 160, p10: 220, defer: 0.5, fg_days: 0,
-        usd: 84, cap_usd: 0.178, cap_vat: 0.22, w03: 37, w05: 43, w10: 55, pf_kg: 320, label: 10, pack: 0.5,
+        sh03: 0.16, sh05: 0.46, sh07: 0, sh10: 0.38, p03: 100, p05: 160, p07: 190, p10: 220, defer: 0.5, fg_days: 0,
+        usd: 84, cap_usd: 0.178, cap_vat: 0.22, w03: 37, w05: 43, w07: 49, w10: 55, pf_kg: 320, label: 10, pack: 0.5,
         waste: 0.02, energy: 9, logist: 0.08, returns: 0.005, mkt_pct: 0.03, mkt_launch: 1500000, mkt_start: 2, mkt_n: 3,
         pilots: 120000, pilots_m: 4,
         tax_k: 1.13, rent: 350000, rent_start: 1, maint: 250000, maint_start: 3, other: 133000,
         idx_m: 15, idx_rep: 0, cost_idx: 0.08, price_idx: 0.05, contingency: 0.10,
         vat_thr: 20000000, vat_rate: 0.05, usn_rate: 0.05, usn_min: 0.01, vat7_thr: 250000000, vat7_rate: 0.07, usn_lim: 450000000, osn_vat: 0.22, osn_tax: 0.25, osn_in: 0.8,
         reserve_m: 1, payout_on: 0, payout_keep: 3,
-        pal_w: 800, pal_h: 1600, pal_kg: 1000, d03: 60, h03: 170, pk03: 12, d05: 65, h05: 215, pk05: 12, d10: 82, h10: 270, pk10: 6,
+        pal_w: 800, pal_h: 1600, pal_kg: 1000, d03: 60, h03: 170, pk03: 12, d05: 65, h05: 215, pk05: 12, d07: 82, h07: 232, pk07: 6, d10: 82, h10: 270, pk10: 6,
         pallet_price: 450, stretch_per: 0.35, stretch_price: 300,
         // тара: 0 — ПЭТ (преформа + выдув), 1 — стекло (готовая бутылка). Цены и вес стекла — оценки, уточнить у поставщика
         glass: 0, tray: 0,
-        gb03: 14, gb05: 17, gb10: 30, gw03: 220, gw05: 300, gw10: 520, gcap: 3.5,
-        gd03: 60, gh03: 170, gpk03: 12, gd05: 65, gh05: 215, gpk05: 12, gd10: 82, gh10: 270, gpk10: 6
+        gb03: 14, gb05: 17, gb07: 21.24, gb10: 30, gw03: 220, gw05: 300, gw07: 400, gw10: 520, gcap: 3.5,
+        gd03: 60, gh03: 170, gpk03: 12, gd05: 65, gh05: 215, gpk05: 12, gd07: 82, gh07: 232, gpk07: 6, gd10: 82, gh10: 270, gpk10: 6
       },
       // пилотные: собираются по этапам, стоимость — детальными строками во «Вложениях», поэтому цена здесь 0 и в автоматические строки они не попадают
       utypes: [{ id: 'A', name: 'ТИП-А30', l: 30, price: 480000, start: 30 }, { id: 'B', name: 'ТИП-Б130', l: 130, price: 900000, start: 0 }, { id: 'P', name: 'Пилотные', l: 30, price: 0, start: 0, pilot: true }],
@@ -63,7 +63,7 @@
         ['Вспомогательное оборудование цеха', 'Озонаторы и бактерицидные лампы', 100000, 2, 20, true],
         ['Вспомогательное оборудование цеха', 'Компрессор 30 бар с осушителем (если не входит в линию)', 0, 2, 20, true],
         ['Пресс-формы', 'Пресс-форма крышки (1 500 $ + НДС 22 %)', 153720, 2, 10, true],
-        ['Пресс-формы', 'Пресс-форма бутылки 0,3 л', 0, 2, 10, true], ['Пресс-формы', 'Пресс-форма бутылки 0,5 л', 0, 2, 10, true], ['Пресс-формы', 'Пресс-форма бутылки 1,0 л', 0, 2, 10, true],
+        ['Пресс-формы', 'Пресс-форма бутылки 0,3 л', 0, 2, 10, true], ['Пресс-формы', 'Пресс-форма бутылки 0,5 л', 0, 2, 10, true], ['Пресс-формы', 'Пресс-форма бутылки 0,75 л', 0, 2, 10, true], ['Пресс-формы', 'Пресс-форма бутылки 1,0 л', 0, 2, 10, true],
         ['Пресс-формы', 'Пресс-форма преформы у литейщика (если нужен нестандартный вес)', 0, 2, 10, true],
         ['Техника и мебель', 'Компьютеры и ноутбуки, 5 шт', 350000, 1, 20, true],
         ['Техника и мебель', 'МФУ, 2 шт', 80000, 1, 20, true],
@@ -97,25 +97,29 @@
     };
   }
 
-  const T3 = ['03', '05', '10'];
+  /* форматы бутылки: ключ параметров, литров в бутылке, подпись. Порядок — по объёму; на нём держатся все массивы «по форматам» (цены, паллеты, продажи).
+     Формат с долей 0 % в расчёте не участвует: бутылок, материалов, паллет и выручки по нему нет */
+  const FMT = [['03', 0.3, '0,3 л'], ['05', 0.5, '0,5 л'], ['07', 0.75, '0,75 л'], ['10', 1, '1,0 л']];
+  const shOf = p => FMT.map(f => +p['sh' + f[0]] || 0); // доли литров по форматам
+  const perL = (p, a) => FMT.reduce((q, f, i) => q + (+p['sh' + f[0]] || 0) / f[1] * (a ? a[i] : 1), 0); // сумма по форматам: бутылок на литр (или × величина на бутылку)
   const matOn = (p, key) => (key === 'cap' || key === 'pf') ? !p.glass : (key === 'gb' || key === 'gcap') ? !!p.glass : true; // какие материалы расходуются при выбранной таре
   const tara = (p, k, t) => +p[(p.glass ? 'g' : '') + k + t] || 0; // размер, высота, штук в упаковке, вес — по выбранной таре
   function prices(p) {
-    const G = p.glass ? 1 : 0, bpl = p.sh03 / 0.3 + p.sh05 / 0.5 + p.sh10 / 1;
+    const G = p.glass ? 1 : 0, bpl = perL(p);
     const cap = p.cap_usd * p.usd * (1 + p.cap_vat);
-    const pf = [p.w03, p.w05, p.w10].map(w => w / 1000 * p.pf_kg), gb = [p.gb03, p.gb05, p.gb10].map(x => +x || 0);
-    const avg = a => bpl ? (p.sh03 / 0.3 * a[0] + p.sh05 / 0.5 * a[1] + p.sh10 * a[2]) / bpl : 0;
+    const pf = FMT.map(f => (+p['w' + f[0]] || 0) / 1000 * p.pf_kg), gb = FMT.map(f => +p['gb' + f[0]] || 0);
+    const avg = a => bpl ? perL(p, a) / bpl : 0;
     const pfAvg = avg(pf), gbAvg = avg(gb), bt = G ? gb : pf, capA = G ? (+p.gcap || 0) : cap;
-    const tray = T3.map(t => { const pk = tara(p, 'pk', t); return pk > 0 ? (+p.tray || 0) / pk : 0; }); // лоток на бутылку
+    const tray = FMT.map(f => { const pk = tara(p, 'pk', f[0]); return pk > 0 ? (+p.tray || 0) / pk : 0; }); // лоток на бутылку
     const m = bt.map((x, i) => x + capA + p.label + p.pack + tray[i]);
-    const pal = pallet(p), vol = [0.3, 0.5, 1], sh = [p.sh03, p.sh05, p.sh10];
-    const palPerL = pal.reduce((a, x, i) => a + (x.bottles > 0 ? sh[i] / vol[i] / x.bottles : 0), 0); // паллет на литр разлитой воды
+    const pal = pallet(p), sh = shOf(p);
+    const palPerL = pal.reduce((a, x, i) => a + (x.bottles > 0 ? sh[i] / FMT[i][1] / x.bottles : 0), 0); // паллет на литр разлитой воды
     return { glass: G, bpl, cap, pf, pfAvg, gb, gbAvg, bt, capA, tray, m, pal, palPerL, mat: { cap: cap, pf: pfAvg, gb: gbAvg, gcap: +p.gcap || 0, label: p.label, pallet: p.pallet_price, stretch: p.stretch_price } };
   }
   const PACK = { 6: 3, 8: 4, 12: 4, 20: 5, 24: 6 }; // бутылок в упаковке -> бутылок в ряду
   function pallet(p) { // сколько бутылок встаёт на паллету: упаковки в слое x слоёв (по высоте и по весу)
     const L = 1200, W = p.pal_w;
-    return [['03', 0.3], ['05', 0.5], ['10', 1]].map(a => {
+    return FMT.map(a => {
       const d = tara(p, 'd', a[0]), h = tara(p, 'h', a[0]), pk = tara(p, 'pk', a[0]), wt = +p[(p.glass ? 'gw' : 'w') + a[0]] || 0, pc = PACK[pk] || 4, prw = pk / pc, x = pc * d, y = prw * d;
       const packs = (x > 0 && y > 0) ? Math.max(Math.floor(L / x) * Math.floor(W / y), Math.floor(L / y) * Math.floor(W / x)) : 0, perLayer = packs * pk, kg1 = a[1] + wt / 1000;
       const byH = h > 0 ? Math.floor(p.pal_h / h) : 0, byKg = perLayer > 0 ? Math.floor(p.pal_kg / (perLayer * kg1)) : 0, layers = Math.max(0, Math.min(byH, byKg));
@@ -135,7 +139,7 @@
   function sim(s) {
     const p = s.p, pr = prices(p), bpl = pr.bpl;
     const Z = () => new Array(N).fill(0);
-    const keys = ['startL', 'pallets', 'newL', 'cap_l', 'plan_l', 'prod_l', 'sold_l', 'fg_l', 'lost_l', 'line_util', 'b03', 'b05', 'b10', 'bottles', 'prod_b', 'use_pcs',
+    const keys = ['startL', 'pallets', 'newL', 'cap_l', 'plan_l', 'prod_l', 'sold_l', 'fg_l', 'lost_l', 'line_util', 'b03', 'b05', 'b07', 'b10', 'bottles', 'prod_b', 'use_pcs',
       'rev', 'receipts', 'rec_ytd', 'osn', 'vat_rate', 'vat', 'vat_in', 'rev_net', 'materials', 'energy', 'staff', 'rent', 'maint', 'other', 'mkt', 'logist', 'returns', 'opex', 'ebitda', 'usn', 'profit',
       'capex_sched', 'new_pay', 'contingency', 'capex', 'wc_pay', 'wc_use', 'wc', 'wc_cum', 'cf', 'cum_cf', 'contrib', 'reserve', 'fixed', 'need', 'payout', 'cash', 'inv_cum', 'headcount'];
     const m = {}; keys.forEach(k => m[k] = Z());
@@ -166,10 +170,10 @@
       m.sold_l[k] = Math.min(m.plan_l[k], fg + m.prod_l[k]);
       m.lost_l[k] = m.plan_l[k] - m.sold_l[k];
       fg = fg + m.prod_l[k] - m.sold_l[k]; m.fg_l[k] = fg;
-      m.b03[k] = m.sold_l[k] * p.sh03 / 0.3; m.b05[k] = m.sold_l[k] * p.sh05 / 0.5; m.b10[k] = m.sold_l[k] * p.sh10;
-      m.bottles[k] = m.b03[k] + m.b05[k] + m.b10[k];
+      FMT.forEach(f => { m['b' + f[0]][k] = m.sold_l[k] * (+p['sh' + f[0]] || 0) / f[1]; });
+      m.bottles[k] = FMT.reduce((q, f) => q + m['b' + f[0]][k], 0);
       m.prod_b[k] = m.prod_l[k] * bpl; m.use_pcs[k] = m.prod_b[k] / (1 - p.waste); m.pallets[k] = m.prod_l[k] * pr.palPerL;
-      m.rev[k] = (m.b03[k] * p.p03 + m.b05[k] * p.p05 + m.b10[k] * p.p10) * idxp(i);
+      m.rev[k] = FMT.reduce((q, f) => q + m['b' + f[0]][k] * (+p['p' + f[0]] || 0), 0) * idxp(i);
     }
     // --- 2. закупки материалов: заказ покрывает расход на `lead` месяцев вперёд, целыми партиями
     const ord = {}, stockEnd = {}, useBy = {};
@@ -202,8 +206,8 @@
       const prevY = recYear[yr(i) - 1] || 0;
       m.vat_rate[k] = osn ? p.osn_vat : (i === 1 ? 0 : ((ytdPrev > p.vat_thr || prevY > p.vat_thr) ? ((ytdPrev > p.vat7_thr || prevY > p.vat7_thr) ? p.vat7_rate : p.vat_rate) : 0));
       m.vat[k] = m.rev[k] * m.vat_rate[k] / (1 + m.vat_rate[k]); m.rev_net[k] = m.rev[k] - m.vat[k];
-      const pb = [m.prod_l[k] * p.sh03 / 0.3, m.prod_l[k] * p.sh05 / 0.5, m.prod_l[k] * p.sh10];
-      m.materials[k] = (pb[0] * pr.m[0] + pb[1] * pr.m[1] + pb[2] * pr.m[2]) / (1 - p.waste) * ic + (i === p.pilots_m ? p.pilots : 0) + m.pallets[k] * (p.pallet_price + p.stretch_per * p.stretch_price) * ic;
+      const pbm = FMT.reduce((q, f, j) => q + m.prod_l[k] * (+p['sh' + f[0]] || 0) / f[1] * pr.m[j], 0); // разлитые бутылки × материалы на бутылку, по форматам
+      m.materials[k] = pbm / (1 - p.waste) * ic + (i === p.pilots_m ? p.pilots : 0) + m.pallets[k] * (p.pallet_price + p.stretch_per * p.stretch_price) * ic;
       m.energy[k] = m.cap_l[k] * p.energy * ic;
       let fot = 0, hc = 0; s.staff.forEach(e => { if (i >= e.from && i <= e.to) { fot += +e.salary || 0; hc++; } });
       m.headcount[k] = hc; m.staff[k] = fot * p.tax_k * ic;
@@ -286,7 +290,7 @@
       lastInvM: (() => { let r = 0; for (let q = 0; q < N; q++) if (m.need[q] + m.contrib[q] > 0) r = q + 1; return r; })(),
       cumEnd: m.cum_cf[N - 1], cashEnd: m.cash[N - 1], payout: sum(m.payout), maxUtil: Math.max.apply(null, m.line_util), wcMax: Math.max.apply(null, m.wc_cum),
       opexTotal: sum(m.opex), capexTotal: sum(m.capex), fotTotal: sum(m.staff), headMax: Math.max.apply(null, m.headcount),
-      osnM: firstIdx(q => m.osn[q] > 0), vat7M: firstIdx(q => !m.osn[q] && m.vat_rate[q] > p.vat_rate + 1e-9), lostL: sum(m.lost_l), sharesOk: Math.abs(p.sh03 + p.sh05 + p.sh10 - 1) < 1e-4,
+      osnM: firstIdx(q => m.osn[q] > 0), vat7M: firstIdx(q => !m.osn[q] && m.vat_rate[q] > p.vat_rate + 1e-9), lostL: sum(m.lost_l), sharesOk: Math.abs(shOf(p).reduce((q, v) => q + v, 0) - 1) < 1e-4,
       cost: pr, lineCapB
     };
     const al = [];
@@ -317,5 +321,5 @@
     const rec = sumT(m.receipts), pay = sumT(m.payout), cash = m.cash[T - 1], opx = tara + fot + oth - rec;
     return { T, cap, capT, np, tara, fot, oth, rec, opx, cash, pay, capAfter: all(m.capex) - capT, check: capT + opx + cash + pay - k.invest };
   }
-  g.Sim = { investSplit, CAP_MAIN, N, MONTHS, DAYS, MON, dayOf, dateOf, defaults, sim, prices, pallet, PACK, id, matOn, tara, irrOf, idxC, idxP };
+  g.Sim = { investSplit, CAP_MAIN, N, MONTHS, DAYS, MON, dayOf, dateOf, defaults, sim, prices, pallet, PACK, id, matOn, tara, irrOf, idxC, idxP, FMT, shOf };
 })(typeof window !== 'undefined' ? window : globalThis);

@@ -23,11 +23,16 @@ const SC={
  vat7: mk(s=>{s.batches.push(B('B',16,12)); s.plan.push({id:'p7',month:13,liters:85000});}),
  osn: mk(s=>{s.batches.push(B('B',50,14)); s.plan.push({id:'p8',month:15,liters:210900}); s.p.shifts=2;}),
  osn_mid: mk(s=>{s.batches.push(B('B',30,20)); s.plan.push({id:'p9',month:21,liters:150000}); s.p.osn_in=0.6; s.p.idx_rep=1;}),
+ f075_glass: mk(s=>{s.p.glass=1; s.p.sh03=0.15;s.p.sh05=0.30;s.p.sh07=0.45;s.p.sh10=0.10;}),
+ f075_pet: mk(s=>{s.p.sh03=0.10;s.p.sh05=0.30;s.p.sh07=0.50;s.p.sh10=0.10; s.p.tray=9; s.p.p07=185; s.p.w07=47;}),
+ no1l: mk(s=>{s.p.glass=1; s.p.sh03=0.20;s.p.sh05=0.35;s.p.sh07=0.45;s.p.sh10=0;}),
+ no1l_3f: mk(s=>{s.p.sh03=0.30;s.p.sh05=0.70;s.p.sh07=0;s.p.sh10=0;}),
+ only075: mk(s=>{s.p.glass=1; s.p.sh03=0;s.p.sh05=0;s.p.sh07=1;s.p.sh10=0; s.p.pal_w=1000;}),
  pallets: mk(s=>{Object.assign(s.p,{pal_w:1000,pal_h:1400,pal_kg:600,d03:58,h03:180,pk03:20,d05:68,h05:230,pk05:6,d10:88,h10:290,pk10:8,pallet_price:700,stretch_per:0.5,stretch_price:350,sh03:0.3,sh05:0.3,sh10:0.4});}),
 };
 (async()=>{ const out={};
  for(const [n,s] of Object.entries(SC)){ const res=S.sim(s); const b=globalThis.Xls.build(ExcelJS,s,res,[{t:'12.11 19:00',text:'тест',dInv:1,dPb:0}]);
-   { const raw=await b.wb.xlsx.writeBuffer(), o=await globalThis.Xls.addCharts(JSZip,raw,b.charts,'nodebuffer'); if(o.charts!==b.charts.items.length) { console.log('ДИАГРАММЫ НЕ ВСТАВЛЕНЫ:',n,o.error); process.exitCode=1; } fs.writeFileSync(`x_${n}.xlsx`,o.buf); } if(!globalThis.__P) globalThis.__P={}; globalThis.__P[n]={bpp:['03','05','10'].map(t=>b.P['bpp'+t]), pal:res.prices.pal.map(x=>x.bottles), m:['03','05','10'].map(t=>b.P['m'+t]), mEng:res.prices.m, kg:['03','05','10'].map(t=>b.P['pkg'+t]), kgEng:res.prices.pal.map(x=>x.kg)};
+   { const raw=await b.wb.xlsx.writeBuffer(), o=await globalThis.Xls.addCharts(JSZip,raw,b.charts,'nodebuffer'); if(o.charts!==b.charts.items.length) { console.log('ДИАГРАММЫ НЕ ВСТАВЛЕНЫ:',n,o.error); process.exitCode=1; } fs.writeFileSync(`x_${n}.xlsx`,o.buf); } if(!globalThis.__P) globalThis.__P={}; globalThis.__P[n]={bpp:S.FMT.map(f=>f[0]).map(t=>b.P['bpp'+t]), pal:res.prices.pal.map(x=>x.bottles), m:S.FMT.map(f=>f[0]).map(t=>b.P['m'+t]), mEng:res.prices.m, kg:S.FMT.map(f=>f[0]).map(t=>b.P['pkg'+t]), kgEng:res.prices.pal.map(x=>x.kg)};
    const m={}; for(const k of Object.keys(b.R)){ const kk=k.endsWith('_ord')?null:k; }
    const eng={}; for(const k of Object.keys(b.R)){ if(res.m[k]) eng[k]=res.m[k]; else if(k.endsWith('_ord')) eng[k]=res.ord[k.slice(0,-4)]; else if(k.endsWith('_stock')) eng[k]=res.stockEnd[k.slice(0,-6)]; else if(k==='use_pet') eng[k]=res.useBy.pf; else if(k==='use_gl') eng[k]=res.useBy.gb; }
    out[n]={pp:globalThis.__P[n],R:b.R,eng,K:b.K,kv:{invest:res.k.invest,peak:res.k.peak,pb_n:res.k.paybackM||null,cum:res.k.cumEnd,payout:res.k.payout,profit:res.k.profitTotal,ebitda:res.k.ebitdaTotal,ebm:res.k.ebm,util:res.k.maxUtil,cash:res.k.cashEnd,irr:res.k.irr},yrows:b.years,yv:res.k.years,checks:b.checks,invest:res.k.invest,pb:res.k.paybackM,alerts:res.alerts.map(a=>a.text)}; }
