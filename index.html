@@ -55,6 +55,8 @@ h1,h2,h3{margin:0;text-wrap:balance}
 .btn.pri{background:var(--accent);border-color:var(--accent);color:var(--on-accent);font-weight:600}
 .btn.ghost{background:transparent}
 .btn.sm{padding:4px 10px;font-size:13px}
+.btn.sm.icon{padding:5px 7px;vertical-align:middle;color:var(--muted)} .btn.sm.icon+.btn.sm.icon{margin-left:4px} .btn.sm.icon:hover{color:var(--ink)} .btn.sm.icon.bin:hover{color:var(--red);border-color:var(--red);background:var(--red-soft)}
+.btn.danger{color:#fff;background:var(--red);border-color:var(--red)} .armbox,.rnbox{display:inline-flex;gap:6px;align-items:center} .rnbox{width:100%} .rnbox .rn{flex:1;min-width:160px;max-width:520px;padding:4px 8px;border:1px solid var(--field-line);border-radius:6px;background:var(--field);color:var(--ink);font:inherit}
 .btn:disabled{opacity:.45;cursor:default}
 select,input{border:1px solid var(--field-line);background:var(--field);border-radius:6px;padding:6px 8px;min-width:0;transition:border-color .12s,box-shadow .12s}
 select:hover,input:hover{border-color:var(--field-hot)}
@@ -1823,6 +1825,8 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
   function rerender() { const a = document.activeElement, fid = focusId || (a && a.id), sel = !!focusId; focusId = ''; render(); if (fid) { const e = $(fid); if (e && e.focus) { e.focus(); if (sel && e.select) e.select(); } } }
   /* ---------- общие сценарии: файл scenarios.json рядом со страницей видят все, кто открыл ссылку ---------- */
   let shared = {}, sharedAt = '', shareUrl = '';
+  let scnEdit = '', scnArm = ''; // «my:Имя» или «pub:Имя»: строка в режиме переименования / ждёт подтверждения удаления
+  const renKey = (map, from, to) => { const out = {}; Object.keys(map).forEach(n => { out[n === from ? to : n] = map[n]; }); return out; }; // переименование с сохранением порядка
   const IN_CLAUDE = !!(window.claude && window.claude.use), TOKKEY = 'vodaGame.ghToken';
   const GH = (() => { const m = /^([^.]+)\.github\.io$/.exec(location.hostname), seg = location.pathname.split('/').filter(Boolean)[0]; return (m && seg) ? { owner: m[1], repo: seg } : { owner: 'aka-sergey', repo: 'Arktika' }; })();
   const getTok = () => { try { return localStorage.getItem(TOKKEY) || ''; } catch (e) { return ''; } };
@@ -2412,7 +2416,12 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
         rows.map(r => { const cl = levCells(r); return `<div class="lever" data-lev="${r.i}"><span>${esc(r.lv.a(s))}</span><span class="in">${num('lv-' + r.i, 'lev:' + r.i, levVal(r.i), 'dec1')}<span class="u">${r.lv.u}</span></span><span class="lb">${cl.bar}</span><span class="li">${cl.inv}</span><span class="lp">${cl.pb}</span><button class="btn sm" data-act="lever:${r.i}">Применить</button></div>`; }).join('') + '</div>';
     }
     if (t === 'scn') {
-      const row = (n, kk, btns) => `<tr><td>${esc(n)}</td><td class="r">${mln(kk.invest)}</td><td>${kk.paybackM ? esc(mLabel(kk.paybackM)) : kk.paybackEst ? '≈ ' + esc(mLabel(kk.paybackEst)) : 'нет'}</td><td class="r">${mln(kk.profitTotal)}</td><td class="r">${short(kk.minCash)} ₽</td><td class="r">${kk.headMax}</td><td style="white-space:nowrap">${btns}</td></tr>`;
+      const IC = { pen: '<svg width="15" height="15" viewBox="0 0 16 16" aria-hidden="true"><path d="M11.3 1.9l2.8 2.8-8.6 8.6-3.3.5.5-3.3z" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></svg>', bin: '<svg width="15" height="15" viewBox="0 0 16 16" aria-hidden="true"><path d="M2.5 4.2h11M6.3 4.2V2.6h3.4v1.6M4 4.2l.7 9.2h6.6l.7-9.2M6.7 6.8v4.2M9.3 6.8v4.2" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>' };
+      /* имя сценария и кнопки «переименовать» и «удалить»; kind — my (в этом браузере) или pub (общий, в репозитории) */
+      const nameCell = (kind, n) => scnEdit === kind + ':' + n ? `<span class="rnbox"><input id="rn-inp" class="rn" type="text" maxlength="80" value="${esc(n)}" aria-label="Новое название сценария"><button class="btn sm pri" data-act="rnok">Сохранить</button><button class="btn sm" data-act="rnno">Отмена</button></span>` : esc(n);
+      const tools = (kind, n) => scnArm === kind + ':' + n ? ` <span class="armbox"><button class="btn sm danger" data-act="scdelok:${kind}:${esc(n)}">${kind === 'pub' ? 'Удалить у всех?' : 'Удалить?'}</button><button class="btn sm" data-act="scdelno">Нет</button></span>`
+        : ` <button class="btn sm icon" data-act="rn:${kind}:${esc(n)}" title="Переименовать" aria-label="Переименовать «${esc(n)}»">${IC.pen}</button><button class="btn sm icon bin" data-act="scdel:${kind}:${esc(n)}" title="Удалить" aria-label="Удалить «${esc(n)}»">${IC.bin}</button>`;
+      const row = (n, kk, btns, nm) => `<tr><td>${nm || esc(n)}</td><td class="r">${mln(kk.invest)}</td><td>${kk.paybackM ? esc(mLabel(kk.paybackM)) : kk.paybackEst ? '≈ ' + esc(mLabel(kk.paybackEst)) : 'нет'}</td><td class="r">${mln(kk.profitTotal)}</td><td class="r">${short(kk.minCash)} ₽</td><td class="r">${kk.headMax}</td><td style="white-space:nowrap">${btns}</td></tr>`;
       const head = '<thead><tr><th>Сценарий</th><th class="r">Вносит инвестор</th><th>Окупаемость</th><th class="r">Прибыль за 5 лет</th><th class="r">Минимум на счёте</th><th class="r">Людей</th><th></th></tr></thead>';
       const pub = Object.keys(shared), mine = Object.keys(st.saved), tok = getTok();
       const pbT = x => x.pb ? esc(mLabel(x.pb)) : x.est ? '≈ ' + esc(mLabel(x.est)) : 'нет', adm = lsGet('vodaGame.admin');
@@ -2424,10 +2433,10 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
         (remote.items.length ? remote.items.map(x => `<tr><td>${esc(x.name)}</td>${anyAuthor ? `<td>${hasAuthor(x) ? esc(x.author) : ''}</td>` : ''}<td class="calc">${esc(new Date(x.created).toLocaleString('ru-RU', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }))}</td><td class="r">${mln(x.invest || 0)}</td><td>${pbT(x)}</td><td style="white-space:nowrap"><button class="btn sm" data-act="open:web:${esc(x.id)}">Открыть</button>${remote.canHide && adm ? ` <button class="btn sm" data-act="webdel:${esc(x.id)}">Убрать</button>` : ''}</td></tr>`).join('') : `<tr><td colspan="${anyAuthor ? 6 : 5}" class="calc">Пока никто ничего не опубликовал. Будьте первым.</td></tr>`) + `</tbody></table></div>
       ${remote.canHide ? `<div class="row"><input id="admcode" type="password" autocomplete="off" placeholder="Код владельца — чтобы убирать сценарии" style="max-width:320px;flex:1" value="${esc(adm)}" aria-label="Код владельца"><button class="btn sm" data-act="admsave">Запомнить</button></div>` : ''}`;
       const fileBlock = (remote.on && !pub.length) ? '' : `<h3>Общие сценарии из файла — видят все, кто открыл ссылку</h3>
-      <p>Лежат в файле <code>scenarios.json</code> рядом со страницей. Любой посетитель может открыть общий сценарий и играть от него; его правки остаются только у него.${sharedAt ? ' Обновлено: ' + esc(new Date(sharedAt).toLocaleString('ru-RU')) + '.' : ''}</p>
-      <div class="tbl"><table>${head}<tbody>` + (pub.length ? pub.map(n => row(n, S.sim(shared[n]).k, `<button class="btn sm" data-act="open:pub:${esc(n)}">Открыть</button>${!IN_CLAUDE && tok ? ` <button class="btn sm" data-act="unpub:${esc(n)}">Убрать из общих</button>` : ''}`)).join('') : '<tr><td colspan="7" class="calc">Общих сценариев пока нет.</td></tr>') + `</tbody></table></div>`;
+      <p>Лежат в файле <code>scenarios.json</code> рядом со страницей. Любой посетитель может открыть общий сценарий и играть от него; его правки остаются только у него.${IN_CLAUDE ? '' : ' Карандаш и корзина меняют файл для всех — для этого нужен токен GitHub (внизу страницы).'}${sharedAt ? ' Обновлено: ' + esc(new Date(sharedAt).toLocaleString('ru-RU')) + '.' : ''}</p>
+      <div class="tbl"><table>${head}<tbody>` + (pub.length ? pub.map(n => row(n, S.sim(shared[n]).k, `<button class="btn sm" data-act="open:pub:${esc(n)}">Открыть</button>${IN_CLAUDE ? '' : tools('pub', n)}`, nameCell('pub', n))).join('') : '<tr><td colspan="7" class="calc">Общих сценариев пока нет.</td></tr>') + `</tbody></table></div>`;
       return web + fileBlock + `<h3>Мои сценарии — только в этом браузере</h3>
-      <div class="tbl"><table>${head}<tbody>${row('База (исходные цифры)', BASE.k, '<button class="btn sm" data-act="open:База">Открыть</button>')}${row('Сейчас на экране: ' + s.name, k, '')}` + mine.map(n => row(n, S.sim(st.saved[n]).k, `<button class="btn sm" data-act="open:my:${esc(n)}">Открыть</button>${!IN_CLAUDE && !remote.on ? ` <button class="btn sm" data-act="pub1:${esc(n)}">Сделать общим</button>` : ''}`)).join('') + `</tbody></table></div>
+      <div class="tbl"><table>${head}<tbody>${row('База (исходные цифры)', BASE.k, '<button class="btn sm" data-act="open:База">Открыть</button>')}${row('Сейчас на экране: ' + s.name, k, '')}` + mine.map(n => row(n, S.sim(st.saved[n]).k, `<button class="btn sm" data-act="open:my:${esc(n)}">Открыть</button>${!IN_CLAUDE && !remote.on ? ` <button class="btn sm" data-act="pub1:${esc(n)}">Сделать общим</button>` : ''}${tools('my', n)}`, nameCell('my', n))).join('') + `</tbody></table></div>
       <div class="row"><button class="btn" data-act="expscn">Скачать мои сценарии файлом</button><button class="btn" data-act="impscn">Загрузить сценарии из файла</button><input type="file" id="imp" accept=".json,application/json" hidden>${IN_CLAUDE ? '' : '<button class="btn" data-act="sharelink">Ссылка на сценарий с экрана</button>'}</div>
       ${shareUrl ? `<div class="row"><code id="shareurl" class="linkbox">${esc(shareUrl)}</code><span style="color:var(--muted)">Отправьте ссылку — у получателя откроется этот сценарий.</span></div>` : ''}
       ` + (remote.on ? '' : IN_CLAUDE ? '<p>Публиковать общие сценарии можно со страницы на сайте. Здесь, внутри Claude, доступны просмотр общих, скачивание и загрузка файлом.</p>' : `<h3>Публикация общих сценариев — только для владельца</h3>
@@ -2620,6 +2629,24 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
       case 'tok': { const v = ($('ghtok').value || '').trim(); if (!v) { toast('Вставьте токен в поле'); break; } try { localStorage.setItem(TOKKEY, v); } catch (x) { } renderTabs(); toast('Токен сохранён в этом браузере'); break; }
       case 'tokdel': try { localStorage.removeItem(TOKKEY); } catch (x) { } renderTabs(); toast('Токен удалён из браузера'); break;
       case 'pub1': { const n = a.slice(1).join(':'), src = st.saved[n]; if (!src) break; const map = Object.assign({}, shared); map[n] = clone(src); t.disabled = true; publish(map, 'Общий сценарий: ' + n).then(ok => { if (ok) { render(); toast('«' + n + '» опубликован. Остальные увидят его через одну-две минуты.'); } else t.disabled = false; }); break; }
+      case 'rn': scnEdit = a.slice(1).join(':'); scnArm = ''; renderTabs(); setTimeout(() => { const e = $('rn-inp'); if (e) { e.focus(); e.select(); } }, 0); break;
+      case 'rnno': scnEdit = ''; renderTabs(); break;
+      case 'rnok': { const kind = scnEdit.split(':')[0], from = scnEdit.slice(kind.length + 1), inp = $('rn-inp'), to = inp ? inp.value.trim().replace(/\s+/g, ' ') : ''; if (!from) break;
+        if (!to || to === from) { scnEdit = ''; renderTabs(); break; }
+        if (to === 'База') { toast('Название «База» занято встроенным сценарием'); break; }
+        if ((kind === 'pub' ? shared : st.saved)[to]) { toast('Сценарий «' + to + '» уже есть — выберите другое название'); break; }
+        if (kind === 'my') { if (!st.saved[from]) { scnEdit = ''; renderTabs(); break; } st.saved = renKey(st.saved, from, to); st.saved[to].name = to; if (s.name === from) s.name = to; scnEdit = ''; persist(); render(); toast('«' + from + '» теперь называется «' + to + '»'); break; }
+        if (!shared[from]) { scnEdit = ''; renderTabs(); break; }
+        { const map = renKey(shared, from, to); map[to] = clone(map[to]); map[to].name = to; t.disabled = true;
+          publish(map, 'Переименован общий сценарий: ' + from + ' → ' + to).then(ok => { if (ok) { scnEdit = ''; if (st.s.name === from) st.s.name = to; persist(); render(); toast('Общий сценарий переименован в «' + to + '». Остальные увидят это через одну-две минуты.' + (from === DEF_SHARED ? ' Он больше не открывается по умолчанию: по умолчанию открывается сценарий с названием «' + DEF_SHARED + '».' : '')); } else t.disabled = false; }); }
+        break; }
+      case 'scdel': scnArm = a.slice(1).join(':'); scnEdit = ''; renderTabs(); break;
+      case 'scdelno': scnArm = ''; renderTabs(); break;
+      case 'scdelok': { const kind = a[1], n = a.slice(2).join(':'); scnArm = '';
+        if (kind === 'my') { if (st.saved[n]) { delete st.saved[n]; persist(); render(); toast('Сценарий «' + n + '» удалён из этого браузера'); } else renderTabs(); break; }
+        if (!shared[n]) { renderTabs(); break; }
+        { const map = Object.assign({}, shared); delete map[n]; t.disabled = true; publish(map, 'Убран общий сценарий: ' + n).then(ok => { render(); if (ok) toast('Общий сценарий «' + n + '» удалён. У остальных он исчезнет через одну-две минуты.' + (n === DEF_SHARED ? ' По умолчанию теперь открывается встроенная база.' : '')); }); }
+        break; }
       case 'unpub': { const n = a.slice(1).join(':'), map = Object.assign({}, shared); delete map[n]; t.disabled = true; publish(map, 'Убран общий сценарий: ' + n).then(ok => { if (ok) { render(); toast('«' + n + '» убран из общих'); } else t.disabled = false; }); break; }
       case 'expscn': { const map = Object.assign({}, st.saved); if (!Object.keys(map).length) { toast('Сначала сохраните хотя бы один сценарий'); break; } saveFile('scenarios.json', new Blob([scnFile(map)], { type: 'application/json' })).then(ok => { if (ok) toast('Файл со сценариями сохранён'); }).catch(() => toast('Сохранение отменено')); break; }
       case 'impscn': $('imp').click(); break;
@@ -2641,7 +2668,8 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
       case 'copypub': { const i = $('puburl'); selText(i); if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(pubUrl).then(() => toast('Ссылка скопирована'), () => toast('Выделите ссылку и скопируйте')); break; }
     }
   });
-  document.addEventListener('keydown', e => { if (e.key === 'Enter' && e.target.matches && e.target.matches('input[data-bind]')) e.target.blur(); if (e.key === 'Enter' && e.target.id === 'scnname') document.querySelector('[data-act="saveok"]').click(); });
+  document.addEventListener('keydown', e => { if (e.key === 'Enter' && e.target.matches && e.target.matches('input[data-bind]')) e.target.blur(); if (e.key === 'Enter' && e.target.id === 'scnname') document.querySelector('[data-act="saveok"]').click();
+    if (e.target.id === 'rn-inp') { if (e.key === 'Enter') { e.preventDefault(); const b = document.querySelector('[data-act="rnok"]'); if (b) b.click(); } else if (e.key === 'Escape') { scnEdit = ''; renderTabs(); } } });
   initTimelineEvents(); render(); loadShared(); loadRemote(); openFromHash();
   /* липкая строка итогов: видна, когда табло ушло за верхний край */
   if (window.IntersectionObserver) new IntersectionObserver(es => { const en = es[es.length - 1]; $('sbar').hidden = en.isIntersecting || en.boundingClientRect.top >= 0; }, { threshold: 0 }).observe($('score'));

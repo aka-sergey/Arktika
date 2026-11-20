@@ -43,6 +43,8 @@ h1,h2,h3{margin:0;text-wrap:balance}
 .btn.pri{background:var(--accent);border-color:var(--accent);color:var(--on-accent);font-weight:600}
 .btn.ghost{background:transparent}
 .btn.sm{padding:4px 10px;font-size:13px}
+.btn.sm.icon{padding:5px 7px;vertical-align:middle;color:var(--muted)} .btn.sm.icon+.btn.sm.icon{margin-left:4px} .btn.sm.icon:hover{color:var(--ink)} .btn.sm.icon.bin:hover{color:var(--red);border-color:var(--red);background:var(--red-soft)}
+.btn.danger{color:#fff;background:var(--red);border-color:var(--red)} .armbox,.rnbox{display:inline-flex;gap:6px;align-items:center} .rnbox{width:100%} .rnbox .rn{flex:1;min-width:160px;max-width:520px;padding:4px 8px;border:1px solid var(--field-line);border-radius:6px;background:var(--field);color:var(--ink);font:inherit}
 .btn:disabled{opacity:.45;cursor:default}
 select,input{border:1px solid var(--field-line);background:var(--field);border-radius:6px;padding:6px 8px;min-width:0;transition:border-color .12s,box-shadow .12s}
 select:hover,input:hover{border-color:var(--field-hot)}
