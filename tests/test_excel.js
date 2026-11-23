@@ -28,6 +28,8 @@ const SC={
  no1l: mk(s=>{s.p.glass=1; s.p.sh03=0.20;s.p.sh05=0.35;s.p.sh07=0.45;s.p.sh10=0;}),
  no1l_3f: mk(s=>{s.p.sh03=0.30;s.p.sh05=0.70;s.p.sh07=0;s.p.sh10=0;}),
  only075: mk(s=>{s.p.glass=1; s.p.sh03=0;s.p.sh05=0;s.p.sh07=1;s.p.sh10=0; s.p.pal_w=1000;}),
+ chz: mk(s=>{s.p.label=7.5; s.p.chz=1.22; s.p.rr05=289; s.p.am_eq=8;}),
+ chz_old: mk(s=>{s.p.label=10; delete s.p.chz;}),
  pallets: mk(s=>{Object.assign(s.p,{pal_w:1000,pal_h:1400,pal_kg:600,d03:58,h03:180,pk03:20,d05:68,h05:230,pk05:6,d10:88,h10:290,pk10:8,pallet_price:700,stretch_per:0.5,stretch_price:350,sh03:0.3,sh05:0.3,sh10:0.4});}),
 };
 (async()=>{ const out={};

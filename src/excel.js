@@ -89,9 +89,9 @@
     put(ws, 'B2', 'Выгружено из бизнес-игры. Жёлтое — ввод, белое — формулы. Списки людей, вложений, установок и плана продаж — на соседних листах. Месяц 1 = ноябрь 2026, расчёт на ' + N + ' месяцев — по ' + S.MONTHS[N - 1].label + '.', { kind: 'note' });
     const P = {}; let r = 4;
     const param = (key, label, unit, val, fmt, hint, calc) => { put(ws, 'B' + r, label); put(ws, 'C' + r, unit, { kind: 'note', h: 'center' }); put(ws, 'D' + r, val, { fmt, kind: calc ? null : 'input' }); if (hint) put(ws, 'E' + r, hint, { kind: 'note' }); P[key] = '$D$' + r; r++; };
-    Meta.groups.forEach(gr => {
+    Meta.groups.filter(gr => !gr.screen).forEach(gr => {
       band(ws, r, gr.title, 2, 14); r++;
-      gr.items.forEach(it => param(it[0], it[1], it[2], p[it[0]], it[3], it[4]));
+      gr.items.forEach(it => param(it[0], it[1], it[2], p[it[0]] == null ? 0 : p[it[0]], it[3], it[4]));
       if (gr.id === 'prod') param('line_cap', 'Мощность линии в месяц', 'бут', `=${P.bph}*${P.hours}*${P.shifts}*${P.wdays}*${P.eff}`, 'int', 'Считается', true);
       if (gr.id === 'sales') param('bpl', 'Бутылок на литр воды', 'шт/л', '=' + S.FMT.map(f => `${P['sh' + f[0]]}/${f[1]}`).join('+'), 'dec3', 'Считается', true);
       if (gr.id === 'bottle') {
@@ -120,7 +120,7 @@
         param('lay' + t, 'Бутылка ' + NM[k] + ' л: бутылок в одном слое паллеты', 'шт', `=IF(OR(${d}<=0,${pk}<=0),0,MAX(INT(1200/${a})*INT(${P.pal_w}/${b}),INT(1200/${b})*INT(${P.pal_w}/${a}))*${pk})`, 'int', 'Упаковки в слое × бутылок в упаковке', true);
         param('bpp' + t, 'Бутылка ' + NM[k] + ' л: бутылок на паллете', 'шт', `=IF(OR(${P['lay' + t]}=0,${P['ah' + t]}<=0),0,${P['lay' + t]}*MAX(0,MIN(INT(${P.pal_h}/${P['ah' + t]}),INT(${P.pal_kg}/(${P['lay' + t]}*(${VOL[k]}+${P['aw' + t]}/1000))))))`, 'int', 'Слоёв — сколько проходит по высоте и по весу', true);
         param('pkg' + t, 'Бутылка ' + NM[k] + ' л: вес груза на паллете', 'кг', `=${P['bpp' + t]}*(${VOL[k]}+${P['aw' + t]}/1000)`, 'int', 'Вода и бутылки, без поддона', true);
-        param('m' + t, 'ИТОГО материалы на бутылку ' + NM[k] + ' л', '₽', `=${P['bt' + t]}+${P.cap_act}+${P.label}+${P.pack}+IF(${pk}>0,${P.tray}/${pk},0)`, 'dec1', 'Бутылка или преформа + крышка + этикетка + плёнка + лоток', true); });
+        param('m' + t, 'ИТОГО материалы на бутылку ' + NM[k] + ' л', '₽', `=${P['bt' + t]}+${P.cap_act}+${P.label}+${P.chz}+${P.pack}+IF(${pk}>0,${P.tray}/${pk},0)`, 'dec1', 'Бутылка или преформа + крышка + этикетка + код «Честного знака» + плёнка + лоток', true); });
     }
     r++;
     band(ws, r, 'Запас материалов: партия, срок заказа, первый заказ', 2, 14); r++;
@@ -206,7 +206,7 @@
     row('contingency', 'Резерв на непредвиденное', '₽', (i, c) => `=${P.contingency}*(SUMIFS(${V('C')},${V('D')},${M(c)},${V('B')},"Да")+${X(c, 'new_pay')})`);
     row('capex', 'ИТОГО вложения в основные средства', '₽', (i, c) => `=${X(c, 'capex_sched')}+${X(c, 'new_pay')}+${X(c, 'contingency')}`, 'money', 'total');
     sub('Запас материалов (платим заранее, целыми партиями)');
-    const priceRef = { cap: P.cap_rub, pf: P.pf_avg, gb: P.gb_avg, gcap: P.gcap, label: P.label, pallet: P.pallet_price, stretch: P.stretch_price }, useRow = k => k === 'pallet' ? R.pallets : k === 'stretch' ? R.stretch_use : (k === 'cap' || k === 'pf') ? R.use_pet : (k === 'gb' || k === 'gcap') ? R.use_gl : R.use_pcs;
+    const priceRef = { cap: P.cap_rub, pf: P.pf_avg, gb: P.gb_avg, gcap: P.gcap, label: `(${P.label}+${P.chz})`, pallet: P.pallet_price, stretch: P.stretch_price }, useRow = k => k === 'pallet' ? R.pallets : k === 'stretch' ? R.stretch_use : (k === 'cap' || k === 'pf') ? R.use_pet : (k === 'gb' || k === 'gcap') ? R.use_gl : R.use_pcs;
     s.mats.forEach(mt => { const k = mt.key, U_ = useRow(k), un = mt.unit || 'шт';
       row(k + '_ord', mt.name + ': заказано и оплачено', un, (i, c, pc) => `=IF(OR(${M(c)}<${P[k + '_first']},${P[k + '_moq']}<=0),0,CEILING(MAX(0,SUMIF(${MR},"<="&(${M(c)}+${P[k + '_lead']}),$${CF}$${U_}:$${CL}$${U_})+MAX(0,${M(c)}+${P[k + '_lead']}-${N})*$${CL}$${U_}` + (pc ? `-SUM($${CF}${r}:${pc}${r})` : '') + `),${P[k + '_moq']}))`, 'int');
       row(k + '_stock', mt.name + ': запас на складе и в пути', un, (i, c) => `=SUM($${CF}${R[k + '_ord']}:${c}${R[k + '_ord']})-SUM($${CF}${U_}:${c}${U_})`, 'int', null, 'MIN'); });

@@ -22,7 +22,9 @@
         bph: 1000, hours: 8, shifts: 1, wdays: 21, eff: 0.85,
         start_m: 4, first_share: 0.5, ramp1: 0.30, ramp2: 1, ramp3: 1, caution: 1,
         sh03: 0.16, sh05: 0.46, sh07: 0, sh10: 0.38, p03: 100, p05: 160, p07: 190, p10: 220, defer: 0.5, fg_days: 0,
-        usd: 84, cap_usd: 0.178, cap_vat: 0.22, w03: 37, w05: 43, w07: 49, w10: 55, pf_kg: 320, label: 10, pack: 0.5,
+        rr03: 0, rr05: 0, rr07: 0, rr10: 0, // цена на полке (рекомендованная розничная): 0 — не задана. В деньгах сценария не участвует, нужна вкладке «Структура цены»
+        am_eq: 5, am_rep: 7, am_mold: 3, // сроки амортизации, лет: оборудование, ремонт, пресс-формы — тоже только для «Структуры цены»
+        usd: 84, cap_usd: 0.178, cap_vat: 0.22, w03: 37, w05: 43, w07: 49, w10: 55, pf_kg: 320, label: 9.4, chz: 0.6, pack: 0.5, // этикетка и код «Честного знака» — отдельно; вместе те же 10 ₽, что были одной строкой
         waste: 0.02, energy: 9, logist: 0.08, returns: 0.005, mkt_pct: 0.03, mkt_launch: 1500000, mkt_start: 2, mkt_n: 3,
         pilots: 120000, pilots_m: 4,
         tax_k: 1.13, rent: 350000, rent_start: 1, maint: 250000, maint_start: 3, other: 133000,
@@ -111,10 +113,11 @@
     const avg = a => bpl ? perL(p, a) / bpl : 0;
     const pfAvg = avg(pf), gbAvg = avg(gb), bt = G ? gb : pf, capA = G ? (+p.gcap || 0) : cap;
     const tray = FMT.map(f => { const pk = tara(p, 'pk', f[0]); return pk > 0 ? (+p.tray || 0) / pk : 0; }); // лоток на бутылку
-    const m = bt.map((x, i) => x + capA + p.label + p.pack + tray[i]);
+    const lab = (+p.label || 0) + (+p.chz || 0); // этикетка вместе с кодом «Честного знака»: закупаются и расходуются вместе
+    const m = bt.map((x, i) => x + capA + lab + p.pack + tray[i]);
     const pal = pallet(p), sh = shOf(p);
     const palPerL = pal.reduce((a, x, i) => a + (x.bottles > 0 ? sh[i] / FMT[i][1] / x.bottles : 0), 0); // паллет на литр разлитой воды
-    return { glass: G, bpl, cap, pf, pfAvg, gb, gbAvg, bt, capA, tray, m, pal, palPerL, mat: { cap: cap, pf: pfAvg, gb: gbAvg, gcap: +p.gcap || 0, label: p.label, pallet: p.pallet_price, stretch: p.stretch_price } };
+    return { glass: G, bpl, cap, pf, pfAvg, gb, gbAvg, bt, capA, tray, m, pal, palPerL, mat: { cap: cap, pf: pfAvg, gb: gbAvg, gcap: +p.gcap || 0, label: lab, pallet: p.pallet_price, stretch: p.stretch_price } };
   }
   const PACK = { 6: 3, 8: 4, 12: 4, 20: 5, 24: 6 }; // бутылок в упаковке -> бутылок в ряду
   function pallet(p) { // сколько бутылок встаёт на паллету: упаковки в слое x слоёв (по высоте и по весу)
@@ -321,5 +324,63 @@
     const rec = sumT(m.receipts), pay = sumT(m.payout), cash = m.cash[T - 1], opx = tara + fot + oth - rec;
     return { T, cap, capT, np, tara, fot, oth, rec, opx, cash, pay, capAfter: all(m.capex) - capT, check: capT + opx + cash + pay - k.invest };
   }
-  g.Sim = { investSplit, CAP_MAIN, N, MONTHS, DAYS, MON, dayOf, dateOf, defaults, sim, prices, pallet, PACK, id, matOn, tara, irrOf, idxC, idxP, FMT, shOf };
+
+  /* ===== СТРУКТУРА ЦЕНЫ ОДНОЙ БУТЫЛКИ =====
+     Амортизации в деньгах сценария нет (там вложения — платежами). Она считается только здесь: вложение делится на срок службы,
+     начиная с месяца оплаты, но не раньше первого месяца продаж. Сроки: оборудование, ремонт, пресс-формы — параметры am_eq, am_rep, am_mold.
+     Разделы «Разрешения и бренд» и «Прочее» (депозит, вход в сети) не амортизируются. */
+  const amClass = cat => /ремонт/i.test(cat) ? 'rep' : /пресс-?форм/i.test(cat) ? 'mold' : /разреш|бренд|прочее/i.test(cat) ? 'none' : 'eq';
+  const amYears = p => ({ eq: +p.am_eq || 5, rep: +p.am_rep || 7, mold: +p.am_mold || 3 });
+  function depr(s) {
+    const p = s.p, Z = () => new Array(N).fill(0), Y = amYears(p), d = { all: Z(), eq: Z(), rep: Z(), mold: Z(), base: { eq: 0, rep: 0, mold: 0, none: 0 }, years: Y };
+    const startCost = s.utypes.reduce((a, t) => a + (+t.start || 0) * (+t.price || 0), 0), UT = {}; s.utypes.forEach(t => { UT[t.id] = t; });
+    const add = (amt, month, cat) => { if (!(amt > 0) || !(month >= 1 && month <= N)) return; const cls = amClass(cat); d.base[cls] += amt; if (cls === 'none') return;
+      const n = Math.max(1, Math.round(Y[cls] * 12)), st = Math.max(month, p.start_m);
+      for (let i = st; i < st + n && i <= N; i++) { d[cls][i - 1] += amt / n; d.all[i - 1] += amt / n; } };
+    s.capex.forEach(c => add((c.auto === 'units0' ? startCost * 0.5 : (+c.amount || 0)) * (1 + (c.reserve ? p.contingency : 0)), c.month, c.cat || 'Прочее'));
+    s.batches.forEach(b => add((+b.qty || 0) * ((UT[b.type] ? +UT[b.type].price : 0) || 0) * (1 + p.contingency), b.month, 'Установки очистки'));
+    return d;
+  }
+  /* периоды для структуры цены: первый год продаж, последний год расчёта, все 5 лет */
+  function unitPeriods(res) { let f = 0; for (let k = 0; k < N; k++) if (res.m.sold_l[k] > 0) { f = k + 1; break; } return { y1: f ? [f, Math.min(N, f + 11)] : [1, 12], y5: [N - 11, N], all: [1, N] }; }
+  /* Раскладка цены по статьям за месяцы a..b (номера с 1), на одну бутылку каждого формата. Сходится с моделью: бутылки × статья по всем форматам = строка модели за период.
+     Как делится: тара — прямо, по ценам формата (с браком); вода и энергия — по литрам; НДС, логистика, возвраты и маркетинг от выручки — по цене;
+     люди, аренда, обслуживание, расходы запуска и амортизация — поровну на каждую проданную бутылку; налог — по доле в прибыли до налога.
+     Формат с долей 0 % считается условно, «если бы продавали»: в сумме по модели он не участвует. */
+  function unit(s, res, a, b) {
+    const p = s.p, m = res.m, pr = res.k.cost, dp = depr(s);
+    const sum = x => { let v = 0; for (let i = a; i <= b; i++) v += x[i - 1] || 0; return v; };
+    const B = sum(m.bottles), L = sum(m.sold_l), rev = sum(m.rev), Bi = FMT.map(f => sum(m['b' + f[0]]));
+    let revBase = 0, staffO = 0, staffP = 0, pil = 0, mktPct = 0;
+    for (let i = a; i <= b; i++) { const k = i - 1, ic = idxC(p, i);
+      revBase += FMT.reduce((q, f) => q + m['b' + f[0]][k] * (+p['p' + f[0]] || 0), 0);
+      s.staff.forEach(e => { if (i >= e.from && i <= e.to) { const v = (+e.salary || 0) * p.tax_k * ic; if (e.group === 'office') staffO += v; else staffP += v; } });
+      if (i === p.pilots_m) pil += p.pilots; mktPct += m.rev_net[k] * p.mkt_pct; }
+    const ip = revBase > 0 ? rev / revBase : idxP(p, b); // средняя индексация цен за период
+    const w = 1 / (1 - p.waste), palC = p.pallet_price + p.stretch_per * p.stretch_price;
+    const base = FMT.map((f, i) => ({ bottle: pr.bt[i] * w, cap: pr.capA * w, label: (+p.label || 0) * w, chz: (+p.chz || 0) * w, pack: p.pack * w, tray: pr.tray[i] * w, pallet: pr.pal[i].bottles > 0 ? palC / pr.pal[i].bottles : 0 }));
+    const baseT = base.map(x => x.bottle + x.cap + x.label + x.chz + x.pack + x.tray + x.pallet);
+    const matBase = Bi.reduce((q, n, i) => q + n * baseT[i], 0), F = matBase > 0 ? (sum(m.materials) - pil) / matBase : idxC(p, b); // индексация затрат и разница «разлито — продано»
+    const fixed = x => B > 0 ? x / B : 0, share = x => rev > 0 ? x / rev : 0;
+    const vr = m.vat_rate[b - 1], vatK = rev > 0 ? (sum(m.vat) - sum(m.vat_in)) / rev : vr / (1 + vr);
+    const enL = L > 0 ? sum(m.energy) / L : 0, logK = rev > 0 ? share(sum(m.logist)) : p.logist, retK = rev > 0 ? share(sum(m.returns)) : p.returns, mkK = rev > 0 ? share(mktPct) : p.mkt_pct * (1 - vr / (1 + vr));
+    const fx = { staffP: fixed(staffP), staffO: fixed(staffO), rent: fixed(sum(m.rent)), maint: fixed(sum(m.maint) + sum(m.other) + pil), launch: fixed(sum(m.mkt) - mktPct), dep: fixed(sum(dp.all)) };
+    const fm = FMT.map((f, i) => {
+      const price = (+p['p' + f[0]] || 0) * ip, rrp = (+p['rr' + f[0]] || 0) * ip, vat = price * vatK, net = price - vat;
+      const tare = {}; Object.keys(base[i]).forEach(q => { tare[q] = base[i][q] * F; }); tare.total = baseT[i] * F;
+      const energy = enL * f[1], logist = price * logK, returns = price * retK, mkt = price * mkK + fx.launch;
+      const cogs = tare.total + energy + fx.staffP + fx.rent + fx.maint + fx.dep, gross = net - cogs; // производственная себестоимость и валовая прибыль
+      const sell = logist + returns + mkt + fx.staffO, ebitda = gross + fx.dep - sell;
+      return { key: f[0], vol: f[1], name: f[2], share: +p['sh' + f[0]] || 0, sold: Bi[i], price, rrp, vat, net, tare, energy, staffP: fx.staffP, staffO: fx.staffO, rent: fx.rent, maint: fx.maint, dep: fx.dep,
+        logist, returns, mkt, cogs, gross, sell, ebitda, cost: cogs + sell };
+    });
+    const usn = sum(m.usn), wS = fm.reduce((q, x, i) => q + Bi[i] * Math.max(0, x.ebitda), 0);
+    fm.forEach(x => { x.tax = wS > 0 ? Math.max(0, x.ebitda) * usn / wS : x.price * share(usn); x.profit = x.ebitda - x.dep - x.tax;
+      x.grossPct = x.net > 0 ? x.gross / x.net : 0; x.markup = x.cogs > 0 ? x.gross / x.cogs : 0; x.profitPct = x.price > 0 ? x.profit / x.price : 0;
+      x.retail = x.rrp > 0 ? x.rrp - x.price : 0; x.retailPct = x.rrp > 0 && x.price > 0 ? x.retail / x.price : 0; });
+    const ebM = sum(m.ebitda), ebU = fm.reduce((q, x, i) => q + Bi[i] * x.ebitda, 0);
+    return { a, b, B, L, rev, ip, F, osn: m.osn[b - 1] > 0, vatRate: vr, fm, dep: dp, depSum: sum(dp.all), ebitdaModel: ebM, ebitdaUnit: ebU, check: ebU - ebM,
+      profitUnit: fm.reduce((q, x, i) => q + Bi[i] * x.profit, 0), profitModel: sum(m.profit) - sum(dp.all) };
+  }
+  g.Sim = { unit, unitPeriods, depr, investSplit, CAP_MAIN, N, MONTHS, DAYS, MON, dayOf, dateOf, defaults, sim, prices, pallet, PACK, id, matOn, tara, irrOf, idxC, idxP, FMT, shOf };
 })(typeof window !== 'undefined' ? window : globalThis);

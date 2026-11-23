@@ -34,6 +34,7 @@
     { const REN = { 'Линии': 'Линии розлива', 'Оборудование': 'Вспомогательное оборудование цеха' }; s.capex.forEach(c => { if (REN[c.cat]) c.cat = REN[c.cat]; }); } // разделы переименованы
     s.batches = s.batches || []; s.p = Object.assign({}, BASE_S.p, old); ['units0', 'l_unit', 'unit_price'].forEach(k => { delete s.p[k]; });
     if (old.sh07 == null) { s.p.sh07 = 0; if (old.p05 != null && old.p10 != null) s.p.p07 = Math.round((+old.p05 + +old.p10) / 2); if (old.w05 != null && old.w10 != null) s.p.w07 = Math.round((+old.w05 + +old.w10) / 2); if (old.pk10 != null) s.p.pk07 = old.pk10; if (old.gpk10 != null) s.p.gpk07 = old.gpk10; }
+    if (old.chz == null) { const lb = old.label == null ? BASE_S.p.label + BASE_S.p.chz : +old.label || 0, cz = lb > 0.6 ? 0.6 : 0; s.p.chz = cz; s.p.label = Math.round((lb - cz) * 1000) / 1000; } // раньше код «Честного знака» сидел в цене этикетки: выделяем 0,6 ₽ отдельной строкой, сумма та же
     BASE_S.mats.forEach(mt => { const x = s.mats.find(z => z.key === mt.key); if (!x) s.mats.push(clone(mt)); else if (!x.unit) x.unit = mt.unit; });
     const big = s.capex.findIndex(c => /^Ремонт, электрика/.test(c.name) && c.amount === 9620000);
     if (big >= 0) { const det = BASE_S.capex.filter(c => ['Ремонт', 'Вспомогательное оборудование цеха', 'Техника и мебель', 'Разрешения и бренд'].includes(c.cat) || /Спецодежда|Бренд-стойки|преформы у литейщика/.test(c.name)).map(c => Object.assign(clone(c), { id: newId() })); s.capex.splice(big, 1, ...det); }
@@ -67,6 +68,7 @@
     persist(); setTimeout(rerender, 0);
   }
   function rerender() { const a = document.activeElement, fid = focusId || (a && a.id), sel = !!focusId; focusId = ''; render(); if (fid) { const e = $(fid); if (e && e.focus) { e.focus(); if (sel && e.select) e.select(); } } }
+  function rerenderTab() { const fid = focusId; focusId = ''; renderTabs(); if (fid) { const e = $(fid); if (e && e.focus) e.focus({ preventScroll: true }); } } // перерисовать только вкладку и вернуть фокус на нажатую кнопку
   /* ---------- общие сценарии: файл scenarios.json рядом со страницей видят все, кто открыл ссылку ---------- */
   let shared = {}, sharedAt = '', shareUrl = '';
   let scnEdit = '', scnArm = ''; // «my:Имя» или «pub:Имя»: строка в режиме переименования / ждёт подтверждения удаления
@@ -314,7 +316,7 @@
   }
 
   /* ---------- вкладки ---------- */
-  const TABS = [['summary', 'Резюме'], ['charts', 'Графики'], ['people', 'Люди'], ['capex', 'Вложения'], ['units', 'Установки и линия'], ['sales', 'Продажи и цены'], ['bottle', 'Бутылка и упаковка'], ['stock', 'Склад и паллеты'], ['costs', 'Расходы'], ['money', 'Налоги и инвестор'], ['levers', 'Рычаги'], ['scn', 'Сценарии'], ['journal', 'Журнал'], ['rules', 'Правила игры']];
+  const TABS = [['summary', 'Резюме'], ['charts', 'Графики'], ['price', 'Структура цены'], ['people', 'Люди'], ['capex', 'Вложения'], ['units', 'Установки и линия'], ['sales', 'Продажи и цены'], ['bottle', 'Бутылка и упаковка'], ['stock', 'Склад и паллеты'], ['costs', 'Расходы'], ['money', 'Налоги и инвестор'], ['levers', 'Рычаги'], ['scn', 'Сценарии'], ['journal', 'Журнал'], ['rules', 'Правила игры']];
   const CATS = ['Линии розлива', 'Установки очистки', 'Ремонт', 'Вспомогательное оборудование цеха', 'Пресс-формы', 'Техника и мебель', 'Разрешения и бренд', 'Прочее'];
   const BT = S.FMT.map(f => [f[0], f[2], f[1]]); // форматы бутылки: ключ, подпись, литров
   const byF = (p, pre) => BT.map(b => +p[pre + b[0]] || 0), sumA = a => a.reduce((q, v) => q + v, 0), notSold = '<span class="tag">не продаётся</span>';
@@ -540,11 +542,112 @@
         (() => { let acc = 0; return items.map((a, i) => { acc += a[2]; return `<tr><td class="calc">${i + 1}</td><td>${esc(a[0])}</td><td class="calc">${a[1]}</td><td class="r">${mln(a[2])}</td><td class="r calc">${(a[2] / tot * 100).toFixed(1).replace('.', ',')} %</td><td class="r calc">${Math.round(acc / tot * 100)} %</td></tr>`; }).join(''); })() + `</tbody></table></div>`);
   }
   const mm_ = i => MONTHS[i].label;
+  /* ---------- структура цены одной бутылки: «Итог → Структура цены» ---------- */
+  const PU = { per: 'y5', view: 'b', sel: '', tbl: false }; // период, единицы, какая бутылка разобрана по шагам, раскрыта ли полная таблица (держится, пока открыта страница)
+  const PUPER = [['y1', 'Первый год продаж'], ['y5', 'Пятый год'], ['all', 'Все 5 лет']], PUVIEW = [['b', '₽ на бутылку'], ['l', '₽ на литр'], ['pct', '% от цены']];
+  const PUSEG = [['tare', 'Тара и упаковка'], ['energy', 'Вода и энергия'], ['staff', 'ФОТ'], ['rent', 'Аренда и обслуживание'], ['dep', 'Амортизация'], ['sell', 'Логистика и маркетинг'], ['tax', 'Налоги'], ['profit', 'Наша прибыль']];
+  const nf2 = new Intl.NumberFormat('ru-RU', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  function pricePanel() {
+    const s = st.s, p = s.p, G = !!p.glass, per = S.unitPeriods(res)[PU.per] || [N - 11, N], u = S.unit(s, res, per[0], per[1]), fm = u.fm, view = PU.view;
+    const f1 = v => nf1.format(Math.abs(v) < 0.05 ? 0 : v).replace('-', '−'), f2 = v => nf2.format(Math.abs(v) < 0.005 ? 0 : v).replace('-', '−'), pc1 = v => f1(v * 100) + ' %', pc0 = v => Math.round(v * 100) + ' %';
+    const un = view === 'l' ? '₽ на литр' : view === 'pct' ? '% отпускной цены' : '₽ на бутылку';
+    const V = (x, f) => view === 'l' ? x / f.vol : view === 'pct' ? (f.price > 0 ? x / f.price * 100 : 0) : x; // значение в выбранных единицах
+    const M = (x, f) => view === 'l' ? x / f.vol : x, mt = (x, f) => f1(M(x, f)) + (view === 'l' ? ' ₽/л' : ' ₽'); // деньги: на бутылку или на литр
+    fm.forEach(f => { f.name = f.name.replace(' ', '\u00a0'); }); // «1,0 л» не разрывается на переносе
+    const sold = fm.filter(f => f.share > 0), best = sold.length > 1 ? sold.reduce((a, f) => f.profitPct > a.profitPct ? f : a, sold[0]) : null;
+    if (!fm.find(f => f.key === PU.sel)) PU.sel = (sold.slice().sort((a, b) => b.sold - a.sold)[0] || fm[0]).key;
+    const sel = fm.find(f => f.key === PU.sel);
+    const seg = f => ({ tare: f.tare.total, energy: f.energy, staff: f.staffP + f.staffO, rent: f.rent + f.maint, dep: f.dep, sell: f.logist + f.returns + f.mkt, tax: f.vat + f.tax, profit: Math.max(0, f.profit) });
+    const tot = f => { const g = seg(f); return PUSEG.reduce((q, x) => q + Math.max(0, g[x[0]]), 0); }; // вся полоса: при прибыли равна отпускной цене, при убытке — больше неё
+    const taxName = u.osn ? 'НДС и налог на прибыль' : 'НДС и УСН';
+    const head = `<h3>Из чего складывается цена бутылки</h3>` + intro(`Цена каждой бутылки разложена по статьям: тара, расходы завода, налоги, наша прибыль и наценка сети.`,
+      `<p>Отпускная цена и цена на полке вписываются прямо в карточках. Отпускная цена — та же, что на вкладке «Продажи и цены»: меняете здесь — пересчитывается весь сценарий. Цена на полке нужна только этой вкладке: по ней видно, сколько накручивает сеть.</p><p>Цены тары — на вкладке «Бутылка и упаковка», сроки амортизации — внизу этой страницы.</p>`);
+    const ctl = `<div class="row puctl"><div class="seg" role="group" aria-label="Период">${PUPER.map(x => `<button type="button" id="pu-per-${x[0]}" data-act="pu:per:${x[0]}" aria-pressed="${PU.per === x[0]}">${x[1]}</button>`).join('')}</div>
+      <div class="seg" role="group" aria-label="Единицы">${PUVIEW.map(x => `<button type="button" id="pu-view-${x[0]}" data-act="pu:view:${x[0]}" aria-pressed="${view === x[0]}">${x[1]}</button>`).join('')}</div>
+      <span class="tnote">${mLabel(u.a)} — ${mLabel(u.b)}, ${G ? 'стекло' : 'ПЭТ'}. Продано ${pcs(u.B)} ${plur(Math.round(u.B), 'бутылка', 'бутылки', 'бутылок')}</span></div>`;
+    if (!(u.B > 0)) return head + ctl + `<div class="alert warn"><b>Продаж нет</b><span>В выбранном периоде ни одной бутылки не продано — раскладывать нечего. Выберите другой период.</span></div>`;
+    // --- карточки форматов: ввод цен и главные числа
+    const rrIn = k => { const v = +p['rr' + k] || 0; return `<span class="in"><input class="num" id="p-rr${k}" data-bind="p:rr${k}" data-fmt="int" inputmode="decimal" autocomplete="off" placeholder="не задана" value="${v ? esc(show(v, 'int')) : ''}"><span class="u">₽</span></span>`; };
+    const rw = (a, b) => `<div><span>${a}</span><span>${b}</span></div>`, idx = Math.abs(u.ip - 1) > 5e-4;
+    const cards = `<div class="pcards">` + fm.map(f => { const on = f.share > 0, loss = f.profit < 0, cur = f.key === PU.sel;
+      const note = !on ? ['', 'Доля в продажах 0 %. Расчёт условный: если бы продавали'] : loss ? ['bad', 'Убыток ' + f1(-f.profit) + ' ₽ с каждой бутылки'] : f.profitPct < 0.05 ? ['bad', 'Почти не зарабатывает: запас ' + pc1(f.profitPct) + ' цены'] : f === best ? ['good', 'Самая прибыльная: запас ' + pc1(f.profitPct) + ' цены'] : ['', 'Запас ' + pc1(f.profitPct) + ' отпускной цены'];
+      return `<article class="pcard${cur ? ' sel' : ''}${on ? '' : ' off'}"><header><b>${f.name}</b><span>${on ? pc0(f.share) + ' литров' : 'не продаётся'}</span></header>
+        <div class="pcin"><label for="p-p${f.key}">Отпускная цена с НДС${bin('p' + f.key)}</label><label for="p-rr${f.key}">Цена на полке (РРЦ)${rrIn(f.key)}</label></div>
+        ${idx ? `<p class="pcidx">За период, с индексацией: ${f1(f.price)} ₽${f.rrp > 0 ? ' и ' + f1(f.rrp) + ' ₽' : ''}</p>` : ''}
+        <div class="pcrows">${rw('Себестоимость производства', mt(f.cogs, f))}${rw('Валовая маржа', mt(f.gross, f) + ' / ' + pc1(f.grossPct))}${rw('Наценка на себестоимость', mt(f.gross, f) + ' / ' + pc1(f.markup))}${rw('Полная себестоимость', mt(f.cost, f))}${rw('Наценка сети', f.rrp > 0 ? mt(f.retail, f) + ' / ' + pc1(f.retailPct) : '<span class="calc">цена на полке не задана</span>')}</div>
+        <div class="pcnet"><span>Чистая прибыль</span><b class="${loss ? 'neg' : on ? 'pos' : ''}">${mt(f.profit, f)}</b></div>
+        <p class="pcnote ${note[0]}">${note[1]}</p>
+        <button type="button" class="lnk pcsel" id="pu-sel-${f.key}" data-act="pusel:${f.key}" aria-pressed="${cur}">${cur ? 'Разобрана по шагам ниже' : 'Разобрать по шагам'}</button></article>`; }).join('') + `</div>`;
+    // --- сравнение форматов: полосы (в рублях) или столбцы одной высоты (в долях цены)
+    const fixSame = f => f.staffP + f.staffO + f.rent + f.maint + f.dep, lo = sold[0], hi = sold[sold.length - 1];
+    const insight = sold.length > 1 ? `Люди, аренда, обслуживание и амортизация делятся поровну на каждую бутылку — по ${f1(fixSame(lo))} ₽. У ${lo.name} это ${pc0(fixSame(lo) / lo.price)} отпускной цены, у ${hi.name} — ${pc0(fixSame(hi) / hi.price)}.` : `Люди, аренда, обслуживание и амортизация — ${f1(fixSame(fm[0]))} ₽ на каждую бутылку.`;
+    const tip = (x, v, f) => `${x[0] === 'tax' ? taxName : x[1]}: ${f1(v)} ₽ на бутылку — ${pc1(f.price > 0 ? v / f.price : 0)} отпускной цены`;
+    const legend = rev => { const a = PUSEG.map(x => `<span><i class="ps-${x[0]}"></i>${x[0] === 'tax' ? 'Налоги: ' + taxName : x[1]}</span>`); if (rev) a.reverse(); return a.join(''); };
+    let chart;
+    if (view === 'pct') {
+      chart = `<div class="pvert"><div class="pcols">` + fm.map(f => { const g = seg(f), T = tot(f), on = f.share > 0, loss = f.profit < 0;
+        const sg = PUSEG.map(x => { const v = g[x[0]]; if (!(v > 0)) return ''; const h = v / T * 100, big = h >= 5 || (x[0] === 'profit' && h >= 3.8), pre = x[0] === 'tare' ? 'тара ' : x[0] === 'staff' ? 'ФОТ ' : x[0] === 'profit' && h >= 9 ? 'прибыль ' : '';
+          return `<i class="ps-${x[0]}" style="height:${h.toFixed(3)}%" title="${esc(tip(x, v, f))}">${big ? (pre ? `<em>${pre}</em>` : '') + pc0(v / f.price) : ''}</i>`; }).join('');
+        return `<div class="pcol${on ? '' : ' off'}"><span class="top">${f1(f.price)} ₽</span><div class="pcolbar" role="img" aria-label="${f.name}: доли статей в отпускной цене">${sg}</div><b>${f.name}</b><span class="sub ${!on ? '' : loss ? 'neg' : 'pos'}">${on ? (loss ? 'убыток ' : 'прибыль ') + f1(Math.abs(f.profit)) + ' ₽' : 'не продаётся'}</span></div>`; }).join('') +
+        `</div><div class="legend pvleg">${legend(true)}</div></div>`;
+    } else {
+      const ext = f => Math.max(tot(f), f.profit >= 0 && f.rrp > f.price ? f.rrp : 0), scale = Math.max(1e-9, ...fm.map(f => M(ext(f), f)));
+      chart = `<div class="legend pleg">${legend(false)}<span><i class="ps-net"></i>Наценка сети до цены на полке</span></div><div class="pbars">` + fm.map(f => { const g = seg(f), on = f.share > 0, loss = f.profit < 0, net = !loss && f.rrp > f.price ? f.rrp - f.price : 0;
+        const sg = PUSEG.map(x => { const v = g[x[0]]; if (!(v > 0)) return ''; const w = M(v, f) / scale * 100;
+          return `<i class="ps-${x[0]}" style="width:${w.toFixed(3)}%" title="${esc(tip(x, v, f))}">${w >= 4.2 ? (x[0] === 'profit' && w >= 13 ? 'прибыль ' : '') + nf0.format(Math.round(M(v, f))) : ''}</i>`; }).join('');
+        const nw = M(net, f) / scale * 100, nt = net > 0 ? `<i class="ps-net" style="width:${nw.toFixed(3)}%" title="Наценка сети: ${f1(net)} ₽ на бутылку — ${pc1(f.retailPct)} к отпускной цене">${nw >= 9 ? 'сеть ' + nf0.format(Math.round(M(net, f))) : ''}</i>` : '';
+        return `<div class="pbrow${on ? '' : ' off'}"><b>${f.name}</b><div class="pbar" role="img" aria-label="${f.name}: статьи цены">${sg}${nt}</div><div class="pbend">отпускная <b>${mt(f.price, f)}</b><br>${loss ? `<span class="neg">убыток <b>${mt(-f.profit, f)}</b></span>` : f.rrp > 0 ? `на полке <b>${mt(f.rrp, f)}</b>` : 'цена на полке не задана'}</div></div>`; }).join('') + `</div>`;
+    }
+    // --- одна бутылка по шагам: от цены на полке до чистой прибыли
+    const rows = []; let cur = 0;
+    const T = (lab, v, cls, note) => { rows.push({ lab, v, a: Math.min(0, v), b: Math.max(0, v), cls: cls || 'ink', tot: true, note }); cur = v; };
+    const D = (lab, v, cls) => { if (Math.abs(v) < 0.005) return; rows.push({ lab, v: -v, a: Math.min(cur, cur - v), b: Math.max(cur, cur - v), cls }); cur -= v; };
+    { const f = sel; if (f.rrp > f.price) { T('Цена на полке', f.rrp); D('Наценка сети', f.retail, 'ps-net'); }
+      T('Отпускная цена с НДС', f.price); D(u.osn ? 'НДС к уплате' : 'НДС', f.vat, 'ps-tax'); T('Выручка без НДС', f.net);
+      D('Тара и упаковка', f.tare.total, 'ps-tare'); D('Вода и энергия', f.energy, 'ps-energy'); D('ФОТ производства', f.staffP, 'ps-staff'); D('Аренда и обслуживание', f.rent + f.maint, 'ps-rent'); D('Амортизация', f.dep, 'ps-dep');
+      T('Валовая прибыль', f.gross, f.gross < 0 ? 'neg' : 'gross', pc1(f.grossPct) + ' выручки');
+      D('Логистика и маркетинг', f.logist + f.returns + f.mkt, 'ps-sell'); D('ФОТ офиса', f.staffO, 'ps-staff'); D(u.osn ? 'Налог на прибыль' : 'Налог УСН', f.tax, 'ps-tax');
+      T('Чистая прибыль', f.profit, f.profit < 0 ? 'neg' : 'ps-profit', pc1(f.profitPct) + ' отпускной цены'); }
+    const wlo = Math.min(0, ...rows.map(r => r.a)), whi = Math.max(1e-9, ...rows.map(r => r.b)), X = v => (v - wlo) / (whi - wlo) * 100;
+    const wf = `<div class="pwf">` + rows.map(r => `<div class="pwr${r.tot ? ' tot' : ''}"><span>${r.lab}</span><span class="t"><i class="${r.cls}" style="left:${X(r.a).toFixed(3)}%;width:${Math.max(0.5, X(r.b) - X(r.a)).toFixed(3)}%"></i>${r.note ? `<em style="left:calc(${X(r.b).toFixed(3)}% + 8px)">${r.note}</em>` : ''}</span><span class="v">${(r.v < 0 ? '−' : '') + f1(Math.abs(V(r.v, sel)))}</span></div>`).join('') + `</div>`;
+    const wfLead = sel.rrp > sel.price ? `Из ${f1(sel.rrp)} ₽ на полке нам остаётся ${f1(sel.profit)} ₽.` : `Из ${f1(sel.price)} ₽ отпускной цены нам остаётся ${f1(sel.profit)} ₽. Впишите цену на полке — появится наценка сети.`;
+    // --- тара подробно
+    const fv = (x, f) => view === 'pct' ? f1(V(x, f)) : f2(V(x, f));
+    const tr = (lab, fn, cls) => `<tr${cls ? ` class="${cls}"` : ''}><td>${lab}</td>${fm.map(f => `<td class="r${f.share > 0 ? '' : ' calc'}">${fn(f)}</td>`).join('')}</tr>`, th = fm.map(f => `<th class="r">${f.name}</th>`).join('');
+    const tareT = `<div class="tbl"><table class="put"><thead><tr><th>Статья, ${un}</th>${th}</tr></thead><tbody>` +
+      tr(G ? 'Бутылка, стекло' : 'Бутылка: ПЭТ-преформа', f => fv(f.tare.bottle, f)) + tr('Пробка', f => fv(f.tare.cap, f)) + tr('Этикетка', f => fv(f.tare.label, f)) + tr('Код «Честного знака»', f => fv(f.tare.chz, f)) +
+      tr('Плёнка и лоток', f => fv(f.tare.pack + f.tare.tray, f)) + tr('Паллета и стрейч-плёнка', f => fv(f.tare.pallet, f)) + `</tbody><tfoot>` + tr('Тара всего', f => fv(f.tare.total, f)) + tr('Доля в отпускной цене', f => pc0(f.price > 0 ? f.tare.total / f.price : 0), 'sub') + `</tfoot></table></div>`;
+    const same = f => f.tare.cap + f.tare.label + f.tare.chz;
+    const tareNote = sold.length > 1 ? `Пробка, этикетка и «Честный знак» стоят одинаково для любой бутылки — ${f1(same(lo))} ₽. У ${lo.name} это ${pc0(same(lo) / lo.price)} отпускной цены, у ${hi.name} — ${pc0(same(hi) / hi.price)}.` : '';
+    // --- все статьи таблицей
+    const line = (lab, fn, cls) => tr(lab, f => f1(V(fn(f), f)), cls);
+    const full = !PU.tbl ? '' : `<div class="tbl"><table class="put"><thead><tr><th>Статья, ${un}</th>${th}</tr></thead><tbody>` +
+      (fm.some(f => f.rrp > 0) ? tr('Цена на полке', f => f.rrp > 0 ? f1(V(f.rrp, f)) : '—') + tr('Наценка сети', f => f.rrp > 0 ? f1(V(f.retail, f)) : '—') : '') +
+      line('Отпускная цена с НДС', f => f.price, 'sum') + line(u.osn ? 'НДС к уплате' : 'НДС', f => f.vat) + line('Выручка без НДС', f => f.net, 'sum') +
+      line('Тара и упаковка', f => f.tare.total) + line('Вода и энергия', f => f.energy) + line('ФОТ производства', f => f.staffP) + line('Аренда', f => f.rent) + line('Обслуживание и прочие расходы', f => f.maint) + line('Амортизация', f => f.dep) +
+      line('Себестоимость производства', f => f.cogs, 'sum') + line('Валовая прибыль', f => f.gross, 'sum') +
+      line('Логистика и бонусы сетям', f => f.logist) + line('Возвраты и списания', f => f.returns) + line('Маркетинг', f => f.mkt) + line('ФОТ офиса', f => f.staffO) +
+      line('Полная себестоимость', f => f.cost, 'sum') + line(u.osn ? 'Налог на прибыль' : 'Налог УСН', f => f.tax) + line('Чистая прибыль', f => f.profit, 'sum') +
+      `</tbody><tfoot>` + tr('Продано за период, бутылок', f => f.share > 0 ? pcs(f.sold) : '—') + `</tfoot></table></div>`;
+    // --- как посчитано
+    const d = u.dep, Y = d.years, yr = n => n + ' ' + plur(n, 'год', 'года', 'лет');
+    const depTxt = [[d.base.eq, 'оборудование', Y.eq], [d.base.rep, 'ремонт', Y.rep], [d.base.mold, 'пресс-формы', Y.mold]].filter(x => x[0] > 0).map(x => x[1] + ' ' + mln(x[0]) + ' на ' + yr(x[2])).join(', ');
+    const notes = `<div class="notes"><p><b class="lead">Как делятся расходы.</b> Тара — по ценам каждой бутылки, с браком ${show(p.waste, 'pct')} %. Вода и энергия — по литрам. НДС, логистика, возвраты и маркетинг — по цене. Люди, аренда, обслуживание и амортизация — поровну на каждую проданную бутылку, сколько бы литров в ней ни было. Налог — по доле бутылки в прибыли.</p>
+      <p><b class="lead">Амортизация.</b> Вложение делится на срок службы, начиная с первого месяца продаж. ${depTxt ? 'В расчёте: ' + depTxt + '.' : 'Вложений с амортизацией в сценарии нет.'}${d.base.none > 0 ? ' Разрешения, бренд, депозит и вход в сети (' + mln(d.base.none) + ') не амортизируются.' : ''} За период — ${mln(u.depSum)}. В деньгах сценария амортизации нет: там вложения учтены платежами, поэтому прибыль в «Резюме» больше.</p>
+      <p><b class="lead">Проверка.</b> EBITDA за период по сценарию — ${mln(u.ebitdaModel)}; по раскладке на бутылки — ${mln(u.ebitdaUnit)}.${idx ? ' Цены в карточках вписываются в уровне цен на старте; в расчёте за период они уже с индексацией +' + f1((u.ip - 1) * 100) + ' %.' : ''}${u.osn ? ' В этом периоде общий режим налогов: НДС показан за вычетом входящего, вместо УСН — налог на прибыль.' : ''}</p></div>`;
+    return head + ctl + cards + `
+      <h3>Что входит в цену каждой бутылки</h3><p>${view === 'pct' ? 'Столбцы одной высоты: каждая бутылка — 100 % своей отпускной цены. ' : 'Длина полосы — ' + (view === 'l' ? 'цена литра воды в этой бутылке' : 'цена бутылки') + ': от тары до цены на полке. '}${insight}</p>${chart}
+      <div class="pu2"><section><h3>Бутылка ${sel.name}: ${sel.rrp > sel.price ? 'путь от полки до нашей прибыли' : 'от отпускной цены до нашей прибыли'}</h3><p>${wfLead} Суммы — ${un}. Другую бутылку выбирают кнопкой в её карточке.</p>${wf}</section>
+        <section><h3>Тара подробно</h3><p>С браком${Math.abs(u.F - 1) > 5e-4 ? ' и индексацией затрат' : ''}. Цены вписываются на вкладке <button type="button" class="lnk" data-act="tab:bottle">«Бутылка и упаковка»</button>.</p>${tareT}${tareNote ? `<p class="tnote2">${tareNote}</p>` : ''}</section></div>
+      <div class="row"><button type="button" class="btn sm" id="pu-tbl" data-act="putbl" aria-expanded="${!!PU.tbl}">${PU.tbl ? 'Скрыть таблицу' : 'Все статьи таблицей'}</button></div>${full}
+      <h3>Как посчитано</h3>${notes}${fields('unit')}`;
+  }
   function panel() {
     buildDiff();
     const s = st.s, p = s.p, m = res.m, k = res.k, t = st.tab, ic = i => S.idxC(p, i), c = k.cost, last = N - 1;
     if (t === 'summary') return summaryPanel();
     if (t === 'charts') return chartsPanel();
+    if (t === 'price') return pricePanel();
     if (t === 'people') {
       const cost = e => { let x = 0; for (let i = e.from; i <= e.to; i++) x += e.salary * p.tax_k * ic(i); return x; };
       const fot = g => s.staff.filter(e => e.group === g).reduce((a, e) => a + e.salary, 0);
@@ -603,13 +706,13 @@
         `</tbody></table></div><div class="row"><button class="btn" data-act="add:plan">＋ Новый уровень плана</button>${removedChip('plan')}</div>${fields('sales')}`;
     }
     if (t === 'bottle') {
-      const G = !!p.glass, gp = G ? 'g' : '', pr = byF(p, 'p'), shB = byF(p, 'sh'), cols = ['#EA3943', '#F5822A', '#F0B90B', '#8A94A3'], nm = [G ? 'Бутылка' : 'Преформа', 'Крышка', 'Этикетка', 'Плёнка и лоток'], mxp = Math.max(1, ...pr);
+      const G = !!p.glass, gp = G ? 'g' : '', pr = byF(p, 'p'), shB = byF(p, 'sh'), cols = ['#EA3943', '#F5822A', '#F0B90B', '#8A94A3'], nm = [G ? 'Бутылка' : 'Преформа', 'Крышка', 'Этикетка и «Честный знак»', 'Плёнка и лоток'], mxp = Math.max(1, ...pr);
       const lays = n => n + ' ' + plur(n, 'слой', 'слоя', 'слоёв'), heavy = BT.filter((b, i) => shB[i] > 0 && c.pal[i].byKg < c.pal[i].byH).map(b => b[1]);
       return intro(`Здесь выбирается тара и её цена. Столбик — цена продажи с завода: снизу материалы, зелёная часть остаётся вам.`, `<p>Слои снизу — ${G ? 'бутылка' : 'преформа'}, крышка, этикетка, плёнка с лотком. Зелёная часть — то, что остаётся на зарплаты, аренду, логистику, налоги и прибыль. Цена продажи меняется на вкладке «Продажи и цены». У ПЭТ и у стекла свои цены, вес, размеры и партии закупки: переключение ничего не стирает, можно сравнивать туда и обратно.</p>`) + `
       <div class="tarasw"><span class="in">${markFor('p:glass', 'opt')}<span class="seg" role="group" aria-label="Тара"><button type="button" data-act="tara:0" aria-pressed="${!G}">ПЭТ-бутылка</button><button type="button" data-act="tara:1" aria-pressed="${G}">Стеклянная бутылка</button></span></span>
         <span class="tnote">${G ? 'Бутылка покупается готовой — цена за штуку. Крышка своя. Цены и вес стекла сейчас — оценка: впишите данные поставщика.' : 'Бутылка выдувается на своей линии из преформы: цена = вес преформы × цена за килограмм.'}</span></div>` +
       (heavy.length ? `<div class="alert warn"><b>Вес паллеты</b><span>Бутылку ${heavy.join(', ')} ограничивает вес, а не высота: слоёв на паллете меньше, чем вошло бы по высоте. Предел сейчас ${pcs(p.pal_kg)} кг — он задаётся на вкладке «Склад и паллеты».</span></div>` : '') + `
-      <div class="colchart">` + BT.map((b, i) => { const parts = [c.bt[i], c.capA, p.label, p.pack + c.tray[i]], tot = c.m[i], H = Math.round(240 * pr[i] / mxp);
+      <div class="colchart">` + BT.map((b, i) => { const parts = [c.bt[i], c.capA, p.label + (+p.chz || 0), p.pack + c.tray[i]], tot = c.m[i], H = Math.round(240 * pr[i] / mxp);
           return `<div class="cc"><span class="cctop">${pr[i]} ₽</span>${colSvg(parts.map((x, j) => [pr[i] ? x / pr[i] : 0, cols[j], nm[j] + ' ' + nf1.format(x) + ' ₽', nf1.format(x)]).concat([[pr[i] ? Math.max(0, 1 - tot / pr[i]) : 0, 'var(--brand)', 'Остаётся ' + nf1.format(pr[i] - tot) + ' ₽', '<b>остаётся ' + nf1.format(pr[i] - tot) + ' ₽ (' + (pr[i] ? Math.round((1 - tot / pr[i]) * 100) : 0) + ' %)</b>']]), H)}<b>${b[1]}</b><span class="ccsub">${shB[i] > 0 ? 'материалы ' + nf1.format(tot) + ' ₽' : 'не продаётся'}</span></div>`; }).join('') +
         `<div class="legend ccleg">${nm.map((x, j) => `<span><i style="background:${cols[j]}"></i>${x}</span>`).join('')}<span><i style="background:var(--brand)"></i>остаётся вам</span></div></div>
       <div class="bcards">` + BT.map((b, i) => { const tot = c.m[i], pl = c.pal[i], lim = pl.byKg < pl.byH;
@@ -617,7 +720,7 @@
           ${brow('Цена продажи с завода, с НДС', `<span class="calc ro">${nf0.format(pr[i])} ₽</span><button type="button" class="lnk" data-act="tab:sales" title="Цена меняется на вкладке «Продажи и цены»">изменить</button>`)}
           ${G ? brow('Цена бутылки', bin('gb' + b[0])) + brow('Вес пустой бутылки', bin('gw' + b[0])) : brow('Вес преформы', bin('w' + b[0]))}
           ${brow('Диаметр', bin(gp + 'd' + b[0]))}${brow('Высота', bin(gp + 'h' + b[0]))}${brow('Штук в упаковке', bin(gp + 'pk' + b[0]))}
-          <div class="bres"><h5>Результат</h5>${brow(G ? 'Бутылка' : 'Преформа', nf1.format(c.bt[i]) + ' ₽', cols[0])}${brow('Крышка', nf1.format(c.capA) + ' ₽', cols[1])}${brow('Этикетка', nf1.format(p.label) + ' ₽', cols[2])}${brow('Плёнка', nf1.format(p.pack) + ' ₽', cols[3])}${brow('Лоток', p.tray > 0 ? nf1.format(c.tray[i]) + ' ₽' : '<span class="calc">цена не задана</span>', cols[3])}
+          <div class="bres"><h5>Результат</h5>${brow(G ? 'Бутылка' : 'Преформа', nf1.format(c.bt[i]) + ' ₽', cols[0])}${brow('Крышка', nf1.format(c.capA) + ' ₽', cols[1])}${brow('Этикетка', nf1.format(p.label) + ' ₽', cols[2])}${brow('Код «Честного знака»', nf1.format(+p.chz || 0) + ' ₽', cols[2])}${brow('Плёнка', nf1.format(p.pack) + ' ₽', cols[3])}${brow('Лоток', p.tray > 0 ? nf1.format(c.tray[i]) + ' ₽' : '<span class="calc">цена не задана</span>', cols[3])}
           ${brow('<b>Материалы всего</b>', '<b>' + nf1.format(tot) + ' ₽</b>')}${brow('<b>Остаётся</b>', '<b>' + nf1.format(pr[i] - tot) + ' ₽ (' + (pr[i] ? Math.round((1 - tot / pr[i]) * 100) : 0) + ' %)</b>')}
           ${brow('На паллете', pcs(pl.bottles) + ' бут., ' + lays(pl.layers))}${brow('Вес груза на паллете', `<span class="${lim ? 'wlim' : ''}">${pcs(pl.kg)} кг</span> из ${pcs(p.pal_kg)}`)}
           ${lim ? `<p class="bwarn">${pl.layers ? 'Ограничивает вес: по высоте вошло бы ' + lays(pl.byH) + ', по весу проходит ' + pl.byKg + '.' : 'Даже один слой тяжелее предела.'} Один слой — ${pcs(pl.layerKg)} кг, одна бутылка с водой — ${pcs(pl.kg1 * 1000)} г.</p>` : ''}</div></div></article>`; }).join('') + `</div>
@@ -698,15 +801,15 @@
   const RULES = `<div class="rules">
     <div><h3>Цель</h3><p>Вы строите завод АРКТИКА и ведёте его 5 лет — 60 месяцев, с ноября 2026 по октябрь 2031. Задача — чтобы проект вернул вложенное, а инвестор внёс как можно меньше. Табло наверху показывает оба числа и на каком месяце проект окупается.</p></div>
     <div><h3>Как играть</h3><ol><li>Посмотрите на ленту: когда уходят деньги, когда кончается запас, когда начинаются продажи.</li><li>Сделайте ход: поменяйте цифру во вкладке или перетащите элемент на ленте.</li><li>Табло покажет, что стало с бюджетом и окупаемостью. Ход записан в журнал.</li><li>Не понравилось — «Отменить ход». Понравилось — «Сохранить сценарий» под именем.</li><li>Вкладка «Рычаги» подсказывает, какой ход сейчас даёт больше всего; значение рычага можно вписать своё.</li></ol></div>
-    <div><h3>Что можно менять</h3><ul><li><b>Резюме</b> — на что идут деньги инвестора (вложения и расходы до самоокупаемости), итоги по годам и главные показатели сценария.</li><li><b>Люди</b> — добавить, убрать, сдвинуть выход, изменить оклад.</li><li><b>Вложения</b> — добавить или убрать строку, поменять сумму, дату и резерв.</li><li><b>Установки</b> — типы ТИП-А30 и ТИП-Б130: сколько на старте и партии докупки. Пилотные, которые собираете сами: штуки и литры здесь, стоимость — детальными строками во «Вложениях».</li><li><b>Продажи</b> — план в литрах, доли и цены трёх бутылок, разгон.</li><li><b>Тара</b> — ПЭТ или стекло; цена бутылки или преформы, крышки, этикетки, плёнки и лотка; вес, размеры и упаковка.</li><li><b>Склад и паллеты</b> — партии и сроки заказа материалов, тип паллеты.</li><li><b>Расходы и налоги</b> — аренда, маркетинг, подушка, возврат инвестору.</li></ul></div>
+    <div><h3>Что можно менять</h3><ul><li><b>Резюме</b> — на что идут деньги инвестора (вложения и расходы до самоокупаемости), итоги по годам и главные показатели сценария.</li><li><b>Структура цены</b> — из чего складывается цена каждой бутылки: тара по строкам, расходы завода, налоги, прибыль и наценка сети. Здесь же вписываются отпускная цена и цена на полке.</li><li><b>Люди</b> — добавить, убрать, сдвинуть выход, изменить оклад.</li><li><b>Вложения</b> — добавить или убрать строку, поменять сумму, дату и резерв.</li><li><b>Установки</b> — типы ТИП-А30 и ТИП-Б130: сколько на старте и партии докупки. Пилотные, которые собираете сами: штуки и литры здесь, стоимость — детальными строками во «Вложениях».</li><li><b>Продажи</b> — план в литрах, доли и цены трёх бутылок, разгон.</li><li><b>Тара</b> — ПЭТ или стекло; цена бутылки или преформы, крышки, этикетки, плёнки и лотка; вес, размеры и упаковка.</li><li><b>Склад и паллеты</b> — партии и сроки заказа материалов, тип паллеты.</li><li><b>Расходы и налоги</b> — аренда, маркетинг, подушка, возврат инвестору.</li></ul></div>
     <div><h3>Дорожки ленты</h3><ul><li><b>Деньги на счёте</b> — остаток по дням. Треугольник сверху — взнос инвестора, число рядом — млн ₽.</li><li><b>Крупные платежи</b> — оранжевые столбики с кружком: оборудование; бирюзовые: партии материалов. Высота — размер платежа.</li><li><b>Готовая вода</b> — бутылок на складе: разлито минус продано.</li><li><b>Крышки, преформы или стеклянные бутылки, этикетки, паллеты, стрейч-плёнка</b> — «пила»: партия пришла — вверх, розлив — вниз. Пунктир — оплачено, но ещё в пути.</li><li><b>Очистка воды</b> — литров в сутки со всех установок обоих типов.</li><li><b>Люди</b> — кто и с какого по какой месяц работает.</li></ul></div>
     <div><h3>Как считаются деньги</h3><ul><li>Инвестор вносит 1-го числа ровно столько, чтобы в конце месяца на счёте остался неснижаемый остаток.</li><li>Зарплата и взносы — 10-го и 25-го. Аренда — 1-го. Партии материалов — 15-го. Налоги — 28-го.</li><li>Выручка приходит равномерно по дням; часть — в следующем месяце (отсрочка покупателям).</li><li>Материалы попадают в расходы, когда воду разлили, а деньги уходят, когда оплатили партию.</li><li>«Резерв» у строки вложений добавляет к ней процент на непредвиденное; платится в том же месяце.</li><li>Окупаемость — месяц, когда накопленный денежный поток без денег инвестора стал неотрицательным.</li></ul></div>
     <div><h3>Производство и продажи</h3><ul><li>Мощность = сумма по типам (штук × литров в сутки) × коэффициент использования × дни.</li><li>Завод разливает столько, сколько нужно по плану продаж плюс целевой запас, но не больше мощности воды и линии.</li><li>Продано = меньшее из плана и того, что есть на складе с учётом розлива.</li><li>Докупили установки, но не подняли план продаж — мощность простаивает, деньги потрачены зря.</li></ul></div>
     <div><h3>Паллеты</h3><ul><li>Бутылок на паллете = упаковок в слое × штук в упаковке × слоёв.</li><li>Упаковок в слое — сколько прямоугольников упаковки встаёт рядами на 1200 × 800 или 1200 × 1000.</li><li>Слоёв — сколько проходит и по высоте груза, и по весу.</li><li>Паллеты и стрейч-плёнка расходуются на каждую разлитую паллету и покупаются партиями, как крышки.</li></ul></div>
     <div><h3>Тревоги</h3><ul><li><b>Материал закончился</b> — заказ сделан поздно или партия мала.</li><li><b>Кассовый разрыв</b> — в середине месяца на счёте минус, хотя в конце плюс. Увеличьте неснижаемый остаток.</li><li><b>Линия не успевает</b> — нужна вторая смена.</li><li><b>План выше производства</b> — не хватает воды или линии.</li><li><b>Лимиты УСН</b> — доход за год вышел за порог. Расчёт сам переходит на повышенную ставку НДС, а выше лимита УСН — на общий режим: НДС с вычетом входящего и налог на прибыль. Ставки и пороги — в «Ежем. расходы и др.».</li></ul></div>
-    <div><h3>Excel, презентация и допущения</h3><ul><li>«Скачать презентацию» собирает PDF на 8 слайдов по текущему сценарию: итог в цифрах, на что идут деньги инвестора, графики окупаемости, итоги по годам и главные допущения.</li><li>«Скачать Excel» выгружает текущий сценарий: «Кейс» с формулами, «Персонал», «Вложения», «Установки» (типы и партии), «Продажи», «Графики» с диаграммами окупаемости, подневные остатки, журнал и справку. Итоги в файле и на экране совпадают.</li><li>Обратно из Excel сценарий не загружается — правьте здесь, выгружайте заново.</li><li>Оклады по ролям, размеры бутылок, цены паллет и стрейч-плёнки — оценки; пресс-формы бутылок и транспорт крышек стоят нулями.</li><li>Амортизации нет: игра считает деньги, а не бухгалтерскую прибыль.</li></ul></div></div>`;
+    <div><h3>Excel, презентация и допущения</h3><ul><li>«Скачать презентацию» собирает PDF на 8 слайдов по текущему сценарию: итог в цифрах, на что идут деньги инвестора, графики окупаемости, итоги по годам и главные допущения.</li><li>«Скачать Excel» выгружает текущий сценарий: «Кейс» с формулами, «Персонал», «Вложения», «Установки» (типы и партии), «Продажи», «Графики» с диаграммами окупаемости, подневные остатки, журнал и справку. Итоги в файле и на экране совпадают.</li><li>Обратно из Excel сценарий не загружается — правьте здесь, выгружайте заново.</li><li>Оклады по ролям, размеры бутылок, цены паллет и стрейч-плёнки — оценки; пресс-формы бутылок и транспорт крышек стоят нулями.</li><li>В деньгах сценария амортизации нет: игра считает деньги, а не бухгалтерскую прибыль. Амортизация есть только во вкладке «Структура цены» — там она нужна для себестоимости бутылки.</li></ul></div></div>`;
 
-  const GROUPS = [['prod', 'Производство', ['capex', 'units', 'people']], ['tara', 'Тара', ['bottle', 'stock']], ['sales', 'Продажи', ['sales']], ['fin', 'Ежем. расходы и др.', ['costs', 'money']], ['total', 'Итог', ['summary', 'charts', 'levers']], ['model', 'Моделирование', ['scn', 'journal', 'rules']]];
+  const GROUPS = [['prod', 'Производство', ['capex', 'units', 'people']], ['tara', 'Тара', ['bottle', 'stock']], ['sales', 'Продажи', ['sales']], ['fin', 'Ежем. расходы и др.', ['costs', 'money']], ['total', 'Итог', ['summary', 'charts', 'price', 'levers']], ['model', 'Моделирование', ['scn', 'journal', 'rules']]];
   const TABN = {}; TABS.forEach(a => { TABN[a[0]] = a[1]; }); const grpOf = t => GROUPS.find(g => g[2].includes(t)) || GROUPS[0];
   function renderTabs() {
     if (!TABN[st.tab]) st.tab = 'charts'; const g = grpOf(st.tab);
@@ -764,7 +867,7 @@
     const a = b.split(':'), kind = a[0], id = a[1], field = a[2], f = t.dataset.fmt || 'txt', s = st.s;
     if (kind === 'capex' && field === 'cat') cxOpen.add(t.value);
     let v = t.type === 'checkbox' ? t.checked : (f === 'txt' || f === 'group') ? t.value.trim() : parse(t.value, f);
-    if (kind === 'contrib' && t.value.trim() === '') v = 0;
+    if ((kind === 'contrib' || (kind === 'p' && /^rr\d\d$/.test(id))) && t.value.trim() === '') v = 0; // пустое поле: взноса нет, цена на полке не задана
     if (kind === 'lev') { if (v === null) { rerender(); return; } st.lev = st.lev || {}; st.lev[id] = v; persist(); clearTimeout(levT); levT = setTimeout(() => { if (st.tab === 'levers') rerender(); }, 220); return; }
     if (v === null || v === '') { toast('Здесь нужно значение'); rerender(); return; }
     if (typeof v === 'number' && v < 0 && !(kind === 'p' && /idx/.test(id))) { toast('Отрицательные значения не подходят'); rerender(); return; }
@@ -861,6 +964,9 @@
       case 'clearj': st.journal = []; persist(); renderTabs(); break;
       case 'tm': st.tmAll = a[1] === '1'; renderTabs(); break;
       case 'tmtbl': st.tmTbl = !st.tmTbl; renderTabs(); break;
+      case 'pu': if (a[1] === 'per' || a[1] === 'view') { PU[a[1]] = a[2]; focusId = 'pu-' + a[1] + '-' + a[2]; rerenderTab(); } break;
+      case 'pusel': PU.sel = a[1]; focusId = 'pu-sel-' + a[1]; rerenderTab(); break;
+      case 'putbl': PU.tbl = !PU.tbl; focusId = 'pu-tbl'; rerenderTab(); break;
       case 'gocx': st.tab = 'capex'; ui.last.prod = 'capex'; saveUi(); cxOpen.add('Установки очистки'); persist(); reveal = 'cx:Установки очистки'; renderTabs(); reveal = null; tabTop(); break;
       case 'tara': { const v = +a[1] ? 1 : 0; if ((s.p.glass ? 1 : 0) === v) break; act('Тара: ' + dvP('glass', s.p.glass ? 1 : 0) + ' → ' + dvP('glass', v), z => { z.p.glass = v; }); break; }
       case 'info': { const tb = st.tab; if (infoOpen.has(tb)) closeThen($('panel').querySelectorAll('.intro .more'), () => { infoOpen.delete(tb); if (st.tab === tb) renderTabs(); }); else { infoOpen.add(tb); reveal = 'info'; renderTabs(); reveal = null; } break; }
