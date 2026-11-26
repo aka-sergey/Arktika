@@ -7,7 +7,7 @@
 <title>Рынок и кампания PRISTINAM</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Golos+Text:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&family=Unbounded:wght@500;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Golos+Text:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
 /* Идея вёрстки: лабораторный протокол на льду. Слева липкое оглавление, справа лента разделов;
    цифры набраны моноширинным, как в протоколе; один холодный акцент, статусные цвета отдельно. */
@@ -324,43 +324,209 @@ section>.vyvod{margin-top:-6px}
 .pbar{grid-template-columns:150px minmax(60px,1fr) 270px}
 @media (max-width:760px){.pbar{grid-template-columns:96px minmax(30px,1fr) 190px}}
 </style>
+<style>
+/* v7 — стратегическая записка. Одна гарнитура, светлый фон, графит, один синий акцент.
+   Сетка: слева оглавление, справа лента глав; блоки разделены тонкими линиями, без карточек и плашек. */
+:root,:root:not([data-theme="light"]),:root[data-theme="dark"]{
+  --paper:#fbfbfa;--surface:#fbfbfa;--sunk:#eff1f3;
+  --ink:#22272e;--muted:#5d6672;--line:#d6dae0;
+  --ice:#143f8f;--ice-soft:#e3e9f5;--on-ice:#ffffff;
+  --good:#22272e;--warn:#22272e;--crit:#a32a22;
+  --good-soft:transparent;--warn-soft:transparent;--crit-soft:transparent;
+  --s1:#143f8f;--s2:#7f98c9;
+  --f-display:'Golos Text',system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;
+  --f-body:'Golos Text',system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;
+  --f-mono:'Golos Text',system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;
+  color-scheme:light;
+}
+body{background:var(--paper);color:var(--ink);font-family:var(--f-body);font-size:16px;line-height:1.55}
+.wrap{max-width:1260px;grid-template-columns:186px minmax(0,1fr);gap:64px;padding:0 28px 96px}
+main{gap:84px;padding-top:36px}
+section{gap:26px}
+h1{font-family:var(--f-display);font-weight:700;font-size:clamp(30px,4.3vw,50px);line-height:1.06;letter-spacing:-.018em}
+h2{font-family:var(--f-display);font-weight:600;font-size:clamp(22px,2.6vw,31px);line-height:1.17;letter-spacing:-.012em;max-width:27em}
+h3{font-size:18px;font-weight:600;line-height:1.3}
+.lede{font-size:clamp(17px,1.6vw,19px);line-height:1.5;color:var(--ink)}
+.eyebrow{font-family:var(--f-body);font-size:12px;font-weight:600;letter-spacing:.1em;color:var(--muted)}
+.mono,td.num,th.num,.rc-axis,.rc-row .val,.bar-row .v,.mbar span,.big,label.ctl output,label.ctl .val,input[type=number],.chip,.ph .mk,.ph .tick,.gantt .wk{font-family:var(--f-body);font-variant-numeric:tabular-nums}
+/* оглавление */
+nav.toc{padding:40px 0}
+nav.toc .brand{font-family:var(--f-body);font-size:12px;letter-spacing:.14em;font-weight:700;margin-bottom:20px}
+nav.toc a{border-left:0;padding:5px 0;font-size:13.5px;color:var(--muted);display:flex;gap:9px}
+nav.toc a i{font-style:normal;font-variant-numeric:tabular-nums;color:var(--line);min-width:1.4em}
+nav.toc a:hover{color:var(--ink)}
+nav.toc a.on{color:var(--ink);font-weight:600;border-left:0}
+nav.toc a.on i{color:var(--ice)}
+/* главы */
+.sec-head{border-top:2px solid var(--ink);padding-top:16px;gap:12px}
+.card{background:none;border:0;border-top:1px solid var(--line);border-radius:0;padding:22px 0 0}
+.grid{gap:28px 40px}
+.tbl-wrap{border:0;border-radius:0;background:none}
+table{font-size:14.5px;font-variant-numeric:tabular-nums}
+th{background:none;text-transform:none;letter-spacing:0;font-size:13px;font-weight:600;color:var(--muted);border-bottom:1.5px solid var(--ink);padding:8px 14px 8px 0;vertical-align:bottom}
+td{padding:10px 14px 10px 0;border-bottom:1px solid var(--line)}
+tr:last-child td{border-bottom:1px solid var(--line)}
+table.heat th{border-bottom:1.5px solid var(--ink)}
+table.heat td{border-bottom:1px solid var(--paper)}
+table.heat th:first-child,table.heat td:first-child{padding-left:0}
+.pgrid td{border:1px solid var(--line);border-radius:0;background:none}
+.pgrid th{border:0}
+.pgrid td.free{background:var(--ice-soft);outline:0;border:1px dashed var(--ice)}
+.pgrid td.us{background:var(--ice);color:var(--on-ice);font-family:var(--f-body);border-color:var(--ice)}
+/* вместо плашек — текст */
+.pill{background:none;padding:0;border-radius:0;font-size:12px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);white-space:normal}
+.pill.ice{background:none;color:var(--ice)}.pill.good,.pill.warn{background:none;color:var(--ink)}.pill.crit{background:none;color:var(--crit)}
+td .pill,.pbar .pill,h3 .pill,#ptVerdict{text-transform:none;letter-spacing:0;font-size:13.5px;font-weight:600}
+h3 .pill{font-weight:500;color:var(--muted)}
+.tag{background:none;padding:0;border-radius:0;color:var(--muted);font-size:11.5px;margin-left:6px}
+.chip{border:0;background:none;padding:0 16px 0 0;font-size:13.5px}
+.fact{border:0;border-top:1px solid var(--line);border-radius:0;background:none;padding:12px 0 0}
+.fact b{font-family:var(--f-body);font-size:26px;font-weight:600}
+.find b.n{font-family:var(--f-body);font-size:24px;font-weight:600;color:var(--ice)}
+.vyvod{background:none;border-left:2px solid var(--ice);border-radius:0;padding:2px 0 2px 18px;font-size:15.5px}
+.vyvod b{color:var(--ink)}
+.costbox{background:none;border-radius:0;padding:0}
+.costbox .tbl-wrap{background:none}
+.scale-legend{gap:24px 32px}
+.scale-legend div{background:none;border-radius:0;padding:10px 0 0;border-top:1px solid var(--line)}
+pre.copy{background:none;border-left:2px solid var(--line);border-radius:0;padding:4px 0 4px 18px;font-family:var(--f-body)}
+.do,.dont{border-top:1px solid var(--line)}
+/* элементы управления */
+.seg{background:none;padding:0;border-radius:0;gap:0;border-bottom:1px solid var(--line)}
+.seg button{border-radius:0;padding:8px 14px;margin-bottom:-1px;border-bottom:2px solid transparent;color:var(--muted);font-weight:500}
+.seg button[aria-pressed="true"]{background:none;box-shadow:none;color:var(--ink);font-weight:600;border-bottom-color:var(--ice)}
+.btn{border-radius:2px;background:none}
+select.sel,input[type=number]{border-radius:2px;background:#fff}
+input[type=range]{accent-color:var(--ice)}
+.gantt button{border-radius:0;background:var(--ice-soft);color:var(--ink)}
+.gantt button[aria-pressed="true"]{background:var(--ice);color:var(--on-ice)}
+/* графики: без скруглений и заливок-подложек */
+.bar-row .fill,.bar-row .track,.trk .bi,.trk .b2,.pbar .fill,.pbar .track,.mbar i{border-radius:0}
+.bar-row:hover,.rc-row:hover,.pbar:hover{background:none}
+.rc-row .val{font-size:13.5px}
+.rc-row .lab small{font-size:11.5px}
+.trk .usd,.trk .us{background:var(--ink)}
+.pbar .cogs{background:var(--ink)}
+.pbar .cogs.dash{background:none;border-left:2px dashed var(--ink)}
+.ph .band{background:var(--ice-soft);border:1px solid var(--ice);border-radius:0}
+.ph .scale{border-radius:0}
+.quad .q-bg{fill:#f2f3f5}
+.quad .qcap{letter-spacing:.06em}
+.diag .box{fill:#f2f3f5}
+.diag .m1{fill:var(--ice)}.diag .m2{fill:var(--ink)}.diag .m3{fill:#9aa3ad}
+.blabel,.phone{box-shadow:none}
+.blabel .bn,.phone .ph-h b{font-family:var(--f-body)}
+.blabel .nums b,.phone .tl b,.blabel .qrrow small,.phone .ph-h span,.phone .rw em{font-family:var(--f-body);font-variant-numeric:tabular-nums}
+.phone .cta,.phone .rw i u{background:#143f8f}.phone .note{background:#e3e9f5}.phone .ok{background:none;color:#143f8f;padding:0}
+.modal-box{border-radius:4px}
+.modal-box li{background:none;border-left:2px solid var(--ice);border-radius:0;padding:4px 0 4px 14px}
+.modal-box li small{font-family:var(--f-body)}
+#tip{border-radius:3px}
+footer{border-top:1px solid var(--line)}
+/* род утверждения: наблюдение, расчёт, цель пилота, рекомендация */
+.kind{font-size:11.5px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);display:flex;gap:8px;align-items:baseline}
+.kind::before{content:"";flex:none;width:8px;height:8px;transform:translateY(-1px)}
+.kind.obs::before{background:var(--ice);border-radius:50%}
+.kind.obs{color:var(--ice)}
+.kind.calc::before{background:var(--ink);transform:translateY(-1px) rotate(45deg)}
+.kind.calc{color:var(--ink)}
+.kind.goal::before{border:2px solid var(--ice);border-radius:50%;width:5px;height:5px}
+.kind.goal{color:var(--ice)}
+.kind.rec::before{background:var(--muted);height:2px;width:14px;transform:translateY(-4px)}
+.kind.ref::before{border:1.5px solid var(--muted);width:6px;height:6px}
+section>.kind{margin-bottom:-16px}
+.kindkey{display:flex;flex-wrap:wrap;gap:8px 28px;font-size:13px;color:var(--muted)}
+.kindkey .kind{display:inline-flex;margin-right:8px}
+.kindkey .kk{display:inline-flex;align-items:baseline;white-space:nowrap}
+.lead>.tbl-wrap{margin-top:-22px}
+@media (max-width:520px){.kindkey .kk{white-space:normal}}
+/* первый экран */
+.lead{gap:34px}
+.lead-grid{display:grid;grid-template-columns:minmax(0,7fr) minmax(0,5fr);gap:56px;align-items:start}
+.lead-main{display:flex;flex-direction:column;gap:18px}
+.lead-basis{border-left:1px solid var(--line);padding-left:36px;display:flex;flex-direction:column;gap:10px}
+.bignum{font-size:clamp(46px,6.2vw,78px);font-weight:700;line-height:.95;letter-spacing:-.03em;color:var(--ice);font-variant-numeric:tabular-nums}
+.lead-basis .also{font-size:14px;color:var(--muted);border-top:1px solid var(--line);padding-top:10px;margin-top:4px}
+.pilot{border-top:2px solid var(--ink);padding-top:14px;display:flex;flex-direction:column;gap:12px}
+.pilot ol{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:20px 32px}
+.pilot li{display:flex;flex-direction:column;gap:4px;font-size:14.5px}
+.pilot li b{font-size:16px;font-weight:600}
+.pilot li span{color:var(--muted)}
+.slogan{font-size:clamp(42px,7vw,88px);font-weight:700;line-height:.98;letter-spacing:-.03em;color:var(--ice)}
+.slogan-sub{font-size:clamp(17px,2vw,21px);font-weight:500;color:var(--ink)}
+/* компактная шкала цены */
+.scale4-wrap{overflow-x:auto}
+.scale4{display:block;width:100%;min-width:640px;height:auto}
+.scale4 text{font-family:var(--f-body);fill:var(--ink)}
+.scale4 .ax{font-size:12px;fill:var(--muted)}
+.scale4 .nm{font-size:15px;font-weight:600}
+.scale4 .vl{font-size:13px;fill:var(--muted)}
+.scale4 .us .nm,.scale4 .us .vl{fill:var(--ice)}
+.scale4 .zone{font-size:12px;fill:var(--muted)}
+.figcap{font-size:13px;color:var(--muted)}
+.figcap b{color:var(--ink);font-weight:600}
+@media (max-width:900px){
+  .wrap{grid-template-columns:minmax(0,1fr);gap:0;padding:0 18px 64px}
+  main{gap:60px;padding-top:16px}
+  nav.toc{padding:12px 0 4px;gap:18px;border-bottom:1px solid var(--line)}
+  nav.toc a{border:0;border-radius:0;padding:6px 0;white-space:nowrap;display:block}
+  nav.toc a i{display:none}
+  nav.toc a.on{border:0;box-shadow:inset 0 -2px 0 var(--ice)}
+  .lead-grid{grid-template-columns:minmax(0,1fr);gap:24px}
+  .lead-basis{border-left:0;padding-left:0;border-top:1px solid var(--line);padding-top:18px}
+  .pilot ol{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}
+}
+@media (max-width:520px){.pilot ol{grid-template-columns:minmax(0,1fr)}}
+</style>
 </head>
 <body>
 <div class="wrap">
 <nav class="toc" id="toc" aria-label="Разделы">
   <div class="brand">PRISTINAM</div>
-  <a href="#sut">Суть</a>
-  <a href="#rynok">Кого теснить</a>
-  <a href="#ceny">Цены и бренды</a>
-  <a href="#karty">Карты позиционирования</a>
-  <a href="#kanaly">Каналы продаж</a>
-  <a href="#pozicia">Наше позиционирование</a>
-  <a href="#auditorii">Аудитории</a>
-  <a href="#soobshenia">Сообщения и тексты</a>
-  <a href="#otchet">Продукт в цифрах</a>
-  <a href="#ochistka">Как устроена очистка</a>
-  <a href="#qr">Протокол по QR</a>
-  <a href="#cena">Линейка и цена</a>
-  <a href="#kampania">Кампания и команда</a>
-  <a href="#osnova">Допущения и источники</a>
+  <a href="#sut"><i></i>Рекомендация</a>
+  <a href="#rynok"><i>01</i>Цели</a>
+  <a href="#ceny"><i>02</i>Цены и бренды</a>
+  <a href="#karty"><i>03</i>Позиционирование брендов</a>
+  <a href="#kanaly"><i>04</i>Каналы</a>
+  <a href="#pozicia"><i>05</i>Наша позиция</a>
+  <a href="#auditorii"><i>06</i>Аудитории</a>
+  <a href="#soobshenia"><i>07</i>Сообщения</a>
+  <a href="#otchet"><i>08</i>Продукт</a>
+  <a href="#ochistka"><i>09</i>Очистка</a>
+  <a href="#qr"><i>10</i>Протокол по QR</a>
+  <a href="#cena"><i>11</i>Линейка и цена</a>
+  <a href="#kampania"><i>12</i>Кампания</a>
+  <a href="#osnova"><i>13</i>Допущения и источники</a>
 </nav>
 
 <main>
 <!-- ============ СУТЬ ============ -->
-<section id="sut">
-  <div class="hero">
-    <div class="eyebrow">Анализ рынка · позиционирование · кампания · 26.11.2026</div>
-    <h1>Сделано льдом</h1>
-    <p class="lede">PRISTINAM — мягкая лёгкая вода, очищенная льдом, а не фильтром: тем же способом, каким воду очищает природа. Каждая партия выходит с открытым протоколом на 34 показателя.</p>
-    <div class="tagline">Очищена льдом. Доказана цифрами.</div>
-    <div class="grid g4">
-      <div class="fact"><b>0,6–0,7 °Ж</b><span>жёсткость: в 10–12 раз ниже норматива 7 °Ж</span></div>
-      <div class="fact"><b>100–115</b><span>мг/дм³ сухого остатка: лёгкая, в 9–10 раз ниже предела 1000</span></div>
-      <div class="fact"><b>0 баллов</b><span>посторонний вкус и запах при 20 °C</span></div>
-      <div class="fact"><b>12 элементов</b><span>ниже порога определения, среди них свинец, кадмий и мышьяк</span></div>
+<section id="sut" class="lead">
+  <div class="lead-grid">
+    <div class="lead-main">
+      <div class="eyebrow">Записка для партнёров · PRISTINAM · 26.11.2026</div>
+      <h1>Предлагаем начать с ресторанов Москвы и Петербурга</h1>
+      <p class="lede">PRISTINAM — мягкая вода в стекле, очищенная льдом. За первые шесть месяцев ставим её в меню 8–12 премиальных ресторанов и отелей по 790 Руб. за 0,75 л. После этого открываем свой магазин и идём в Азбуку Вкуса с цифрами продаж.</p>
+    </div>
+    <div class="lead-basis">
+      <div class="kind obs">Наблюдение · на чём основано</div>
+      <div class="bignum">28 из 56</div>
+      <p>San Benedetto представлен в 28 из 56 изученных меню с водой. Его медианная цена — 990 Руб. за 0,75 л. Российские негазированные позиции стоят 675–790 Руб.: место второй, более доступной строки свободно.</p>
+      <p class="also">В меню наши 790 Руб. ниже медианы рынка (970 Руб.), а на полке 399 Руб. выше медианы каждого канала. В ресторане цена работает на нас.</p>
     </div>
   </div>
-
+  <div class="pilot">
+    <div class="kind goal">Цель пилота · что проверяем за шесть месяцев</div>
+    <ol>
+      <li><b>Берут ли рестораны</b><span>8–12 заведений ставят PRISTINAM в меню после 30 дегустаций у сомелье.</span></li>
+      <li><b>Заказывают ли снова</b><span>Не меньше 70% заведений закупают повторно через четыре недели.</span></li>
+      <li><b>Держится ли цена</b><span>790 Руб. в меню и 399 Руб. в своём магазине продают без постоянной скидки.</span></li>
+      <li><b>Понятен ли «лёд»</b><span>Не больше 15% опрошенных называют воду «пустой» или «безвкусной».</span></li>
+    </ol>
+  </div>
+  <div class="kindkey"><span>Как читать подписи к блокам:</span><span class="kk"><div class="kind obs">Наблюдение</div> измерено в исследовании</span><span class="kk"><div class="kind calc">Расчёт</div> посчитано по модели и допущениям</span><span class="kk"><div class="kind goal">Цель пилота</div> что должны получить</span><span class="kk"><div class="kind rec">Рекомендация</div> наше предложение</span></div>
+  <div class="stack" style="gap:8px;margin-top:18px"><div class="kind rec">Рекомендация</div>
+  <h3>Решения, которые предлагаем утвердить</h3></div>
   <div class="tbl-wrap">
     <table>
       <tr><th style="width:190px">Решение</th><th>Что делаем</th></tr>
@@ -379,18 +545,19 @@ section>.vyvod{margin-top:-6px}
 <!-- ============ РЫНОК ============ -->
 <section id="rynok">
   <div class="sec-head">
-    <div class="eyebrow">Рынок</div>
-    <h2>Куда входим и кого теснить</h2>
+    <div class="eyebrow">01 · Цели</div>
+    <h2>Шесть целей: первыми теснить San Benedetto и Святой Источник в ресторанах</h2>
     <p>В базе исследования 244 бренда, 1 555 наблюдений цен в рознице, онлайн и в меню, 73 заведения Москвы и Петербурга и 2 040 отзывов. Вывод: входить нужно в зазор между российским премиумом и импортом, и первой дверью должны быть рестораны.</p>
   </div>
 
   <div class="grid g3">
-    <div class="card stack find"><span class="pill ice">Цена</span><b class="n">492 → 532 → 670 Руб./л</b><h3>Зазор между Россией и импортом</h3><p>Самый дорогой российский бренд в стекле — Nedra, 492 Руб./л. Европейский импорт начинается с 506–570 Руб./л и доходит до 670–820 Руб./л у Acqua Panna и San Benedetto. Наши 399 Руб. за 0,75 л дают 532 Руб./л: выше всех российских марок и ниже основного импорта.</p></div>
-    <div class="card stack find"><span class="pill ice">Рестораны</span><b class="n">28 из 56</b><h3>Одна марка держит половину меню</h3><p>San Benedetto стоит в 28 из 56 заведений, где в меню есть вода, с медианой 990 Руб. за 0,75 л. Российские негазированные позиции стоят 675–790 Руб. Место второй, более дешёвой строки с историей свободно.</p></div>
-    <div class="card stack find"><span class="pill ice">Доверие</span><b class="n">31% против 0–4%</b><h3>Импорту перестали верить</h3><p>У Evian 31% отзывов содержат негатив о подлинности, у Voss 14%, у S.Pellegrino 11%, у San Benedetto 7%. У большинства российских брендов 0–4%. Открытый протокол партии бьёт именно сюда.</p></div>
+    <div class="card stack find"><div class="kind obs">Наблюдение · цена</div><b class="n">492 → 532 → 670 Руб./л</b><h3>Зазор между Россией и импортом</h3><p>Самый дорогой российский бренд в стекле — Nedra, 492 Руб./л. Европейский импорт начинается с 506–570 Руб./л и доходит до 670–820 Руб./л у Acqua Panna и San Benedetto. Наши 399 Руб. за 0,75 л дают 532 Руб./л: выше всех российских марок и ниже основного импорта.</p></div>
+    <div class="card stack find"><div class="kind obs">Наблюдение · рестораны</div><b class="n">28 из 56</b><h3>Одна марка держит половину меню</h3><p>San Benedetto стоит в 28 из 56 заведений, где в меню есть вода, с медианой 990 Руб. за 0,75 л. Российские негазированные позиции стоят 675–790 Руб. Место второй, более дешёвой строки с историей свободно.</p></div>
+    <div class="card stack find"><div class="kind obs">Наблюдение · доверие</div><b class="n">31% против 0–4%</b><h3>Импорту перестали верить</h3><p>У Evian 31% отзывов содержат негатив о подлинности, у Voss 14%, у S.Pellegrino 11%, у San Benedetto 7%. У большинства российских брендов 0–4%. Открытый протокол партии бьёт именно сюда.</p></div>
   </div>
 
   <div class="card stack">
+    <div class="kind rec">Вывод из наблюдений</div>
     <h3>Кого теснить: шесть целей</h3>
     <div class="tbl-wrap"><table>
       <tr><th>Цель</th><th>Где</th><th>Что у них сейчас</th><th>Слабое место</th><th>Чем берём</th><th>Очередь</th></tr>
@@ -409,11 +576,20 @@ section>.vyvod{margin-top:-6px}
 <!-- ============ ЦЕНЫ И БРЕНДЫ ============ -->
 <section id="ceny">
   <div class="sec-head">
-    <div class="eyebrow">Цены и бренды</div>
-    <h2>Ценовая лестница брендов</h2>
-    <p>Негазированная вода, обычная цена без акций, рубли за литр. Розница и онлайн показаны отдельными точками. Чёрная линия — PRISTINAM при цене 399 Руб. за 0,75 л.</p>
+    <div class="eyebrow">02 · Цены и бренды</div>
+    <h2>При 399 Руб. за бутылку PRISTINAM оказывается между Nedra и Acqua Panna</h2>
+    <p>Самая дорогая российская вода в стекле стоит 492 Руб. за литр, основной европейский импорт начинается с 670 Руб. Плановая цена PRISTINAM, 399 Руб. за 0,75 л, даёт 532 Руб. за литр.</p>
   </div>
   <div class="card stack">
+    <div class="kind obs">Наблюдение и план</div>
+    <h3>Четыре ориентира: цена за литр в стекле</h3>
+    <div class="scale4-wrap"><svg class="scale4" id="scale4" viewBox="0 0 920 200" role="img" aria-label="Шкала цены за литр: Nedra, PRISTINAM, Acqua Panna, San Benedetto"></svg></div>
+    <p class="figcap" id="scale4cap"></p>
+  </div>
+  <div class="card stack">
+    <div class="kind obs">Наблюдение · цены на 25.11.2026</div>
+    <h3>Все бренды: полная лестница цен</h3>
+    <p class="muted" style="font-size:14px">Негазированная вода, обычная цена без акций, рубли за литр. Розница и онлайн показаны отдельными точками. Тёмная линия — PRISTINAM при цене 399 Руб. за 0,75 л. Переключайте материал и группировку.</p>
     <div class="row" style="justify-content:space-between">
       <div class="row">
         <div class="seg" id="ladMat" role="group" aria-label="Материал"><button data-v="glass" aria-pressed="true">Стекло 0,25–1 л</button><button data-v="pet" aria-pressed="false">ПЭТ 0,33–0,6 л</button></div>
@@ -428,7 +604,8 @@ section>.vyvod{margin-top:-6px}
 
   <div class="grid g2">
     <div class="card stack">
-      <h3>Что видно на лестнице</h3>
+      <div class="kind obs">Наблюдение</div>
+    <h3>Что видно на лестнице</h3>
       <ul class="clean">
         <li>Российское стекло занимает коридор от 160 до 490 Руб./л. Выше 500 Руб./л нет ни одной российской марки.</li>
         <li>Импорт, кроме казахстанской Tassay (414 Руб./л), стоит от 506 до 1 410 Руб./л. В рознице он дешевле, чем онлайн: Acqua Panna 520 против 728 Руб./л, San Benedetto 721 против 817 Руб./л.</li>
@@ -438,7 +615,8 @@ section>.vyvod{margin-top:-6px}
       </ul>
     </div>
     <div class="card stack">
-      <h3>Что это значит для нашей цены</h3>
+      <div class="kind rec">Вывод</div>
+    <h3>Что это значит для нашей цены</h3>
       <ul class="clean">
         <li>399 Руб. за 0,75 л ставит PRISTINAM над Nedra (369 Руб. онлайн), рядом с San Benedetto в METRO (389 Руб.) и под Acqua Panna онлайн (460 Руб.).</li>
         <li>Мы становимся самой дорогой российской водой в стекле. Это позиция, а не риск, только если бутылка, история и протокол держат уровень импорта.</li>
@@ -448,6 +626,7 @@ section>.vyvod{margin-top:-6px}
   </div>
 
   <div class="card stack">
+    <div class="kind obs">Наблюдение · вердикт в последнем столбце — наша оценка</div>
     <h3>Сводная таблица брендов</h3>
     <p class="muted" style="font-size:13.5px">Цены: медиана, в скобках число наблюдений. Отзывы: доля от содержательных отзывов бренда на маркетплейсах. Выручка — у основного юрлица, а не у бренда. Пустая клетка означает, что данных нет, а не что товара нет. У Dausuz цена 0,75 л онлайн ненадёжна: одна из двух найденных цен — 100 Руб.</p>
     <div class="tbl-wrap"><table id="brandTable" style="min-width:1040px"></table></div>
@@ -458,11 +637,12 @@ section>.vyvod{margin-top:-6px}
 <!-- ============ КАРТЫ ============ -->
 <section id="karty">
   <div class="sec-head">
-    <div class="eyebrow">Позиционирование среди брендов</div>
-    <h2>Карты позиционирования</h2>
+    <div class="eyebrow">03 · Позиционирование брендов</div>
+    <h2>Дорогая вода в России продаёт природу, а поле «технология, дорого» пусто</h2>
     <p>Где стоят бренды по цене и по тому, на чём они строят ценность: на природном происхождении или на технологии. Положение брендов взято из исследования: измеренные цены и оценки заявлений 33 брендов.</p>
   </div>
   <div class="card stack">
+    <div class="kind obs">Наблюдение (цена) и оценка исследователя (шкала)</div>
     <div class="row" style="justify-content:space-between">
       <h3>Цена × источник ценности: где стоят бренды на самом деле</h3>
       <div class="seg" id="quadMat" role="group" aria-label="Материал"><button data-v="glass" aria-pressed="true">Стекло</button><button data-v="pet" aria-pressed="false">ПЭТ</button></div>
@@ -494,13 +674,15 @@ section>.vyvod{margin-top:-6px}
 
   <div class="grid g2">
     <div class="card stack">
-      <h3>Кому принадлежит слово «мягкая»</h3>
+      <div class="kind obs">Наблюдение · отзывы покупателей</div>
+    <h3>Кому принадлежит слово «мягкая»</h3>
       <p class="muted" style="font-size:13.5px">Доля отзывов, где покупатель сам называет воду мягкой.</p>
       <div class="rc" id="softBars"></div>
       <div class="vyvod"><b>Вывод.</b> Слово «мягкая» покупатели уже говорят сами, значит объяснять его не нужно: это готовый вход в категорию. Оно встречается у всех марок, но ни у одной не доходит до трети отзывов и ни у одной не подкреплено числом. Кто первым поставит рядом «0,6 °Ж», тот заберёт слово себе. Это на порядок дешевле, чем приучать рынок к новому слову вроде «перекристаллизация».</div>
     </div>
     <div class="card stack">
-      <h3>Что видно на остальных шкалах</h3>
+      <div class="kind obs">Оценка исследователя по заявлениям брендов</div>
+    <h3>Что видно на остальных шкалах</h3>
       <ul class="clean">
         <li><b>Технология × статус.</b> Справа вверху пусто: высокую технологичность заявляют только Fahrenheit, BonAqua и «Лангвей», и все три вне премиума.</li>
         <li><b>Природа × статус.</b> Весь статус собран у «природных» марок: Nedra, Acqua Panna, VodaVoda, Petroglyph, Dausuz. Sever и Azure заявляют статус без природы и стоят дёшево.</li>
@@ -512,6 +694,7 @@ section>.vyvod{margin-top:-6px}
   </div>
 
   <div class="card stack">
+    <div class="kind obs">Наблюдение · отзывы покупателей</div>
     <h3>Слабые места брендов в отзывах</h3>
     <p class="muted" style="font-size:13.5px"><b>Нажмите на число, чтобы увидеть сами отзывы.</b> Доля отзывов с негативом по теме, % от содержательных отзывов бренда. Отзывы собраны на Ozon и Wildberries; точность разметки тем 73–83%, поэтому читать нужно порядок величин, а не десятые доли.</p>
     <div class="tbl-wrap"><table class="heat" id="weakTable"></table></div>
@@ -522,11 +705,12 @@ section>.vyvod{margin-top:-6px}
 <!-- ============ КАНАЛЫ ============ -->
 <section id="kanaly">
   <div class="sec-head">
-    <div class="eyebrow">Каналы продаж</div>
-    <h2>Где продаётся премиальное стекло и почём</h2>
+    <div class="eyebrow">04 · Каналы</div>
+    <h2>В меню наша цена ниже рынка, на полке выше: первая дверь — рестораны</h2>
   </div>
 
   <div class="card stack">
+    <div class="kind obs">Наблюдение · цены на 25.11.2026, столбец PRISTINAM — план</div>
     <h3>Сколько стоит бутылка 0,75 л в стекле в каждом канале</h3>
     <p class="muted" style="font-size:14px">Негазированная вода, обычная цена. Медиана — цена, дешевле которой стоит половина найденных предложений. В последнем столбце — насколько PRISTINAM дороже или дешевле этой медианы.</p>
     <div class="tbl-wrap"><table id="tiersTable"></table></div>
@@ -534,6 +718,7 @@ section>.vyvod{margin-top:-6px}
   </div>
 
   <div class="card stack">
+    <div class="kind obs">Наблюдение · 73 заведения Москвы и Петербурга</div>
     <h3>Кто стоит в ресторанах и отелях</h3>
     <div class="legend"><span><i style="background:var(--s1)"></i>Москва</span><span><i style="background:var(--s2)"></i>Петербург</span><span>справа — медиана цены негазированной 0,75 л в меню</span></div>
     <div class="rc" id="horeca"></div>
@@ -556,6 +741,7 @@ section>.vyvod{margin-top:-6px}
   </div>
 
   <div class="card stack">
+    <div class="kind obs">Наблюдение · найденные карточки товаров</div>
     <h3>Присутствие брендов в стекле по площадкам</h3>
     <p class="muted" style="font-size:13.5px">Число разных товаров бренда в стекле, найденных на площадке 25.11.2026. Последний столбец — число заведений с брендом в меню. Пустая клетка означает «не найдено в сборе», а не «не продаётся». Азбука Вкуса, Лента и Пятёрочка не открылись для сбора.</p>
     <div class="tbl-wrap"><table class="heat" id="presTable"></table></div>
@@ -576,13 +762,15 @@ section>.vyvod{margin-top:-6px}
 
   <div class="grid g2">
     <div class="card stack">
-      <h3>Кто стоит за брендами: размер компаний</h3>
+      <div class="kind obs">Наблюдение · отчётность компаний за 2025 год</div>
+    <h3>Кто стоит за брендами: размер компаний</h3>
       <p class="muted" style="font-size:13.5px">Выручка компании, которая выпускает бренд, за 2025 год. Она показывает, сколько денег у конкурента на ответ нам: скидки, полку, рекламу. Это не продажи самой воды: у «ПепсиКо» в выручке все напитки и снеки. Шкала логарифмическая: каждое деление в десять раз больше предыдущего.</p>
       <div class="rc" id="revDots"></div>
       <div class="vyvod"><b>Вывод.</b> Прямые соседи по премиальному стеклу — небольшие компании с выручкой 89–270 млн Руб.: рекламой нас в нише не задавят. Но у байкальской группы, структуры Эн+ за Legend of Baikal и «Калинова Родника» за Sever хватит ресурса скопировать удачный ход за сезон. Защищает то, что нельзя купить быстро: патент, протокол на каждую партию и личные отношения с сомелье.</div>
     </div>
     <div class="card stack">
-      <h3>Порядок входа по каналам</h3>
+      <div class="kind rec">Рекомендация · суммы производителю — расчёт</div>
+    <h3>Порядок входа по каналам</h3>
       <div class="tbl-wrap"><table>
         <tr><th>Шаг</th><th>Канал</th><th>Почему</th></tr>
         <tr><td class="num">1</td><td>Премиальные рестораны и отели</td><td>790 Руб. в меню ниже рынка; половину меню держит один импортный бренд; производителю остаётся 229 Руб. с бутылки</td></tr>
@@ -599,21 +787,23 @@ section>.vyvod{margin-top:-6px}
 <!-- ============ ПОЗИЦИОНИРОВАНИЕ ============ -->
 <section id="pozicia">
   <div class="sec-head">
-    <div class="eyebrow">Стратегия</div>
-    <h2>Позиционирование</h2>
+    <div class="eyebrow">05 · Наша позиция</div>
+    <h2>PRISTINAM — мягкая вода к столу, очищенная льдом</h2>
     <p class="lede">Для ресторанов и людей, которые выбирают воду к столу и читают этикетку, PRISTINAM — мягкая лёгкая вода, очищенная льдом. Она ничего не добавляет к вкусу еды, вина и чая, а её состав открыт по каждой партии.</p>
   </div>
 
   <div class="grid g2">
     <div class="card stack">
-      <h3>Главный ход: лёд — это природа, а не техника</h3>
+      <div class="kind rec">Рекомендация</div>
+    <h3>Главный ход: лёд — это природа, а не техника</h3>
       <p>Рынок делит воду на «нетронутую природную» и «очищенную техникой». За первую платят премию, вторая стоит как масса: Aqua Minerale 152 Руб./л, BonAqua 123 Руб./л.</p>
       <p>Замораживание снимает это деление. Когда вода замерзает, кристалл льда строится из молекул воды и выталкивает примеси: морской лёд в разы преснее океана. PRISTINAM повторяет природный процесс с инженерной точностью.</p>
       <p>Поэтому в заголовках стоит слово «лёд». Слова «технология», «установка», «патент» уходят в доказательства.</p>
     <div class="vyvod"><b>Вывод.</b> Технологию в воде продают через образ, а не через схему. Так Coca-Cola подаёт дистилляцию в smartwater: «процесс, вдохновлённый облаками». Мы делаем то же со льдом. Лёд понятен без объяснений и снимает главный страх перед очищенной водой: что она «неживая».</div>
     </div>
     <div class="card stack">
-      <h3>Почему именно так</h3>
+      <div class="kind obs">Наблюдение</div>
+    <h3>Почему именно так</h3>
       <ul class="clean">
         <li>В отзывах о премиальной воде люди хвалят вкус и мягкость. Технологические обещания брендов повторяются в 0–3% отзывов.</li>
         <li>Клетка «раскрытый метод + высокий статус» на карте рынка пуста: 0 из 33 брендов.</li>
@@ -626,6 +816,7 @@ section>.vyvod{margin-top:-6px}
   </div>
 
   <div class="card stack">
+    <div class="kind rec">Рекомендация</div>
     <h3>Платформа бренда</h3>
     <dl class="kv">
       <dt>Суть</dt><dd>Первозданная чистота. Имя PRISTINAM идёт от латинского pristinus, «первозданный».</dd>
@@ -640,6 +831,7 @@ section>.vyvod{margin-top:-6px}
   </div>
 
   <div class="card stack">
+    <div class="kind rec">Рекомендация · цены конкурентов — наблюдение</div>
     <h3>Против кого и чем отвечаем</h3>
     <div class="tbl-wrap"><table>
       <tr><th>Конкурент</th><th>Что обещает</th><th class="num">Цена 0,75 стекло</th><th>Наш ответ</th></tr>
@@ -659,10 +851,11 @@ section>.vyvod{margin-top:-6px}
 <!-- ============ АУДИТОРИИ ============ -->
 <section id="auditorii">
   <div class="sec-head">
-    <div class="eyebrow">Кому</div>
-    <h2>Аудитории</h2>
+    <div class="eyebrow">06 · Аудитории</div>
+    <h2>Сначала убеждаем сомелье и закупщика, затем покупателя</h2>
     <p>Пять сегментов в порядке приоритета. Первые три запускают кампанию, два последних подключаются с 17-й недели.</p>
   </div>
+  <div class="kind goal">Рекомендация · строка «Цель» в каждой аудитории — цель пилота</div>
   <div class="seg" id="audSeg" role="group" aria-label="Аудитория"></div>
   <div class="card" id="audBody"></div>
     <div class="vyvod"><b>Вывод.</b> Сначала продаём не тому, кто пьёт, а тому, кто решает: сомелье и закупщику. В премиальной воде рекомендация сомелье стоит дороже рекламной кампании, потому что гость заказывает то, что ему назвали. Покупатель в магазине подключается вторым шагом, когда уже видел бутылку на столе.</div>
@@ -671,8 +864,8 @@ section>.vyvod{margin-top:-6px}
 <!-- ============ СООБЩЕНИЯ ============ -->
 <section id="soobshenia">
   <div class="sec-head">
-    <div class="eyebrow">Что говорим</div>
-    <h2>Сообщения и готовые тексты</h2>
+    <div class="eyebrow">07 · Сообщения</div>
+    <h2>Одна мысль и три опоры: мягкая, очищена льдом, доказана цифрами</h2>
   </div>
 
   <div class="grid g3">
@@ -721,8 +914,8 @@ section>.vyvod{margin-top:-6px}
 <!-- ============ ОТЧЁТ ============ -->
 <section id="otchet">
   <div class="sec-head">
-    <div class="eyebrow">Продукт</div>
-    <h2>Что доказывает отчёт лаборатории</h2>
+    <div class="eyebrow">08 · Продукт</div>
+    <h2>Лаборатория подтверждает мягкую лёгкую воду с pH 8,2–8,6</h2>
     <p>В отчёте три точки отбора и 34 показателя. Точки 2 и 3 дают воду с pH 8,2–8,6: это профиль продукта для бутылки, вся кампания стоит на нём. Точка 1 показывает режим pH 10,2: лаборатория отметила его как выход за норматив 6–9, поэтому в бутылку и в рекламу он не идёт.</p>
     <p><a href="https://aka-sergey.github.io/Arktika/pristinam-lab-report-2025-03-07.pdf" target="_blank" rel="noopener">Открыть полный отчёт лаборатории (PDF, 6 страниц)</a></p>
   </div>
@@ -737,6 +930,7 @@ section>.vyvod{margin-top:-6px}
       <span class="pill" id="ptVerdict"></span>
     </div>
 
+    <div class="kind obs">Наблюдение · отчёт лаборатории от 07.03.2025</div>
     <h3>pH на шкале норматива</h3>
     <div class="ph" id="phStrip" aria-label="pH трёх точек на шкале от 5 до 11, зелёная зона — норматив 6–9"></div>
 
@@ -766,23 +960,24 @@ section>.vyvod{margin-top:-6px}
 
   <div class="grid g3">
     <div class="card stack">
-      <span class="pill good">Закрыто отчётом</span>
+      <div class="kind obs">Наблюдение · подтверждено отчётом</div>
       <h3>Минерализация в границах</h3>
       <p>Сухой остаток 100–115 мг/дм³ лежит внутри диапазона 50–1000 мг/дм³, который ТР ЕАЭС 044/2017 задаёт для обработанной питьевой воды. Вопрос «20 ppm ниже нижней границы» снят.</p>
     </div>
     <div class="card stack">
-      <span class="pill good">Закрыто отчётом</span>
+      <div class="kind obs">Наблюдение · подтверждено отчётом</div>
       <h3>pH в норме</h3>
       <p>8,2–8,6 при допустимых 6–9. Это слабощелочная вода, и это можно писать как факт из протокола. Обещать пользу от pH нельзя.</p>
     </div>
     <div class="card stack">
-      <span class="pill good">Закрыто патентами</span>
+      <div class="kind obs">Наблюдение · патенты</div>
       <h3>Технология защищена</h3>
       <p>Патенты РФ № 2780068 (система и способ очистки), № 2782584 и № 2786296 (теплообменное устройство), европейский EP 3904296, а также США, Китай, Индия, Южная Корея и Швейцария.</p>
     </div>
   </div>
 
   <div class="card stack">
+    <div class="kind calc">Наблюдение и расчёт</div>
     <h3>Три меры одной воды: какую цифру куда ставить</h3>
     <div class="tbl-wrap"><table>
       <tr><th>Мера</th><th class="num">Значение</th><th>Откуда</th><th>Где использовать</th></tr>
@@ -798,11 +993,12 @@ section>.vyvod{margin-top:-6px}
 <!-- ============ ОЧИСТКА ============ -->
 <section id="ochistka">
   <div class="sec-head">
-    <div class="eyebrow">Справочно</div>
-    <h2>Чем очистка льдом отличается от фильтра</h2>
+    <div class="eyebrow">09 · Очистка</div>
+    <h2>Лёд отделяет воду от примесей без мембраны</h2>
     <p>Справка для тех, кто будет объяснять продукт сомелье, закупщику или журналисту. Схемы условные: они показывают принцип, а не точные пропорции веществ.</p>
   </div>
   <div class="card stack">
+    <div class="kind ref">Справка · схема условная</div>
     <h3>Как работает перекристаллизация</h3>
     <svg class="diag" viewBox="0 0 760 470" role="img" aria-label="Схема: исходная вода при замораживании разделяется на лёд и незамёрзший остаток">
 <rect class="box" x="260" y="16" width="240" height="130" rx="14"/><circle class="m1" cx="291.7" cy="39.8" r="6"/><rect class="m2" x="321.0" y="33.8" width="12" height="12" rx="1.5"/><path class="m3" d="M362.3 32.8L369.3 45.8H355.3Z"/><circle class="m1" cx="397.7" cy="39.8" r="6"/><rect class="m2" x="427.0" y="33.8" width="12" height="12" rx="1.5"/><path class="m3" d="M468.3 32.8L475.3 45.8H461.3Z"/><path class="m3" d="M291.7 60.2L298.7 73.2H284.7Z"/><circle class="m1" cx="327.0" cy="67.2" r="6"/><rect class="m2" x="356.3" y="61.2" width="12" height="12" rx="1.5"/><path class="m3" d="M397.7 60.2L404.7 73.2H390.7Z"/><circle class="m1" cx="433.0" cy="67.2" r="6"/><rect class="m2" x="462.3" y="61.2" width="12" height="12" rx="1.5"/><rect class="m2" x="285.7" y="88.8" width="12" height="12" rx="1.5"/><path class="m3" d="M327.0 87.8L334.0 100.8H320.0Z"/><circle class="m1" cx="362.3" cy="94.8" r="6"/><rect class="m2" x="391.7" y="88.8" width="12" height="12" rx="1.5"/><path class="m3" d="M433.0 87.8L440.0 100.8H426.0Z"/><circle class="m1" cx="468.3" cy="94.8" r="6"/><circle class="m1" cx="291.7" cy="122.2" r="6"/><rect class="m2" x="321.0" y="116.2" width="12" height="12" rx="1.5"/><path class="m3" d="M362.3 115.2L369.3 128.2H355.3Z"/><circle class="m1" cx="397.7" cy="122.2" r="6"/><rect class="m2" x="427.0" y="116.2" width="12" height="12" rx="1.5"/><path class="m3" d="M468.3 115.2L475.3 128.2H461.3Z"/>
@@ -818,6 +1014,7 @@ section>.vyvod{margin-top:-6px}
     <div class="vyvod"><b>Вывод.</b> Для объяснения хватает одной фразы: «лёд берёт из воды чистое, остальное сливаем». Схема нужна сомелье и журналисту. Гостю ресторана она не нужна.</div>
   </div>
   <div class="card stack">
+    <div class="kind ref">Справка · схема условная</div>
     <h3>Два разных способа разделить воду и примеси</h3>
     <svg class="diag" viewBox="0 0 760 330" role="img" aria-label="Схема: мембрана обратного осмоса и кристаллизация льда">
 <rect class="box" x="30" y="16" width="330" height="220" rx="14"/><circle class="m1" cx="62.2" cy="47.6" r="6"/><rect class="m2" x="92.8" y="41.6" width="12" height="12" rx="1.5"/><path class="m3" d="M135.2 40.6L142.2 53.6H128.2Z"/><circle class="m1" cx="171.8" cy="47.6" r="6"/><path class="m3" d="M62.2 79.8L69.2 92.8H55.2Z"/><circle class="m1" cx="98.8" cy="86.8" r="6"/><rect class="m2" x="129.2" y="80.8" width="12" height="12" rx="1.5"/><path class="m3" d="M171.8 79.8L178.8 92.8H164.8Z"/><rect class="m2" x="56.2" y="120.0" width="12" height="12" rx="1.5"/><path class="m3" d="M98.8 119.0L105.8 132.0H91.8Z"/><circle class="m1" cx="135.2" cy="126.0" r="6"/><rect class="m2" x="165.8" y="120.0" width="12" height="12" rx="1.5"/><circle class="m1" cx="62.2" cy="165.2" r="6"/><rect class="m2" x="92.8" y="159.2" width="12" height="12" rx="1.5"/><path class="m3" d="M135.2 158.2L142.2 171.2H128.2Z"/><circle class="m1" cx="171.8" cy="165.2" r="6"/><path class="m3" d="M62.2 197.4L69.2 210.4H55.2Z"/><circle class="m1" cx="98.8" cy="204.4" r="6"/><rect class="m2" x="129.2" y="198.4" width="12" height="12" rx="1.5"/><path class="m3" d="M171.8 197.4L178.8 210.4H164.8Z"/>
@@ -844,8 +1041,8 @@ section>.vyvod{margin-top:-6px}
 <!-- ============ QR ============ -->
 <section id="qr">
   <div class="sec-head">
-    <div class="eyebrow">Механика</div>
-    <h2>Протокол партии по QR: как это выглядит</h2>
+    <div class="eyebrow">10 · Протокол по QR</div>
+    <h2>QR на бутылке ведёт к протоколу партии: доверие можно показать</h2>
     <p>Макет для стеклянной бутылки 0,75 л. Покупатель или гость ресторана наводит камеру на контрэтикетку и попадает на страницу своей партии. QR на макете настоящий: он ведёт на раздел этого отчёта с цифрами лаборатории.</p>
   </div>
   <div class="card stack">
@@ -893,13 +1090,14 @@ section>.vyvod{margin-top:-6px}
 <!-- ============ ЦЕНА ============ -->
 <section id="cena">
   <div class="sec-head">
-    <div class="eyebrow">Продукт</div>
-    <h2>Линейка, упаковка и цена</h2>
+    <div class="eyebrow">11 · Линейка и цена</div>
+    <h2>На старте два формата в стекле: 399 Руб. на полке и 790 Руб. в меню</h2>
   </div>
 
   <div class="grid g2">
     <div class="card stack">
-      <h3>Линейка на старте</h3>
+      <div class="kind rec">Рекомендация</div>
+    <h3>Линейка на старте</h3>
       <div class="tbl-wrap"><table>
         <tr><th>Формат</th><th class="num">Полка</th><th class="num">Меню</th><th>Роль</th></tr>
         <tr><td>Стекло 0,75 л, негазированная</td><td class="num">399 Руб.</td><td class="num">790 Руб.</td><td>Ядро: стол ресторана, коробка 6 шт. онлайн</td></tr>
@@ -910,7 +1108,8 @@ section>.vyvod{margin-top:-6px}
     <div class="vyvod"><b>Вывод.</b> Два формата на старте — рабочее правило запуска: один для стола, второй для номера отеля и переговорной. Каждый следующий формат добавляем после того, как предыдущий начали покупать повторно.</div>
     </div>
     <div class="card stack">
-      <h3>Упаковка</h3>
+      <div class="kind rec">Рекомендация</div>
+    <h3>Упаковка</h3>
       <ul class="clean">
         <li>Стекло, сдержанная типографика, много воздуха. Образ льда и кристалла без колб и молекул.</li>
         <li>На лице три слова: PRISTINAM, «очищена льдом», номер партии.</li>
@@ -924,6 +1123,7 @@ section>.vyvod{margin-top:-6px}
   </div>
 
   <div class="card stack">
+    <div class="kind calc">Расчёт · себестоимость из модели завода, наценки каналов — допущения</div>
     <h3>Калькулятор: сколько остаётся производителю</h3>
     <p class="muted" style="font-size:14px">Цена производителя без НДС 22% за бутылку 0,75 л и то, что остаётся после себестоимости. Себестоимость берётся из финансовой модели завода «Арктика»: выберите сценарий и период. Наценки сетей и дистрибьюторов, бонусы и комиссии взяты как допущения исследования, до реальных прайсов.</p>
     <div class="costbox stack">
@@ -956,22 +1156,27 @@ section>.vyvod{margin-top:-6px}
 <!-- ============ КАМПАНИЯ ============ -->
 <section id="kampania">
   <div class="sec-head">
-    <div class="eyebrow">Как</div>
-    <h2>Кампания «Сделано льдом»</h2>
+    <div class="eyebrow">12 · Кампания</div>
+    <div class="slogan">Сделано льдом</div>
+    <div class="slogan-sub">Очищена льдом. Доказана цифрами.</div>
+    <h2>Кампания ведёт воду от ресторанного стола к дому за 24 недели</h2>
     <p>24 недели, четыре фазы. Сначала вода появляется на столах, где её рекомендует сомелье, потом в корзинах тех, кто прочитал о ней и хочет проверить сам.</p>
   </div>
 
   <div class="card stack">
+    <div class="kind goal">План · «Итог фазы» — цель пилота</div>
     <div class="gantt" id="gantt" aria-label="График фаз по неделям"></div>
     <div id="phaseBody" class="stack" style="margin-top:8px"></div>
     <div class="vyvod"><b>Вывод.</b> Фазы идут в порядке «увидел, попробовал, купил домой». Менять их местами нельзя: запуск в интернете без ресторанов даёт дорогую неизвестную воду без отзывов.</div>
   </div>
 
-  <h3>Шесть механик кампании</h3>
+  <div class="kind rec">План</div>
+    <h3>Шесть механик кампании</h3>
   <div class="grid g3" id="mechs"></div>
     <div class="vyvod"><b>Вывод.</b> Все шесть механик делают одно и то же: превращают невидимое свойство воды в то, что можно увидеть, сосчитать или пересказать.</div>
 
   <div class="card stack">
+    <div class="kind rec">Рекомендация</div>
     <h3>Минимальная команда</h3>
     <p class="muted" style="font-size:14px">Два человека в штате на старте, три ко второй фазе, четыре к третьей. Всё остальное закрывают подрядчики.</p>
     <div class="tbl-wrap"><table>
@@ -991,6 +1196,7 @@ section>.vyvod{margin-top:-6px}
   </div>
 
   <div class="card stack">
+    <div class="kind goal">План · в последнем столбце — цели пилота</div>
     <h3>Каналы и их роли</h3>
     <div class="tbl-wrap"><table>
       <tr><th>Канал</th><th>Роль</th><th>Что делаем</th><th>Цель</th></tr>
@@ -1010,10 +1216,11 @@ section>.vyvod{margin-top:-6px}
 <!-- ============ СТАРТ ============ -->
 <section id="osnova">
   <div class="sec-head">
-    <div class="eyebrow">Основа</div>
+    <div class="eyebrow">13 · Допущения и источники</div>
     <h2>Допущения и источники</h2>
   </div>
   <div class="card stack">
+    <div class="kind calc">Допущения</div>
     <h3>Что я принял за основу</h3>
     <ul class="clean">
       <li>В бутылку идёт режим точек 2 и 3 отчёта, pH 8,2–8,6. Если разливается другой режим, цифры в текстах нужно заменить цифрами его протокола.</li>
@@ -1059,7 +1266,7 @@ section>.vyvod{margin-top:-6px}
         sh03: 0.16, sh05: 0.46, sh07: 0, sh10: 0.38, p03: 100, p05: 160, p07: 190, p10: 220, defer: 0.5, fg_days: 0,
         rr03: 0, rr05: 0, rr07: 0, rr10: 0, // цена на полке (рекомендованная розничная): 0 — не задана. В деньгах сценария не участвует, нужна вкладке «Структура цены»
         am_eq: 5, am_rep: 7, am_mold: 3, // сроки амортизации, лет: оборудование, ремонт, пресс-формы — тоже только для «Структуры цены»
-        usd: 84, cap_usd: 0.178, cap_vat: 0.22, w03: 37, w05: 43, w07: 49, w10: 55, pf_kg: 320, label: 9.4, chz: 0.6, pack: 0.5, // этикетка и код «Честного знака» — отдельно; вместе те же 10 ₽, что были одной строкой
+        usd: 84, cap_usd: 0.178, cap_vat: 0.22, w03: 37, w05: 43, w07: 49, w10: 55, pf_kg: 320, label: 9.4, chz: 0.6, pack: 0.5, // этикетка и код «Честного знака» — отдельно; вместе те же 10 Руб., что были одной строкой
         waste: 0.02, energy: 9, logist: 0.08, returns: 0.005, mkt_pct: 0.03, mkt_launch: 1500000, mkt_start: 2, mkt_n: 3,
         pilots: 120000, pilots_m: 4,
         tax_k: 1.13, rent: 350000, rent_start: 1, maint: 250000, maint_start: 3, other: 133000,
@@ -1337,10 +1544,10 @@ section>.vyvod{margin-top:-6px}
     { const q = firstIdx(z => m.line_util[z] > 1.0001); if (q) al.push({ lvl: 'warn', day: dayOf(q, 1), text: 'Линия розлива не успевает с ' + MONTHS[q - 1].label + ' (' + Math.round(k.maxUtil * 100) + ' %) — нужна вторая смена' }); }
     { const q = firstIdx(z => m.lost_l[z] > 1 && z + 1 > p.start_m); if (q) al.push({ lvl: 'warn', day: dayOf(q, 1), text: 'С ' + MONTHS[q - 1].label + ' план продаж выше производства — недопродано ' + Math.round(k.lostL).toLocaleString('ru-RU') + ' л за период' }); }
     { const q = firstIdx(z => m.fg_l[z] > 2 * Math.max(1, m.plan_l[z]) && m.plan_l[z] > 0); if (q) al.push({ lvl: 'warn', day: dayOf(q, 1), text: 'Склад готовой воды больше двух месяцев продаж с ' + MONTHS[q - 1].label }); }
-    if (minCash < -1) al.push({ lvl: 'warn', day: minCashDay, text: 'Кассовый разрыв внутри месяца: ' + dateOf(minCashDay).text + ' на счёте ' + Math.round(minCash / 1000).toLocaleString('ru-RU') + ' тыс. ₽ — увеличьте неснижаемый остаток' });
+    if (minCash < -1) al.push({ lvl: 'warn', day: minCashDay, text: 'Кассовый разрыв внутри месяца: ' + dateOf(minCashDay).text + ' на счёте ' + Math.round(minCash / 1000).toLocaleString('ru-RU') + ' тыс. Руб. — увеличьте неснижаемый остаток' });
     const pcT = v => String(Math.round(v * 1000) / 10).replace('.', ',') + ' %';
-    if (k.vat7M) al.push({ lvl: 'warn', day: dayOf(k.vat7M, 1), text: 'С ' + MONTHS[k.vat7M - 1].label + ' НДС ' + pcT(p.vat7_rate) + ' вместо ' + pcT(p.vat_rate) + ': доход за год выше ' + Math.round(p.vat7_thr / 1e6) + ' млн ₽. Это учтено в расчёте' });
-    if (k.osnM) al.push({ lvl: 'warn', day: dayOf(k.osnM, 1), text: 'С ' + MONTHS[k.osnM - 1].label + ' доход за год выше лимита УСН (' + Math.round(p.usn_lim / 1e6) + ' млн ₽): дальше налоги считаются по общему режиму — НДС ' + pcT(p.osn_vat) + ' с вычетом входящего и налог на прибыль ' + pcT(p.osn_tax) });
+    if (k.vat7M) al.push({ lvl: 'warn', day: dayOf(k.vat7M, 1), text: 'С ' + MONTHS[k.vat7M - 1].label + ' НДС ' + pcT(p.vat7_rate) + ' вместо ' + pcT(p.vat_rate) + ': доход за год выше ' + Math.round(p.vat7_thr / 1e6) + ' млн Руб. Это учтено в расчёте' });
+    if (k.osnM) al.push({ lvl: 'warn', day: dayOf(k.osnM, 1), text: 'С ' + MONTHS[k.osnM - 1].label + ' доход за год выше лимита УСН (' + Math.round(p.usn_lim / 1e6) + ' млн Руб.): дальше налоги считаются по общему режиму — НДС ' + pcT(p.osn_vat) + ' с вычетом входящего и налог на прибыль ' + pcT(p.osn_tax) });
     s.capex.forEach(c => { if (!(c.month >= 1 && c.month <= N)) al.push({ lvl: 'err', day: 0, text: 'Вложение «' + c.name + '»: месяц оплаты вне периода' }); });
     return { m, d, ev, arrivals, ord, stockEnd, useBy, cnt, k, alerts: al, prices: pr };
   }
@@ -2049,6 +2256,29 @@ renderQuad();
     h+='<tr><td><b>'+r.name+'</b></td><td><div class="mbar"><i style="width:'+Math.round(r.m/1000*140)+'px"></i><span>'+r0(r.m)+' Руб.</span></div></td><td class="num">'+r0(r.lo)+'–'+r0(r.hi)+'</td><td class="num">'+r.n+(r.n<3?' (мало)':'')+'</td><td class="num">'+r.us+' Руб.</td><td><span class="pill '+(d>0?'warn':'good')+'">'+(d>0?'дороже на '+d+'%':'дешевле на '+Math.abs(d)+'%')+'</span></td></tr>';});
   $('#tiersTable').innerHTML=h;
 })();
+})();
+</script>
+<script>
+/* Компактная шкала: четыре ориентира цены за литр, стекло */
+(function(){
+'use strict';
+const g=Object.fromEntries(M.glass.map(r=>[r.b,r.p])), r0=x=>Math.round(x).toLocaleString('ru-RU');
+const US=399/0.75, lo=400, hi=900, X0=40, X1=880, Y=118;
+const sx=v=>X0+(v-lo)/(hi-lo)*(X1-X0);
+const pts=[['Nedra','Россия','end',-12],['Acqua Panna','импорт, Италия','middle',0],['San Benedetto','импорт, Италия','middle',0]].filter(p=>g[p[0]]);
+let s='';
+s+=`<line x1="${X0}" x2="${X1}" y1="${Y}" y2="${Y}" stroke="var(--ink)" stroke-width="1.5"/>`;
+[400,500,600,700,800,900].forEach(t=>{s+=`<line x1="${sx(t)}" x2="${sx(t)}" y1="${Y}" y2="${Y+6}" stroke="var(--ink)" stroke-width="1"/><text class="ax" x="${sx(t)}" y="${Y+22}" text-anchor="middle">${t}</text>`;});
+s+=`<text class="ax" x="${X1}" y="${Y+40}" text-anchor="end">Руб. за литр</text>`;
+if(g['Nedra']){const n=sx(g['Nedra'][0]); s+=`<line x1="${X0}" x2="${n}" y1="${Y+52}" y2="${Y+52}" stroke="var(--muted)" stroke-width="1"/><line x1="${n}" x2="${n}" y1="${Y+47}" y2="${Y+57}" stroke="var(--muted)"/><text class="zone" x="${X0}" y="${Y+70}">российские марки в стекле: до ${r0(g['Nedra'][0])} Руб./л</text>`;}
+if(g['Acqua Panna']){const a=sx(g['Acqua Panna'][0]); s+=`<line x1="${a}" x2="${X1}" y1="${Y+52}" y2="${Y+52}" stroke="var(--muted)" stroke-width="1"/><line x1="${a}" x2="${a}" y1="${Y+47}" y2="${Y+57}" stroke="var(--muted)"/><text class="zone" x="${a}" y="${Y+70}">основной европейский импорт: от ${r0(g['Acqua Panna'][0])} Руб./л</text>`;}
+pts.forEach(p=>{const v=g[p[0]], x=sx(v[0]), tx=x+p[3];
+  s+=`<g data-tip="<b>${p[0]}</b><br>${r0(v[0])} Руб./л, медиана по ${v[1]} наблюдениям<br>стекло, негазированная, обычная цена"><circle cx="${x}" cy="${Y}" r="7" fill="var(--ink)" stroke="var(--paper)" stroke-width="2"/><text class="nm" x="${tx}" y="${Y-36}" text-anchor="${p[2]}">${p[0]}</text><text class="vl" x="${tx}" y="${Y-18}" text-anchor="${p[2]}">${r0(v[0])} Руб./л · ${p[1]}</text></g>`;});
+const ux=sx(US);
+s+=`<g class="us" data-tip="<b>PRISTINAM</b><br>плановая цена 399 Руб. за 0,75 л<br>это ${r0(US)} Руб./л"><line x1="${ux}" x2="${ux}" y1="26" y2="${Y}" stroke="var(--ice)" stroke-width="2"/><rect x="${ux-8}" y="${Y-8}" width="16" height="16" transform="rotate(45 ${ux} ${Y})" fill="var(--ice)" stroke="var(--paper)" stroke-width="2"/><text class="nm" x="${ux+12}" y="38">PRISTINAM, плановая цена</text><text class="vl" x="${ux+12}" y="56">${r0(US)} Руб./л = 399 Руб. за 0,75 л</text></g>`;
+document.querySelector('#scale4').innerHTML=s;
+const cap=document.querySelector('#scale4cap');
+cap.innerHTML='<b>Наблюдение:</b> медианы обычных цен в рознице и онлайн на 25.11.2026, стекло, негазированная вода: '+pts.map(p=>p[0]+' — '+g[p[0]][1]+' наблюдений').join(', ')+'. <b>План:</b> цена PRISTINAM.';
 })();
 </script>
 </body>
