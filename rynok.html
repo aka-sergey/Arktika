@@ -1,0 +1,1356 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>Рынок и кампания PRISTINAM</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Golos+Text:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&family=Unbounded:wght@500;700&display=swap" rel="stylesheet">
+<style>
+/* Идея вёрстки: лабораторный протокол на льду. Слева липкое оглавление, справа лента разделов;
+   цифры набраны моноширинным, как в протоколе; один холодный акцент, статусные цвета отдельно. */
+:root{
+  --paper:#f2f5f7; --surface:#ffffff; --sunk:#e8eef2;
+  --ink:#0c1b2a; --muted:#536373; --line:#d3dce3;
+  --ice:#0a6788; --ice-soft:#d9ebf2; --on-ice:#ffffff;
+  --good:#17754a; --warn:#a86200; --crit:#b3261e;
+  --good-soft:#dff1e7; --warn-soft:#f7ead2; --crit-soft:#f7dedb;
+  --f-display:'Unbounded','Golos Text',system-ui,sans-serif;
+  --f-body:'Golos Text',system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;
+  --f-mono:'JetBrains Mono',ui-monospace,'SF Mono',Menlo,Consolas,monospace;
+  color-scheme:light;
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --paper:#07111a; --surface:#0e1b26; --sunk:#132432;
+    --ink:#e6eef4; --muted:#93a5b4; --line:#223543;
+    --ice:#5cc3e6; --ice-soft:#123040; --on-ice:#04121a;
+    --good:#4cc38a; --warn:#e3a53a; --crit:#f2817a;
+    --good-soft:#10301f; --warn-soft:#33270f; --crit-soft:#3a1a18;
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --paper:#07111a; --surface:#0e1b26; --sunk:#132432;
+  --ink:#e6eef4; --muted:#93a5b4; --line:#223543;
+  --ice:#5cc3e6; --ice-soft:#123040; --on-ice:#04121a;
+  --good:#4cc38a; --warn:#e3a53a; --crit:#f2817a;
+  --good-soft:#10301f; --warn-soft:#33270f; --crit-soft:#3a1a18;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+@media (prefers-reduced-motion:reduce){html{scroll-behavior:auto} *{transition:none!important}}
+body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--f-body);font-size:16px;line-height:1.55;-webkit-font-smoothing:antialiased}
+.wrap{max-width:1180px;margin:0 auto;padding:0 20px 80px;display:grid;grid-template-columns:200px minmax(0,1fr);gap:40px}
+nav.toc{position:sticky;top:0;align-self:start;padding:28px 0;max-height:100vh;overflow:auto}
+nav.toc .brand{font-family:var(--f-display);font-weight:700;font-size:13px;letter-spacing:.14em;margin-bottom:18px}
+nav.toc a{display:block;padding:6px 0 6px 12px;border-left:2px solid var(--line);color:var(--muted);text-decoration:none;font-size:14px}
+nav.toc a:hover,nav.toc a.on{color:var(--ink);border-left-color:var(--ice)}
+main{min-width:0;display:flex;flex-direction:column;gap:56px;padding-top:28px}
+@media (max-width:900px){
+  .wrap{grid-template-columns:minmax(0,1fr);gap:0;padding:0 16px 60px}
+  nav.toc{position:static;padding:14px 0 6px;display:flex;gap:6px;overflow-x:auto;max-height:none}
+  nav.toc .brand{display:none}
+  nav.toc a{white-space:nowrap;border:1px solid var(--line);border-radius:999px;padding:5px 12px;font-size:13px}
+  nav.toc a.on{border-color:var(--ice)}
+  main{gap:44px;padding-top:14px}
+}
+h1,h2,h3{text-wrap:balance;margin:0}
+h1{font-family:var(--f-display);font-weight:700;font-size:clamp(34px,6vw,64px);line-height:1.02;letter-spacing:-.01em}
+h2{font-family:var(--f-display);font-weight:500;font-size:clamp(20px,2.6vw,26px);line-height:1.2}
+h3{font-size:17px;font-weight:700}
+p{margin:0;max-width:68ch}
+.eyebrow{font-family:var(--f-mono);font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.lede{font-size:clamp(17px,2vw,20px);line-height:1.45;max-width:60ch}
+.muted{color:var(--muted)}
+.mono{font-family:var(--f-mono);font-variant-numeric:tabular-nums}
+section{display:flex;flex-direction:column;gap:20px;scroll-margin-top:16px}
+.sec-head{display:flex;flex-direction:column;gap:8px;border-top:2px solid var(--ink);padding-top:14px}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:20px}
+.grid{display:grid;gap:14px}
+.g2{grid-template-columns:repeat(auto-fit,minmax(280px,1fr))}
+.g3{grid-template-columns:repeat(auto-fit,minmax(220px,1fr))}
+.g4{grid-template-columns:repeat(auto-fit,minmax(170px,1fr))}
+.stack{display:flex;flex-direction:column;gap:10px}
+.row{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+/* hero */
+.hero{display:flex;flex-direction:column;gap:22px;padding:28px;border-radius:14px;background:linear-gradient(160deg,var(--ice-soft),var(--surface) 62%);border:1px solid var(--line)}
+.tagline{font-family:var(--f-display);font-weight:500;font-size:clamp(15px,2vw,19px);color:var(--ice)}
+.fact{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:14px 16px;display:flex;flex-direction:column;gap:4px}
+.fact b{font-family:var(--f-mono);font-size:22px;font-weight:600;line-height:1.1;font-variant-numeric:tabular-nums}
+.fact span{font-size:13px;color:var(--muted)}
+/* tables */
+.tbl-wrap{overflow-x:auto;border:1px solid var(--line);border-radius:10px;background:var(--surface)}
+table{border-collapse:collapse;width:100%;font-size:14px}
+th,td{text-align:left;padding:10px 12px;border-bottom:1px solid var(--line);vertical-align:top}
+tr:last-child td{border-bottom:0}
+th{font-size:12px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;background:var(--sunk)}
+td.num,th.num{text-align:right;font-family:var(--f-mono);font-variant-numeric:tabular-nums;white-space:nowrap}
+/* controls */
+.seg{display:inline-flex;flex-wrap:wrap;gap:4px;background:var(--sunk);padding:4px;border-radius:10px}
+.seg button{font:inherit;font-size:14px;font-weight:500;border:0;background:transparent;color:var(--muted);padding:7px 13px;border-radius:7px;cursor:pointer}
+.seg button[aria-pressed="true"]{background:var(--surface);color:var(--ink);box-shadow:0 1px 2px rgba(0,0,0,.12)}
+button:focus-visible,a:focus-visible,input:focus-visible,summary:focus-visible{outline:2px solid var(--ice);outline-offset:2px}
+.pill{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:600;padding:3px 9px;border-radius:999px;background:var(--sunk);color:var(--ink);white-space:nowrap}
+.pill.good{background:var(--good-soft);color:var(--good)}
+.pill.warn{background:var(--warn-soft);color:var(--warn)}
+.pill.crit{background:var(--crit-soft);color:var(--crit)}
+.pill.ice{background:var(--ice-soft);color:var(--ice)}
+.chip{font-family:var(--f-mono);font-size:12px;padding:4px 8px;border:1px solid var(--line);border-radius:6px;background:var(--surface)}
+.btn{font:inherit;font-size:13px;font-weight:600;border:1px solid var(--line);background:var(--surface);color:var(--ink);padding:6px 12px;border-radius:7px;cursor:pointer}
+.btn:hover{border-color:var(--ice);color:var(--ice)}
+label.ctl{display:flex;flex-direction:column;gap:6px;font-size:13px;color:var(--muted)}
+label.ctl output,label.ctl .val{font-family:var(--f-mono);color:var(--ink);font-weight:600;font-size:15px}
+input[type=range]{width:100%;accent-color:var(--ice)}
+input[type=number]{font:inherit;font-family:var(--f-mono);padding:7px 9px;border:1px solid var(--line);border-radius:7px;background:var(--surface);color:var(--ink);width:120px}
+/* lab bars */
+.bars{display:flex;flex-direction:column;gap:7px}
+.bar-row{display:grid;grid-template-columns:150px minmax(60px,1fr) 118px 118px;gap:12px;align-items:center;font-size:14px;padding:2px 4px;border-radius:6px}
+.bar-row:hover{background:var(--sunk)}
+.bar-row .track{height:10px;background:var(--sunk);border-radius:0 4px 4px 0;position:relative;border-left:1px solid var(--muted)}
+.bar-row:hover .track{background:var(--line)}
+.bar-row .fill{position:absolute;left:0;top:0;bottom:0;background:var(--ice);border-radius:0 4px 4px 0;min-width:2px}
+.bar-row .v{font-family:var(--f-mono);font-variant-numeric:tabular-nums;text-align:right;white-space:nowrap}
+.bar-row .x{color:var(--muted);font-size:13px;white-space:nowrap}
+.bar-axis{display:grid;grid-template-columns:150px minmax(60px,1fr) 118px 118px;gap:12px;font-size:12px;color:var(--muted);padding:0 4px}
+.bar-axis div:nth-child(2){display:flex;justify-content:space-between}
+@media (max-width:640px){
+  .bar-row,.bar-axis{grid-template-columns:104px minmax(40px,1fr) 84px}
+  .bar-row .x,.bar-axis div:nth-child(4){display:none}
+}
+.ph{position:relative;height:54px;margin:6px 8px 20px}
+.ph .scale{position:absolute;left:0;right:0;top:22px;height:10px;background:var(--sunk);border-radius:5px}
+.ph .band{position:absolute;top:22px;height:10px;background:var(--good-soft);border:1px solid var(--good);border-radius:5px}
+.ph .mk{position:absolute;top:14px;width:26px;height:26px;margin-left:-13px;border-radius:50%;background:var(--surface);border:2px solid var(--muted);font-size:10px;font-family:var(--f-mono);display:flex;align-items:center;justify-content:center;color:var(--muted)}
+.ph .mk.on{border-color:var(--ice);background:var(--ice);color:var(--on-ice);font-weight:600;z-index:2}
+.ph .mk.bad.on{border-color:var(--crit);background:var(--crit)}
+.ph .tick{position:absolute;top:40px;font-size:11px;font-family:var(--f-mono);color:var(--muted);transform:translateX(-50%)}
+/* positioning grid */
+.pgrid{border-collapse:separate;border-spacing:4px;min-width:640px;font-size:12.5px}
+.pgrid td,.pgrid th{border:0;padding:8px;border-radius:6px;background:var(--surface);height:58px;width:19%;vertical-align:middle;color:var(--ink);text-transform:none;letter-spacing:0;font-weight:400}
+.pgrid th{background:transparent;color:var(--muted);font-size:12px;width:5%;height:auto;white-space:nowrap}
+.pgrid td.free{background:var(--ice-soft);outline:1px dashed var(--ice)}
+.pgrid td.us{background:var(--ice);color:var(--on-ice);font-family:var(--f-display);font-weight:700;font-size:12px;letter-spacing:.06em;text-align:center}
+/* tabs content */
+.kv{display:grid;grid-template-columns:130px minmax(0,1fr);gap:8px 16px;font-size:15px}
+.kv dt{color:var(--muted);font-size:13px;padding-top:2px}
+.kv dd{margin:0}
+@media (max-width:560px){.kv{grid-template-columns:1fr;gap:2px 0}.kv dd{margin-bottom:10px}}
+pre.copy{margin:0;white-space:pre-wrap;font-family:var(--f-body);font-size:15px;line-height:1.5;background:var(--sunk);border-radius:8px;padding:16px;border-left:3px solid var(--ice)}
+.do-dont{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:14px}
+.do-dont ul{margin:0;padding-left:18px;display:flex;flex-direction:column;gap:6px;font-size:15px}
+.do{border-top:3px solid var(--good)} .dont{border-top:3px solid var(--crit)}
+/* price bars */
+.pbar{display:grid;grid-template-columns:150px minmax(60px,1fr) 150px;gap:12px;align-items:center;font-size:14px;padding:3px 4px;border-radius:6px}
+.pbar:hover{background:var(--sunk)}
+.pbar .track{height:14px;background:var(--sunk);position:relative;border-left:1px solid var(--muted);border-radius:0 4px 4px 0}
+.pbar .fill{position:absolute;left:0;top:0;bottom:0;background:var(--ice);border-radius:0 4px 4px 0}
+.pbar .rng{position:absolute;top:6px;height:2px;background:var(--ink);opacity:.55}
+.pbar .cogs{position:absolute;top:-4px;bottom:-4px;width:2px;background:var(--warn)}
+.pbar .r{display:flex;gap:8px;justify-content:flex-end;align-items:center;white-space:nowrap}
+@media (max-width:640px){.pbar{grid-template-columns:96px minmax(40px,1fr) 128px;gap:8px}}
+/* gantt */
+.gantt{display:grid;grid-template-columns:repeat(24,minmax(0,1fr));gap:3px 2px;align-items:center}
+.gantt .wk{font-size:10px;font-family:var(--f-mono);color:var(--muted);text-align:center}
+.gantt button{font:inherit;font-size:13px;font-weight:600;border:0;border-radius:6px;padding:9px 8px;background:var(--sunk);color:var(--ink);cursor:pointer;text-align:left;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.gantt button[aria-pressed="true"]{background:var(--ice);color:var(--on-ice)}
+ul.clean{margin:0;padding-left:18px;display:flex;flex-direction:column;gap:6px}
+.alloc{display:grid;grid-template-columns:minmax(120px,240px) minmax(50px,1fr) 150px;gap:12px;align-items:center;font-size:14px;padding:3px 4px}
+.alloc .track{height:12px;background:var(--sunk);border-left:1px solid var(--muted);border-radius:0 4px 4px 0;position:relative}
+.alloc .fill{position:absolute;left:0;top:0;bottom:0;background:var(--ice);border-radius:0 4px 4px 0}
+.alloc .v{font-family:var(--f-mono);text-align:right;white-space:nowrap}
+@media (max-width:640px){.alloc{grid-template-columns:1fr 110px}.alloc .track{display:none}}
+.big{font-family:var(--f-mono);font-size:24px;font-weight:600;font-variant-numeric:tabular-nums;line-height:1.15}
+details summary{cursor:pointer;font-weight:600;font-size:14px;color:var(--ice)}
+.check{display:flex;gap:10px;align-items:flex-start;font-size:15px}
+.check input{margin-top:4px;accent-color:var(--ice);width:16px;height:16px;flex:none}
+#tip{position:fixed;pointer-events:none;z-index:50;background:var(--ink);color:var(--paper);font-size:12.5px;line-height:1.4;padding:8px 10px;border-radius:7px;max-width:280px;opacity:0;transition:opacity .1s}
+#tip.on{opacity:1}
+footer{font-size:13px;color:var(--muted);border-top:1px solid var(--line);padding-top:16px}
+footer p{max-width:90ch}
+</style>
+<style>
+/* Рыночный блок: две серии для каналов и городов (проверены на различимость), строки-графики на общей шкале */
+:root{--s1:#257de0;--s2:#f47230}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--s1:#338ced;--s2:#e76624}}
+:root[data-theme="dark"]{--s1:#338ced;--s2:#e76624}
+.legend{display:flex;flex-wrap:wrap;gap:6px 16px;font-size:13px;color:var(--muted);align-items:center}
+.legend i{display:inline-block;width:10px;height:10px;margin-right:6px;vertical-align:-1px}
+.k1{background:var(--s1);border-radius:50%}.k2{background:var(--s2);transform:rotate(45deg)}
+.kh{border:2px solid var(--muted);border-radius:50%;background:var(--surface)}
+.kus{width:2px!important;height:14px!important;background:var(--ink)}
+.rc{display:flex;flex-direction:column;gap:1px}
+.rc-row,.rc-axis{display:grid;grid-template-columns:168px minmax(80px,1fr) 132px;gap:12px;align-items:center;font-size:13.5px}
+.rc-row{padding:0 4px;border-radius:5px;min-height:23px}
+.rc-row:hover{background:var(--sunk)}
+.rc-row .lab{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.rc-row .lab small{color:var(--muted);font-size:11px;margin-left:5px}
+.rc-row .val{font-family:var(--f-mono);font-size:12.5px;text-align:right;white-space:nowrap;font-variant-numeric:tabular-nums}
+.rc-row .val small{color:var(--muted)}
+.rc-grp{font-size:12px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;padding:10px 4px 3px}
+.trk{position:relative;height:23px}
+.trk::before{content:"";position:absolute;left:0;right:0;top:11px;height:1px;background:var(--line)}
+.trk .gl{position:absolute;top:0;bottom:0;width:1px;background:var(--line);opacity:.6}
+.trk .us{position:absolute;top:0;bottom:0;width:2px;margin-left:-1px;background:var(--ink)}
+.trk .d{position:absolute;top:6px;width:11px;height:11px;margin-left:-5.5px;box-shadow:0 0 0 2px var(--surface)}
+.trk .d1{background:var(--s1);border-radius:50%}
+.trk .d2{background:var(--s2);transform:rotate(45deg);width:10px;height:10px;margin-left:-5px;top:6.5px}
+.trk .d.low{background:var(--surface)}
+.trk .d1.low{box-shadow:inset 0 0 0 2px var(--s1)}
+.trk .d2.low{box-shadow:inset 0 0 0 2px var(--s2)}
+.trk .rg{position:absolute;top:9px;height:5px;background:var(--line);border-radius:3px}
+.trk .md{position:absolute;top:3px;width:5px;height:17px;margin-left:-2.5px;background:var(--ice);border-radius:2px}
+.trk .usd{position:absolute;top:5px;width:12px;height:12px;margin-left:-6px;background:var(--ink);transform:rotate(45deg);box-shadow:0 0 0 2px var(--surface)}
+.trk .b1,.trk .b2{position:absolute;top:5px;height:13px}
+.trk .b1{background:var(--s1);border-radius:0}.trk .b2{background:var(--s2);border-radius:0 4px 4px 0}
+.trk .bi{position:absolute;top:6px;left:0;height:11px;background:var(--ice);border-radius:0 4px 4px 0}
+.rc-axis{color:var(--muted);font-size:11px;font-family:var(--f-mono);padding:0 4px}
+.rc-axis .ax{position:relative;height:16px}
+.rc-axis .ax span{position:absolute;transform:translateX(-50%);white-space:nowrap}
+.rc-axis .ax span.usl{color:var(--ink);font-weight:600;font-family:var(--f-body);top:-15px}
+@media (max-width:700px){.rc-row,.rc-axis{grid-template-columns:104px minmax(60px,1fr)}.rc-row .val,.rc-axis>div:nth-child(3){display:none}}
+table.heat{font-size:13px;min-width:760px}
+table.heat th{font-size:11px;letter-spacing:0;text-transform:none;text-align:center;vertical-align:bottom;padding:8px 4px;font-weight:500}
+table.heat th:first-child,table.heat td:first-child{text-align:left;white-space:nowrap;padding-left:12px}
+table.heat td{text-align:center;padding:6px 4px;font-family:var(--f-mono);font-variant-numeric:tabular-nums;border-bottom:1px solid var(--surface)}
+table.heat td.sep{border-left:2px solid var(--line)}
+.h0{color:var(--line)}
+.h1{background:color-mix(in srgb,var(--ice) 13%,var(--surface))}
+.h2{background:color-mix(in srgb,var(--ice) 28%,var(--surface))}
+.h3{background:color-mix(in srgb,var(--ice) 46%,var(--surface))}
+.h4{background:color-mix(in srgb,var(--ice) 68%,var(--surface));color:var(--on-ice);font-weight:600}
+.tag{font-size:10.5px;padding:1px 5px;border-radius:4px;background:var(--sunk);color:var(--muted);margin-left:4px;font-family:var(--f-body)}
+select.sel{font:inherit;font-size:14px;padding:6px 8px;border:1px solid var(--line);border-radius:7px;background:var(--surface);color:var(--ink)}
+.pgrid td b{font-weight:700}
+.pgrid td .imp{color:var(--muted)}
+.find b.n{font-family:var(--f-mono);font-size:26px;font-weight:600;display:block;line-height:1.1;margin-bottom:2px}
+td.verdict{white-space:nowrap}
+</style>
+</head>
+<body>
+<div class="wrap">
+<nav class="toc" id="toc" aria-label="Разделы">
+  <div class="brand">PRISTINAM</div>
+  <a href="#sut">Суть</a>
+  <a href="#rynok">Кого теснить</a>
+  <a href="#ceny">Цены и бренды</a>
+  <a href="#karty">Карты позиционирования</a>
+  <a href="#kanaly">Каналы продаж</a>
+  <a href="#pozicia">Наше позиционирование</a>
+  <a href="#auditorii">Аудитории</a>
+  <a href="#soobshenia">Сообщения и тексты</a>
+  <a href="#otchet">Продукт в цифрах</a>
+  <a href="#cena">Линейка и цена</a>
+  <a href="#kampania">Кампания</a>
+  <a href="#budget">Бюджет и KPI</a>
+  <a href="#start">Первые 30 дней</a>
+</nav>
+
+<main>
+<!-- ============ СУТЬ ============ -->
+<section id="sut">
+  <div class="hero">
+    <div class="eyebrow">Анализ рынка · позиционирование · кампания · 26.11.2026</div>
+    <h1>Сделано льдом</h1>
+    <p class="lede">PRISTINAM — мягкая лёгкая вода, очищенная льдом, а не фильтром: тем же способом, каким воду очищает природа. Каждая партия выходит с открытым протоколом на 34 показателя.</p>
+    <div class="tagline">Очищена льдом. Доказана цифрами.</div>
+    <div class="grid g4">
+      <div class="fact"><b>0,6–0,7 °Ж</b><span>жёсткость: в 10–12 раз ниже норматива 7 °Ж</span></div>
+      <div class="fact"><b>100–115</b><span>мг/дм³ сухого остатка: лёгкая, в 9–10 раз ниже предела 1000</span></div>
+      <div class="fact"><b>0 баллов</b><span>посторонний вкус и запах при 20 °C</span></div>
+      <div class="fact"><b>12 элементов</b><span>ниже порога определения, среди них свинец, кадмий и мышьяк</span></div>
+    </div>
+  </div>
+
+  <div class="tbl-wrap">
+    <table>
+      <tr><th style="width:190px">Решение</th><th>Что делаем</th></tr>
+      <tr><td><b>Куда входим</b></td><td>В зазор между российским премиумом (до 490 ₽/л в стекле) и импортом (от 570 ₽/л). При 399 ₽ за 0,75 л PRISTINAM стоит 532 ₽/л и становится самой дорогой российской водой, оставаясь дешевле импорта.</td></tr>
+      <tr><td><b>Кого теснить</b></td><td>В ресторанах San Benedetto (28 из 56 меню, 990 ₽) и Святой Источник (770 ₽ за массовое имя). В отелях и онлайн Nedra. Онлайн Acqua Panna и покупателей Evian, которые перестали верить импорту.</td></tr>
+      <tr><td><b>Позиционирование</b></td><td>Мягкая вода к столу, очищенная льдом. Ведём вкусом и мягкостью, доказываем цифрами лаборатории, метод подаём как природный процесс, а не как «технологию очистки».</td></tr>
+      <tr><td><b>Идея кампании</b></td><td>«Сделано льдом». Три опоры: лёд (метод), мягкость (ощущение), протокол (доказательство).</td></tr>
+      <tr><td><b>Кому продаём</b></td><td>Сомелье и F&amp;B-директорам премиальных ресторанов и отелей Москвы и Петербурга; покупателям премиальной воды в стекле, которые читают этикетку.</td></tr>
+      <tr><td><b>Продукт и цена</b></td><td>Стекло 0,75 л: 399 ₽ на полке, 790 ₽ в меню. Стекло 0,33 л: 219 ₽ и 470 ₽. Без ПЭТ и без газа на старте.</td></tr>
+      <tr><td><b>Каналы</b></td><td>Сначала рестораны и отели (8–12 пилотных точек), с 9-й недели Ozon и водные интернет-магазины, затем подарки и отели 0,33. Без ТВ, наружной рекламы и массовых сетей.</td></tr>
+      <tr><td><b>Чего не говорим</b></td><td>Ни слова о здоровье, «живой», «щелочной для организма», «структурированной». pH и патент стоят в доказательствах, не в заголовке.</td></tr>
+    </table>
+  </div>
+</section>
+
+<!-- ============ РЫНОК ============ -->
+<section id="rynok">
+  <div class="sec-head">
+    <div class="eyebrow">Рынок</div>
+    <h2>Куда входим и кого теснить</h2>
+    <p>В базе исследования 244 бренда, 1 555 наблюдений цен в рознице, онлайн и в меню, 73 заведения Москвы и Петербурга и 2 040 отзывов. Вывод: входить нужно в зазор между российским премиумом и импортом, и первой дверью должны быть рестораны.</p>
+  </div>
+
+  <div class="grid g3">
+    <div class="card stack find"><span class="pill ice">Цена</span><b class="n">492 → 532 → 670 ₽/л</b><h3>Зазор между Россией и импортом</h3><p>Самый дорогой российский бренд в стекле — Nedra, 492 ₽/л. Европейский импорт начинается с 506–570 ₽/л и доходит до 670–820 ₽/л у Acqua Panna и San Benedetto. Наши 399 ₽ за 0,75 л дают 532 ₽/л: выше всех российских марок и ниже основного импорта.</p></div>
+    <div class="card stack find"><span class="pill ice">Рестораны</span><b class="n">28 из 56</b><h3>Одна марка держит половину меню</h3><p>San Benedetto стоит в 28 из 56 заведений, где в меню есть вода, с медианой 990 ₽ за 0,75 л. Российские негазированные позиции стоят 675–790 ₽. Место второй, более дешёвой строки с историей свободно.</p></div>
+    <div class="card stack find"><span class="pill ice">Доверие</span><b class="n">31% против 0–4%</b><h3>Импорту перестали верить</h3><p>У Evian 31% отзывов содержат негатив о подлинности, у Voss 14%, у S.Pellegrino 11%, у San Benedetto 7%. У большинства российских брендов 0–4%. Открытый протокол партии бьёт именно сюда.</p></div>
+  </div>
+
+  <div class="card stack">
+    <h3>Кого теснить: шесть целей</h3>
+    <div class="tbl-wrap"><table>
+      <tr><th>Цель</th><th>Где</th><th>Что у них сейчас</th><th>Слабое место</th><th>Чем берём</th><th>Очередь</th></tr>
+      <tr><td><b>San Benedetto</b></td><td>Рестораны и отели Москвы и Петербурга</td><td>28 точек, меню 990 ₽ (n=20), в METRO 389 ₽</td><td>Импорт; самая высокая цена среди массовых позиций меню; 7% отзывов с сомнением в подлинности</td><td>Вторая негазированная строка на 20% дешевле, поставка из Москвы, история для гостя</td><td class="verdict"><span class="pill ice">1</span></td></tr>
+      <tr><td><b>Святой Источник в меню</b></td><td>Рестораны, 6 из 7 точек в Петербурге</td><td>7 точек, меню 770 ₽ (n=6)</td><td>Массовое имя: в рознице 113 ₽/л в ПЭТ, статус 0 из 4</td><td>Та же цена в меню, но бутылка и история премиального уровня</td><td class="verdict"><span class="pill ice">1</span></td></tr>
+      <tr><td><b>Nedra</b></td><td>Luxury-отели, рестораны, онлайн</td><td>7 точек, меню 790 ₽ (n=5), онлайн 369 ₽ (n=3)</td><td>Выручка компании 89 млн ₽, розлив по контракту, отзывов нет, метод не раскрыт</td><td>Та же цена в меню плюс цифры и протокол, которых у Nedra нет</td><td class="verdict"><span class="pill">2</span></td></tr>
+      <tr><td><b>Acqua Panna и импорт онлайн</b></td><td>Ozon, водные магазины</td><td>460 ₽ за 0,75 л онлайн (n=3), 670 ₽/л по всем форматам</td><td>Цена; общая для импорта проблема подлинности</td><td>399 ₽ и протокол партии по QR</td><td class="verdict"><span class="pill">2</span></td></tr>
+      <tr><td><b>Evian</b></td><td>Онлайн</td><td>Стекло 972 ₽/л (n=2), ПЭТ 417–449 ₽/л</td><td>31% отзывов с негативом о доверии, 16% с негативом о вкусе</td><td>Забираем разочарованных: «цифры совпадут с вашим прибором»</td><td class="verdict"><span class="pill">2</span></td></tr>
+      <tr><td><b>Tassay, Surgiva</b></td><td>Премиальные рестораны Москвы</td><td>Меню 1 180 и 1 275 ₽ (n=3 и 4), 6 и 3 точки</td><td>Самая дорогая негазированная строка</td><td>Позиция на треть дешевле</td><td class="verdict"><span class="pill">3</span></td></tr>
+    </table></div>
+    <p><b>Кого не трогаем.</b> Baikal Pearl и Baikal Reserve: 675 ₽ в меню, 9 и 8 точек, за ними группа с выручкой 2 млрд ₽ — они дешевле нас и с ресурсом. Legend of Baikal: 240 ₽ на полке и 12 позиций в METRO, это пол розницы. Borjomi: 18 точек, но это газированная минеральная вода, другая строка меню. Массовые марки в ПЭТ.</p>
+  </div>
+</section>
+
+<!-- ============ ЦЕНЫ И БРЕНДЫ ============ -->
+<section id="ceny">
+  <div class="sec-head">
+    <div class="eyebrow">Цены и бренды</div>
+    <h2>Ценовая лестница брендов</h2>
+    <p>Негазированная вода, обычная цена без акций, рубли за литр. Розница и онлайн показаны отдельными точками. Чёрная линия — PRISTINAM при цене 399 ₽ за 0,75 л.</p>
+  </div>
+  <div class="card stack">
+    <div class="row" style="justify-content:space-between">
+      <div class="row">
+        <div class="seg" id="ladMat" role="group" aria-label="Материал"><button data-v="glass" aria-pressed="true">Стекло 0,25–1 л</button><button data-v="pet" aria-pressed="false">ПЭТ 0,33–0,6 л</button></div>
+        <div class="seg" id="ladGrp" role="group" aria-label="Группировка"><button data-v="price" aria-pressed="true">По цене</button><button data-v="origin" aria-pressed="false">Россия и импорт</button><button data-v="status" aria-pressed="false">По статусу</button></div>
+      </div>
+      <div class="legend"><span><i class="k1"></i>розница</span><span><i class="k2"></i>онлайн</span><span><i class="kh"></i>меньше 3 наблюдений</span><span><i class="kus"></i>PRISTINAM</span></div>
+    </div>
+    <div class="rc" id="ladder"></div>
+    <p class="muted" id="ladNote" style="font-size:13px"></p>
+  </div>
+
+  <div class="grid g2">
+    <div class="card stack">
+      <h3>Что видно на лестнице</h3>
+      <ul class="clean">
+        <li>Российское стекло занимает коридор от 160 до 490 ₽/л. Выше 500 ₽/л нет ни одной российской марки.</li>
+        <li>Импорт, кроме казахстанской Tassay (414 ₽/л), стоит от 506 до 1 410 ₽/л. В рознице он дешевле, чем онлайн: Acqua Panna 520 против 728 ₽/л, San Benedetto 721 против 817 ₽/л.</li>
+        <li>Самые плотные данные у Legend of Baikal (21 наблюдение, 434 ₽/л) и Baikal Pearl (13 наблюдений, 381 ₽/л): это устойчивый пол российского стекла.</li>
+        <li>«Очищенные» марки внизу: Sever 287 ₽/л, BonAqua в стекле 300 ₽/л, Azure 161 ₽/л. Очистка без доказательств цену не поднимает.</li>
+        <li>В ПЭТ выше 400 ₽/л стоят только импорт, «Лангвей» и Petroglyph. Байкальские марки держатся на 215–245 ₽/л, масса на 90–155 ₽/л, поэтому в ПЭТ мы не идём.</li>
+      </ul>
+    </div>
+    <div class="card stack">
+      <h3>Что это значит для нашей цены</h3>
+      <ul class="clean">
+        <li>399 ₽ за 0,75 л ставит PRISTINAM над Nedra (369 ₽ онлайн), рядом с San Benedetto в METRO (389 ₽) и под Acqua Panna онлайн (460 ₽).</li>
+        <li>Мы становимся самой дорогой российской водой в стекле. Это позиция, а не риск, только если бутылка, история и протокол держат уровень импорта.</li>
+        <li>Запас вверх есть: до основного импорта ещё 140–280 ₽/л. Запаса вниз нет: при 299 ₽ мы попадаем в коридор Legend и Petroglyph и теряем отличие.</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="card stack">
+    <h3>Сводная таблица брендов</h3>
+    <p class="muted" style="font-size:13.5px">Цены: медиана, в скобках число наблюдений. Отзывы: доля от содержательных отзывов бренда на маркетплейсах. Выручка — у основного юрлица, а не у бренда. Пустая клетка означает, что данных нет, а не что товара нет. У Dausuz цена 0,75 л онлайн ненадёжна: одна из двух найденных цен — 100 ₽.</p>
+    <div class="tbl-wrap"><table id="brandTable" style="min-width:1040px"></table></div>
+  </div>
+</section>
+
+<!-- ============ КАРТЫ ============ -->
+<section id="karty">
+  <div class="sec-head">
+    <div class="eyebrow">Позиционирование среди брендов</div>
+    <h2>Карты позиционирования</h2>
+    <p>33 бренда оценены по пяти шкалам от 0 до 4 по тому, что они сами заявляют: природа, технология, чистота, функция и статус. Выберите оси и посмотрите, где тесно и где пусто.</p>
+  </div>
+  <div class="card stack">
+    <div class="row">
+      <label class="ctl" for="axX" style="flex-direction:row;align-items:center;gap:8px">По горизонтали <select class="sel" id="axX"></select></label>
+      <label class="ctl" for="axY" style="flex-direction:row;align-items:center;gap:8px">По вертикали <select class="sel" id="axY"></select></label>
+      <div class="legend"><span><b style="color:var(--ink)">жирным</b> — цена в стекле от 400 ₽/л</span><span class="muted">серым — импорт</span></div>
+    </div>
+    <div style="overflow-x:auto"><table class="pgrid" id="pgrid2" aria-label="Карта позиционирования брендов"></table></div>
+    <p id="pgNote" style="font-size:14.5px"></p>
+  </div>
+
+  <div class="grid g2">
+    <div class="card stack">
+      <h3>Кому принадлежит слово «мягкая»</h3>
+      <p class="muted" style="font-size:13.5px">Доля отзывов, где покупатель сам называет воду мягкой.</p>
+      <div class="rc" id="softBars"></div>
+      <p style="font-size:14.5px">Слово встречается у всех, но ни у кого не доходит до трети отзывов, и ни один бренд не подкрепляет его числом. PRISTINAM может забрать «мягкую» за собой: жёсткость 0,6 °Ж на этикетке.</p>
+    </div>
+    <div class="card stack">
+      <h3>Что видно на картах</h3>
+      <ul class="clean">
+        <li><b>Технология × статус.</b> Справа вверху пусто: высокую технологичность заявляют только Fahrenheit, BonAqua и «Лангвей», и все три вне премиума.</li>
+        <li><b>Природа × статус.</b> Весь статус собран у «природных» марок: Nedra, Acqua Panna, VodaVoda, Petroglyph, Dausuz. Sever и Azure заявляют статус без природы и стоят дёшево.</li>
+        <li><b>Чистота × статус.</b> Чистоту на 4 балла заявляют Lauretana и «Архыз Vita», но их статус 1–2. Клетка «максимальная чистота + высокий статус» свободна.</li>
+        <li><b>Функция × статус.</b> Все бренды с обещанием пользы (Pokrovska, Virgo fons, Prolom, AQUAdetox) имеют статус 0–2. Польза и премиум не совмещаются.</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="card stack">
+    <h3>Слабые места брендов в отзывах</h3>
+    <p class="muted" style="font-size:13.5px">Доля отзывов с негативом по теме, % от содержательных отзывов бренда. Отзывы собраны на Ozon и Wildberries; точность разметки тем 73–83%, поэтому читать нужно порядок величин, а не десятые доли.</p>
+    <div class="tbl-wrap"><table class="heat" id="weakTable"></table></div>
+    <p style="font-size:14.5px">Доверие теряют импортные марки: покупатели подозревают подделку и пишут о помятых и вскрытых бутылках. На цену чаще всего жалуются у Prolom и AQUAdetox, марок с обещанием пользы. К вкусу претензий мало у всех, кроме Evian и Fahrenheit.</p>
+  </div>
+</section>
+
+<!-- ============ КАНАЛЫ ============ -->
+<section id="kanaly">
+  <div class="sec-head">
+    <div class="eyebrow">Каналы продаж</div>
+    <h2>Где продаётся премиальное стекло и почём</h2>
+  </div>
+
+  <div class="card stack">
+    <h3>Цена бутылки 0,75 л в стекле по каналам</h3>
+    <div class="legend"><span><i style="background:var(--line);width:22px;height:5px;border-radius:3px"></i>разброс цен</span><span><i style="background:var(--ice);width:5px;height:14px;border-radius:2px"></i>медиана</span><span><i style="background:var(--ink);transform:rotate(45deg)"></i>PRISTINAM: 399 ₽ на полке, 790 ₽ в меню</span></div>
+    <div class="rc" id="tiers"></div>
+    <p style="font-size:14.5px">Наши 399 ₽ выше медианы каждого розничного и онлайн-канала на 15–50%, но внутри разброса цен в водных магазинах и на маркетплейсах. В меню 790 ₽ ниже общей медианы 970 ₽: в ресторанах мы входим как доступная позиция, а на полке как дорогая. Поэтому первая дверь — рестораны.</p>
+  </div>
+
+  <div class="card stack">
+    <h3>Кто стоит в ресторанах и отелях</h3>
+    <div class="legend"><span><i style="background:var(--s1)"></i>Москва</span><span><i style="background:var(--s2)"></i>Петербург</span><span>справа — медиана цены негазированной 0,75 л в меню</span></div>
+    <div class="rc" id="horeca"></div>
+    <div class="grid g2">
+      <div class="stack">
+        <h3>Цена в меню по типу заведения</h3>
+        <div class="tbl-wrap"><table id="hsegTable"></table></div>
+      </div>
+      <div class="stack">
+        <h3>Что отсюда следует</h3>
+        <ul class="clean">
+          <li>Премиальные рестораны продают негазированную 0,75 л за 1 010 ₽ по медиане. Наши 790 ₽ на 22% ниже этой медианы и равны цене Nedra.</li>
+          <li>В Петербурге San Benedetto стоит в 16 точках, Святой Источник в 6, Dausuz в 6. Там же самая лёгкая замена.</li>
+          <li>В Москве плотнее Baikal Pearl и Baikal Reserve (7 и 6 точек) и Tassay (6): здесь целимся в верхнюю цену, а не в байкальскую группу.</li>
+          <li>Фильтрованной воды заведения нет ни в одном из 73 меню: рестораны продают воду только в бутылке.</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <div class="card stack">
+    <h3>Присутствие брендов в стекле по площадкам</h3>
+    <p class="muted" style="font-size:13.5px">Число разных товаров бренда в стекле, найденных на площадке 25.11.2026. Последний столбец — число заведений с брендом в меню. Пустая клетка означает «не найдено в сборе», а не «не продаётся». Азбука Вкуса, Лента и Пятёрочка не открылись для сбора.</p>
+    <div class="tbl-wrap"><table class="heat" id="presTable"></table></div>
+    <div class="grid g2">
+      <ul class="clean">
+        <li><b>Водные магазины</b> держат почти всех: это обязательный первый листинг онлайн.</li>
+        <li><b>METRO</b> — единственная сеть с широким премиальным стеклом: Legend 12 позиций, San Benedetto 8, Edis 8. Это cash & carry, формат закупок для ресторанов и офисов.</li>
+        <li><b>Ozon</b> даёт 1–5 позиций на бренд, Wildberries меньше, Яндекс Маркет почти пуст.</li>
+      </ul>
+      <ul class="clean">
+        <li><b>Перекрёсток</b> берёт в стекле только Legend, Acqua Panna, Petroglyph и Baikal Pearl. ВкусВилл — одну позицию Legend. В Магните стекло не найдено.</li>
+        <li><b>Nedra и San Benedetto</b> сильны в ресторанах и слабы онлайн: там их можно обойти раньше, чем они ответят.</li>
+        <li><b>Legend of Baikal</b> стоит везде. С ней не конкурируем полкой, а отстраиваемся ценой и историей.</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="grid g2">
+    <div class="card stack">
+      <h3>Масштаб компаний за брендами</h3>
+      <p class="muted" style="font-size:13.5px">Выручка основного юрлица за 2025 год, шкала логарифмическая. Это масштаб компании, а не продажи бренда.</p>
+      <div class="rc" id="revDots"></div>
+    </div>
+    <div class="card stack">
+      <h3>Порядок входа по каналам</h3>
+      <div class="tbl-wrap"><table>
+        <tr><th>Шаг</th><th>Канал</th><th>Почему</th></tr>
+        <tr><td class="num">1</td><td>Премиальные рестораны и отели</td><td>790 ₽ ниже медианы меню; половину меню держит один импортный бренд; производителю остаётся 229 ₽ с бутылки</td></tr>
+        <tr><td class="num">2</td><td>Водные магазины и свой магазин</td><td>Там стоят все премиальные марки; производителю остаётся 258 ₽</td></tr>
+        <tr><td class="num">3</td><td>Ozon</td><td>Отзывы и проверка цены; 233 ₽ производителю</td></tr>
+        <tr><td class="num">4</td><td>METRO</td><td>Единственная сеть с премиальным стеклом и закупками ресторанов; 200 ₽ производителю</td></tr>
+        <tr><td class="num">5</td><td>Премиальные сети</td><td>Только с цифрами пилота: производителю остаётся 168 ₽, меньше всех каналов</td></tr>
+      </table></div>
+      <p style="font-size:14.5px">Прямые конкуренты в премиальном стекле — небольшие компании с выручкой 89–270 млн ₽. Ресурсных игроков трое: байкальская группа, структура Эн+ за Legend of Baikal и «Калинов Родник» за Sever.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ============ ПОЗИЦИОНИРОВАНИЕ ============ -->
+<section id="pozicia">
+  <div class="sec-head">
+    <div class="eyebrow">Стратегия</div>
+    <h2>Позиционирование</h2>
+    <p class="lede">Для ресторанов и людей, которые выбирают воду к столу и читают этикетку, PRISTINAM — мягкая лёгкая вода, очищенная льдом. Она ничего не добавляет к вкусу еды, вина и чая, а её состав открыт по каждой партии.</p>
+  </div>
+
+  <div class="grid g2">
+    <div class="card stack">
+      <h3>Главный ход: лёд — это природа, а не техника</h3>
+      <p>Рынок делит воду на «нетронутую природную» и «очищенную техникой». За первую платят премию, вторая стоит как масса: Aqua Minerale 152 ₽/л, BonAqua 123 ₽/л.</p>
+      <p>Замораживание снимает это деление. Когда вода замерзает, кристалл льда строится из молекул воды и выталкивает примеси: морской лёд в разы преснее океана. PRISTINAM повторяет природный процесс с инженерной точностью.</p>
+      <p>Поэтому в заголовках стоит слово «лёд». Слова «технология», «установка», «патент» уходят в доказательства.</p>
+    </div>
+    <div class="card stack">
+      <h3>Почему именно так</h3>
+      <ul class="clean">
+        <li>В отзывах о премиальной воде люди хвалят вкус и мягкость. Технологические обещания брендов повторяются в 0–3% отзывов.</li>
+        <li>Клетка «раскрытый метод + высокий статус» на карте рынка пуста: 0 из 33 брендов.</li>
+        <li>Ни один премиальный бренд в России не публикует метод и протокол партии.</li>
+        <li>Sever подаёт очистку одной фразой без цифр и стоит 287 ₽/л против 479 ₽/л у Nedra.</li>
+        <li>Щелочные бренды продают пользу, покупатели проверяют pH полосками и ставят одну звезду. Туда не идём.</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="card stack">
+    <h3>Платформа бренда</h3>
+    <dl class="kv">
+      <dt>Суть</dt><dd>Первозданная чистота. Имя PRISTINAM идёт от латинского pristinus, «первозданный».</dd>
+      <dt>Обещание</dt><dd>Мягкий чистый вкус, который не спорит с тем, что на столе.</dd>
+      <dt>Причины верить</dt><dd><b>Лёд.</b> Очистка перекристаллизацией. <b>Цифры.</b> 34 показателя независимой лаборатории по QR на каждой партии. <b>Защита.</b> Патенты в семи юрисдикциях.</dd>
+      <dt>Характер</dt><dd>Инженер со вкусом: точный, спокойный, немногословный.</dd>
+      <dt>Тон</dt><dd>Короткие фразы. Числа с единицами. Никаких «самая», «идеальная», «уникальная». Никакого здоровья.</dd>
+      <dt>Слоган</dt><dd><b>Очищена льдом. Доказана цифрами.</b></dd>
+      <dt>Имя кампании</dt><dd><b>Сделано льдом</b></dd>
+    </dl>
+  </div>
+
+  <div class="card stack">
+    <h3>Против кого и чем отвечаем</h3>
+    <div class="tbl-wrap"><table>
+      <tr><th>Конкурент</th><th>Что обещает</th><th class="num">Цена 0,75 стекло</th><th>Наш ответ</th></tr>
+      <tr><td>Nedra</td><td>Природная вода, «не вмешиваемся в состав», fine dining</td><td class="num">369 ₽ онлайн<br>790–1 350 ₽ меню</td><td>Открытый метод и цифры, которых у Nedra нет. Цена в меню на нижней границе Nedra.</td></tr>
+      <tr><td>Legend of Baikal</td><td>Глубина Байкала</td><td class="num">240 ₽ полка</td><td>Стоим выше этого пола за счёт мягкости с числом и протокола.</td></tr>
+      <tr><td>Baikal Pearl / Baikal430</td><td>Сверхлёгкая минерализация до 0,12 г/л (заявление бренда)</td><td class="num">271 ₽ онлайн</td><td>Та же лёгкость, 100–115 мг/дм³, плюс жёсткость 0,6 °Ж и метод.</td></tr>
+      <tr><td>Sever / Azure</td><td>«Многоступенчатая очистка» в премиальном стекле</td><td class="num">287 ₽/л</td><td>Раскрываем метод полностью и показываем протокол.</td></tr>
+      <tr><td>VodaVoda</td><td>Дизайн и «мягкая вода»</td><td class="num">339 ₽ онлайн</td><td>Та же выгода, но с числом и объяснением, откуда мягкость.</td></tr>
+      <tr><td>San Benedetto</td><td>Итальянский стандарт ресторана</td><td class="num">990–1 050 ₽ меню</td><td>Российская вода с историей для гостя, в меню на 20–25% дешевле.</td></tr>
+      <tr><td>Lauretana</td><td>14 мг/л, «самая лёгкая»</td><td class="num">460 ₽ онлайн</td><td>Числом минерализации не спорим. Спорим мягкостью, ценой и методом.</td></tr>
+      <tr><td>Fahrenheit</td><td>pH 9,5 и технология</td><td class="num">75 ₽ за 0,5 ПЭТ</td><td>В «щелочную» полку не идём: pH у нас в протоколе, а не на фасаде.</td></tr>
+    </table></div>
+  </div>
+</section>
+
+<!-- ============ АУДИТОРИИ ============ -->
+<section id="auditorii">
+  <div class="sec-head">
+    <div class="eyebrow">Кому</div>
+    <h2>Аудитории</h2>
+    <p>Пять сегментов в порядке приоритета. Первые три запускают кампанию, два последних подключаются с 17-й недели.</p>
+  </div>
+  <div class="seg" id="audSeg" role="group" aria-label="Аудитория"></div>
+  <div class="card" id="audBody"></div>
+</section>
+
+<!-- ============ СООБЩЕНИЯ ============ -->
+<section id="soobshenia">
+  <div class="sec-head">
+    <div class="eyebrow">Что говорим</div>
+    <h2>Сообщения и готовые тексты</h2>
+  </div>
+
+  <div class="grid g3">
+    <div class="card stack"><span class="pill ice">Опора 1 · ощущение</span><h3>Мягкая</h3><p>Жёсткость 0,6–0,7 °Ж, натрия 1,2–1,5 мг/л, посторонний вкус 0 баллов. Вода, которая не спорит с вином, кофе и едой.</p></div>
+    <div class="card stack"><span class="pill ice">Опора 2 · метод</span><h3>Очищена льдом</h3><p>Воду замораживают. Чистый лёд забирают, незамёрзшую часть с примесями сливают. Лёд тает и становится водой PRISTINAM.</p></div>
+    <div class="card stack"><span class="pill ice">Опора 3 · доказательство</span><h3>Доказана цифрами</h3><p>34 показателя независимой лаборатории. Свинец, кадмий, мышьяк и ещё девять элементов ниже порога определения. QR на бутылке ведёт на протокол партии.</p></div>
+  </div>
+
+  <div class="card stack">
+    <div class="row" style="justify-content:space-between">
+      <div class="seg" id="copySeg" role="group" aria-label="Формат текста"></div>
+      <button class="btn" id="copyBtn" type="button">Скопировать текст</button>
+    </div>
+    <pre class="copy" id="copyBody"></pre>
+    <p class="muted" id="copyNote" style="font-size:14px"></p>
+  </div>
+
+  <div class="do-dont">
+    <div class="card do stack">
+      <h3>Говорим</h3>
+      <ul>
+        <li>«Очищена льдом», «мягкая», «лёгкая», «чистый вкус».</li>
+        <li>Числа с единицами и источником: «жёсткость 0,6 °Ж по протоколу лаборатории».</li>
+        <li>«Технология очистки защищена патентом РФ № 2780068».</li>
+        <li>«pH 8,2–8,6» одной строкой на контрэтикетке и в протоколе.</li>
+        <li>«20–40 ppm по TDS-метру» во вкладыше «Проверь сам».</li>
+      </ul>
+    </div>
+    <div class="card dont stack">
+      <h3>Не говорим</h3>
+      <ul>
+        <li>«Полезная», «для здоровья», «детокс», «ощелачивает», «живая», «структурированная»: закон о рекламе запрещает приписывать воде лечебные свойства.</li>
+        <li>«Запатентованная вода»: патент выдан на способ и устройство, а не на воду.</li>
+        <li>«Обогащена минералами»: это отдельная категория продукта, и она противоречит идее очистки.</li>
+        <li>«Чище, чем X» и «лучше фильтра»: сравнение с конкурентом требует доказательств по каждому.</li>
+        <li>«Талая» и «ледниковая»: эти слова заняты водой ледникового происхождения.</li>
+        <li>pH 10–12,5 в потребительских материалах: режим выше норматива для питьевой воды.</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- ============ ОТЧЁТ ============ -->
+<section id="otchet">
+  <div class="sec-head">
+    <div class="eyebrow">Продукт</div>
+    <h2>Что доказывает отчёт лаборатории</h2>
+    <p>В отчёте три точки отбора и 34 показателя. Точки 2 и 3 дают воду с pH 8,2–8,6: это профиль продукта для бутылки, вся кампания стоит на нём. Точка 1 показывает режим pH 10,2: лаборатория отметила его как выход за норматив 6–9, поэтому в бутылку и в рекламу он не идёт.</p>
+  </div>
+
+  <div class="card stack">
+    <div class="row" style="justify-content:space-between">
+      <div class="seg" id="ptSeg" role="group" aria-label="Точка отбора">
+        <button data-pt="1" aria-pressed="true">Точка 2 · pH 8,6</button>
+        <button data-pt="2" aria-pressed="false">Точка 3 · pH 8,2</button>
+        <button data-pt="0" aria-pressed="false">Точка 1 · pH 10,2</button>
+      </div>
+      <span class="pill" id="ptVerdict"></span>
+    </div>
+
+    <h3>pH на шкале норматива</h3>
+    <div class="ph" id="phStrip" aria-label="pH трёх точек на шкале от 5 до 11, зелёная зона — норматив 6–9"></div>
+
+    <h3>Найденные вещества: сколько от норматива</h3>
+    <p class="muted" style="font-size:14px">Длина полосы показывает долю от гигиенического норматива СанПиН 1.2.3685-21. Правый край шкалы равен нормативу.</p>
+    <div class="bar-axis"><div></div><div><span>0</span><span>норматив</span></div><div style="text-align:right">результат</div><div>к нормативу</div></div>
+    <div class="bars" id="labBars"></div>
+
+    <div class="grid g2" style="margin-top:8px">
+      <div class="stack">
+        <h3>Ниже порога определения <span class="pill ice" id="lodCount"></span></h3>
+        <div class="row" id="lodChips"></div>
+      </div>
+      <div class="stack">
+        <h3>Органолептика</h3>
+        <div class="row" id="orgChips"></div>
+        <p class="muted" style="font-size:14px">Шкала привкуса и запаха от 0 до 5 баллов, норматив не выше 2. Ноль означает, что постороннего вкуса и запаха нет.</p>
+      </div>
+    </div>
+
+    <details>
+      <summary>Полная таблица: 34 показателя по трём точкам</summary>
+      <div class="tbl-wrap" style="margin-top:12px"><table id="labTable"></table></div>
+    </details>
+  </div>
+
+  <div class="grid g3">
+    <div class="card stack">
+      <span class="pill good">Закрыто отчётом</span>
+      <h3>Минерализация в границах</h3>
+      <p>Сухой остаток 100–115 мг/дм³ лежит внутри диапазона 50–1000 мг/дм³, который ТР ЕАЭС 044/2017 задаёт для обработанной питьевой воды. Вопрос «20 ppm ниже нижней границы» снят.</p>
+    </div>
+    <div class="card stack">
+      <span class="pill good">Закрыто отчётом</span>
+      <h3>pH в норме</h3>
+      <p>8,2–8,6 при допустимых 6–9. Это слабощелочная вода, и это можно писать как факт из протокола. Обещать пользу от pH нельзя.</p>
+    </div>
+    <div class="card stack">
+      <span class="pill good">Закрыто патентами</span>
+      <h3>Технология защищена</h3>
+      <p>Патенты РФ № 2780068 (система и способ очистки), № 2782584 и № 2786296 (теплообменное устройство), европейский EP 3904296, а также США, Китай, Индия, Южная Корея и Швейцария.</p>
+    </div>
+  </div>
+
+  <div class="card stack">
+    <h3>Три меры одной воды: какую цифру куда ставить</h3>
+    <div class="tbl-wrap"><table>
+      <tr><th>Мера</th><th class="num">Значение</th><th>Откуда</th><th>Где использовать</th></tr>
+      <tr><td>Сухой остаток</td><td class="num">100–115 мг/дм³</td><td>отчёт лаборатории</td><td>этикетка, протокол, карта воды в ресторане</td></tr>
+      <tr><td>Сумма измеренных ионов</td><td class="num" id="ionSum"></td><td>мой расчёт по строкам отчёта</td><td>внутренний ориентир</td></tr>
+      <tr><td>Показание бытового TDS-метра</td><td class="num">20–40 ppm</td><td>заявление на сайте PRISTINAM</td><td>вкладыш «Проверь сам» с подписью «по TDS-метру»</td></tr>
+    </table></div>
+    <p>Покупатели премиальной воды меряют её TDS-метрами и полосками и пишут об этом в отзывах. Сумма ионов из отчёта того же порядка, что 20–40 ppm на приборе. Поэтому число «20 ppm» ставим только с подписью «по TDS-метру», а главной цифрой минерализации делаем сухой остаток из протокола.</p>
+  </div>
+</section>
+
+<!-- ============ ЦЕНА ============ -->
+<section id="cena">
+  <div class="sec-head">
+    <div class="eyebrow">Продукт</div>
+    <h2>Линейка, упаковка и цена</h2>
+  </div>
+
+  <div class="grid g2">
+    <div class="card stack">
+      <h3>Линейка на старте</h3>
+      <div class="tbl-wrap"><table>
+        <tr><th>Формат</th><th class="num">Полка</th><th class="num">Меню</th><th>Роль</th></tr>
+        <tr><td>Стекло 0,75 л, негазированная</td><td class="num">399 ₽</td><td class="num">790 ₽</td><td>Ядро: стол ресторана, коробка 6 шт. онлайн</td></tr>
+        <tr><td>Стекло 0,33 л, негазированная</td><td class="num">219 ₽</td><td class="num">470 ₽</td><td>Отели, рум-сервис, переговорные</td></tr>
+      </table></div>
+      <p>399 ₽ стоит между Nedra онлайн (369 ₽) и Acqua Panna (460 ₽) и на 41% выше медианы российского стекла (283 ₽). В меню 790 ₽ равны медиане российских позиций, импорт стоит 1 180 ₽.</p>
+      <p>На Ozon с первого дня идёт тест трёх цен: 299, 399 и 549 ₽. Цену 549 ₽ включаем в план только по его итогам.</p>
+    </div>
+    <div class="card stack">
+      <h3>Упаковка</h3>
+      <ul class="clean">
+        <li>Стекло, сдержанная типографика, много воздуха. Образ льда и кристалла без колб и молекул.</li>
+        <li>На лице три слова: PRISTINAM, «очищена льдом», номер партии.</li>
+        <li>На обороте четыре числа и QR на протокол партии.</li>
+        <li>Номер партии на каждой бутылке. Одна установка даёт 40–320 бутылок в сутки, и малый объём становится знаком статуса.</li>
+        <li>Для доставки коробка на 6 бутылок с разделителями: треть отзывов о воде на маркетплейсах посвящена бою и комплектации.</li>
+        <li>pH на лице этикетки не ставим: так делают щелочные бренды в ПЭТ за 75 ₽.</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="card stack">
+    <h3>Калькулятор: сколько остаётся производителю</h3>
+    <p class="muted" style="font-size:14px">Цена производителя без НДС 22% за бутылку 0,75 л. Наценки сетей и дистрибьюторов, бонусы и комиссии взяты как допущения исследования, до реальных прайсов. Тонкая линия показывает разброс между осторожным и оптимистичным набором допущений.</p>
+    <div class="grid g4">
+      <label class="ctl" for="inShelf">Цена на полке и онлайн<span class="val"><output id="outShelf"></output> ₽</span><input type="range" id="inShelf" min="199" max="699" step="10" value="399"></label>
+      <label class="ctl" for="inMenu">Цена в меню<span class="val"><output id="outMenu"></output> ₽</span><input type="range" id="inMenu" min="490" max="1290" step="10" value="790"></label>
+      <label class="ctl" for="inCogs">Себестоимость бутылки, ₽ <span class="pill warn">пример, подставьте свою</span><input type="number" id="inCogs" min="0" max="500" step="1" value="100"></label>
+      <div class="stack"><span class="muted" style="font-size:13px">Допущения по наценкам</span>
+        <div class="seg" id="scSeg" role="group" aria-label="Набор допущений">
+          <button data-sc="0" aria-pressed="false">Осторожно</button>
+          <button data-sc="1" aria-pressed="true">База</button>
+          <button data-sc="2" aria-pressed="false">Оптимистично</button>
+        </div>
+      </div>
+    </div>
+    <div class="stack" id="priceBars" style="gap:6px"></div>
+    <p class="muted" style="font-size:13px">Оранжевая отметка показывает себестоимость. Маржа считается от цены производителя: от 40% — зелёная, 30–40% — жёлтая, ниже 30% — красная.</p>
+  </div>
+</section>
+
+<!-- ============ КАМПАНИЯ ============ -->
+<section id="kampania">
+  <div class="sec-head">
+    <div class="eyebrow">Как</div>
+    <h2>Кампания «Сделано льдом»</h2>
+    <p>24 недели, четыре фазы. Сначала вода появляется на столах, где её рекомендует сомелье, потом в корзинах тех, кто прочитал о ней и хочет проверить сам.</p>
+  </div>
+
+  <div class="card stack">
+    <div class="gantt" id="gantt" aria-label="График фаз по неделям"></div>
+    <div id="phaseBody" class="stack" style="margin-top:8px"></div>
+  </div>
+
+  <h3>Шесть механик кампании</h3>
+  <div class="grid g3" id="mechs"></div>
+
+  <div class="card stack">
+    <h3>Каналы и их роли</h3>
+    <div class="tbl-wrap"><table>
+      <tr><th>Канал</th><th>Роль</th><th>Что делаем</th><th>Цель</th></tr>
+      <tr><td><b>Рестораны и отели</b></td><td>Статус и первая проба</td><td>Личные дегустации, карта воды, обучение официантов за 15 минут</td><td>8–12 точек, 70% закупают повторно</td></tr>
+      <tr><td><b>Ozon и водные магазины</b></td><td>Продажи и отзывы</td><td>Свой магазин, коробка 6 шт., тест трёх цен, вкладыш «Проверь сам»</td><td>Рейтинг от 4,6 после 30 отзывов, претензий до 1,5%</td></tr>
+      <tr><td><b>Сайт и QR-протокол</b></td><td>Доверие</td><td>Страница партии: 34 показателя, дата, номер, видео процесса</td><td>Сканирует каждый десятый покупатель</td></tr>
+      <tr><td><b>Telegram и гастро-медиа</b></td><td>Знание в узком кругу</td><td>Посевы в каналах о ресторанах и вине, колонки сомелье, ролик о льде</td><td>15 публикаций за 12 недель</td></tr>
+      <tr><td><b>PR</b></td><td>Легитимность</td><td>Итоги слепой дегустации, история инженеров и патентов</td><td>5 материалов в деловых и гастрономических изданиях</td></tr>
+      <tr><td><b>Подарки и офисы</b></td><td>Выручка вне ресторана</td><td>Подарочный набор 2 × 0,75 с буклетом о методе</td><td>10 корпоративных клиентов</td></tr>
+    </table></div>
+    <p><b>Не делаем:</b> ТВ, наружную рекламу, массовых блогеров, доставку за 15 минут и федеральные сети. Одна установка даёт до 320 бутылок в сутки, охватные медиа на таком объёме не окупаются.</p>
+  </div>
+</section>
+
+<!-- ============ БЮДЖЕТ ============ -->
+<section id="budget">
+  <div class="sec-head">
+    <div class="eyebrow">Сколько</div>
+    <h2>Бюджет и показатели</h2>
+    <p>Бюджет кампании привязан к объёму, который вы можете произвести. Поставьте свои установки и загрузку, калькулятор покажет выручку и то, какой бюджет она выдержит.</p>
+  </div>
+
+  <div class="card stack">
+    <div class="grid g4">
+      <label class="ctl" for="inUnits">Установок<span class="val"><output id="outUnits"></output></span><input type="range" id="inUnits" min="1" max="20" step="1" value="2"></label>
+      <label class="ctl" for="inLpd">Литров в сутки на установку<span class="val"><output id="outLpd"></output> л</span><input type="range" id="inLpd" min="30" max="240" step="10" value="240"></label>
+      <label class="ctl" for="inUtil">Загрузка<span class="val"><output id="outUtil"></output>%</span><input type="range" id="inUtil" min="20" max="100" step="5" value="70"></label>
+      <label class="ctl" for="inBud">Бюджет кампании на 6 месяцев<span class="val"><output id="outBud"></output> млн ₽</span><input type="range" id="inBud" min="1" max="20" step="0.5" value="5"></label>
+    </div>
+    <div class="grid g4">
+      <div class="fact"><span>Бутылок 0,75 л в месяц</span><b id="kBottles"></b></div>
+      <div class="fact"><span>Выручка производителя в месяц</span><b id="kRev"></b></div>
+      <div class="fact"><span>Бюджет к годовой выручке</span><b id="kShare"></b></div>
+      <div class="fact"><span>Оценка</span><div><span class="pill" id="kVerdict"></span></div><span id="kVerdictText"></span></div>
+    </div>
+    <p class="muted" style="font-size:13px">Выручка посчитана при полной продаже по средней цене производителя 235 ₽ без НДС: половина объёма идёт в рестораны, 35% на Ozon, 15% через свой магазин и подарки. Пороги оценки (до 15%, 15–35%, выше 35%) — мой ориентир для запуска премиального бренда, не норматив.</p>
+
+    <h3>Куда идут деньги</h3>
+    <div class="stack" id="alloc" style="gap:4px"></div>
+    <p class="muted" style="font-size:13px">Доли — рекомендация. Суммы — ориентиры для планирования, не котировки подрядчиков.</p>
+  </div>
+
+  <div class="card stack">
+    <h3>Показатели по фазам</h3>
+    <div class="tbl-wrap"><table>
+      <tr><th>Фаза</th><th>Показатель</th><th class="num">Цель</th><th>Что делаем, если не дошли</th></tr>
+      <tr><td>Посев</td><td>Личные дегустации у сомелье и F&amp;B-директоров</td><td class="num">30</td><td>Расширяем список до 60 адресов, добавляем Петербург</td></tr>
+      <tr><td>Посев</td><td>Пилотные точки с водой в меню</td><td class="num">8–12</td><td>Меняем оффер: бесплатные первые два ящика на месяц</td></tr>
+      <tr><td>Посев</td><td>Точки, закупившие повторно через 4 недели</td><td class="num">от 70%</td><td>Разбираем причины с сомелье, правим цену меню или подачу</td></tr>
+      <tr><td>Посев</td><td>Ассоциация «пустая, безвкусная» в тесте формулировок</td><td class="num">до 15%</td><td>Усиливаем линию «лёгкая, как байкальская», показываем состав</td></tr>
+      <tr><td>Онлайн</td><td>Рейтинг карточки после 30 отзывов</td><td class="num">от 4,6</td><td>Читаем отзывы 1–3 звезды, чиним упаковку или текст</td></tr>
+      <tr><td>Онлайн</td><td>Заказы с претензией (бой, недовложение)</td><td class="num">до 1,5%</td><td>Меняем разделители и схему отгрузки</td></tr>
+      <tr><td>Онлайн</td><td>Выручка на посетителя при 399 ₽ к выручке при 299 ₽</td><td class="num">от 90%</td><td>Стартовая цена 349 ₽, цену 549 ₽ снимаем</td></tr>
+      <tr><td>Онлайн</td><td>Покупатели, открывшие протокол по QR</td><td class="num">от 10%</td><td>Выносим QR и призыв на крышку коробки</td></tr>
+      <tr><td>Масштаб</td><td>Корпоративные клиенты</td><td class="num">10</td><td>Переносим упор на сезон подарков</td></tr>
+    </table></div>
+  </div>
+</section>
+
+<!-- ============ СТАРТ ============ -->
+<section id="start">
+  <div class="sec-head">
+    <div class="eyebrow">С чего начать</div>
+    <h2>Первые 30 дней</h2>
+  </div>
+  <div class="card stack" id="todo"></div>
+
+  <div class="card stack">
+    <h3>Что я принял за основу</h3>
+    <ul class="clean">
+      <li>В бутылку идёт режим точек 2 и 3 отчёта, pH 8,2–8,6. Если разливается другой режим, цифры в текстах нужно заменить цифрами его протокола.</li>
+      <li>Рабочее имя воды — PRISTINAM, как в товарном знаке на странице патентов. Если у воды другое имя, идея и тексты переносятся без изменений.</li>
+      <li>Слоган «Лёд вместо фильтра» для ролика годится, только если в линии нет ни одного фильтра. Если есть хотя бы предфильтр, оставляем «Очищена льдом».</li>
+      <li>Название лаборатории в рекламе ставим с её письменного согласия. До него пишем «независимая лаборатория».</li>
+      <li>Себестоимость бутылки мне неизвестна: в калькуляторе стоит пример, маржа считается от вашей цифры.</li>
+    </ul>
+  </div>
+
+  <footer>
+    <p><b>Источники.</b> База исследования: 1 555 наблюдений цен (862 в расчётах: обычные цены и цены меню на 25.11.2026), 244 бренда, 73 заведения, 2 040 отзывов Ozon и Wildberries, оценки позиционирования 33 брендов, выручка 2025 года по данным о юрлицах. Технический отчёт по результатам исследования проб питьевой воды, ООО «ЭКОСТАНДАРТ «Технические решения», 07.03.2025 (3 точки, нормативы СанПиН 1.2.3685-21). Страница патентов pristinam.ru/patent. Цены конкурентов, отзывы, карта позиционирования, ценовые цепочки и пороги тестов — исследование рынка упакованной воды, сессии 01–14, ноябрь 2026. Рекомендации по позиционированию, долям бюджета и целям кампании — авторские.</p>
+  </footer>
+</section>
+</main>
+</div>
+<div id="tip" role="tooltip"></div>
+
+<script>
+(function(){
+'use strict';
+const $=s=>document.querySelector(s), $$=s=>Array.from(document.querySelectorAll(s));
+const el=(t,c,h)=>{const e=document.createElement(t); if(c)e.className=c; if(h!==undefined)e.innerHTML=h; return e;};
+const nf=(x,d)=>x.toLocaleString('ru-RU',d===undefined?{maximumSignificantDigits:3}:{minimumFractionDigits:d,maximumFractionDigits:d});
+const rub=x=>Math.round(x).toLocaleString('ru-RU');
+
+/* ---------- Данные отчёта: [показатель, единица, норматив, точка1, точка2, точка3, группа] ---------- */
+/* значение: [число, погрешность] | [балл] | строка '<…' = ниже порога определения */
+const LAB=[
+['Водородный показатель (pH)','ед. pH',[6,9],[10.2,.2],[8.6,.2],[8.2,.2],'ph'],
+['Сухой остаток','мг/дм³',1000,[65,12],[100,19],[115,22]],
+['Мутность по формазину','ЕМФ',2.6,'<1,0','<1,0','<1,0'],
+['Жёсткость','°Ж',7,[.33,.05],[.57,.09],[.68,.10]],
+['Запах при 20 °C','балл',2,[0],[0],[0],'org'],
+['Запах при 60 °C','балл',2,[0],[1],[1],'org'],
+['Щёлочность общая','ммоль/дм³',6.5,'<0,1',[.21,.04],[.31,.07]],
+['Вкус','балл',2,[0],[0],[0],'org'],
+['Окисляемость перманганатная','мг/дм³',5,[.5,.1],[1.7,.3],[3.0,.3]],
+['Мышьяк','мг/дм³',.01,'<0,005','<0,005','<0,005','tox'],
+['Нитриты','мг/дм³',3,'<0,1','<0,1','<0,1'],
+['Нитраты','мг/дм³',45,'<0,1',[.37,.06],[.27,.04]],
+['Хлориды','мг/дм³',350,'<0,1',[1.96,.29],[2.4,.4]],
+['Кадмий','мг/дм³',.001,'<0,0001','<0,0001','<0,0001','tox'],
+['Железо','мг/дм³',.3,'<0,05','<0,05','<0,05','tox'],
+['Сульфаты','мг/дм³',500,[.63,.09],[9.6,1.4],[12.9,1.9]],
+['Никель','мг/дм³',.02,[.007,.003],'<0,001','<0,001','tox'],
+['Стронций','мг/дм³',7,[.087,.017],[.02,.005],[.028,.007]],
+['Сурьма','мг/дм³',.005,'<0,005','<0,005','<0,005','tox'],
+['Цинк','мг/дм³',5,[.033,.011],[.084,.02],[.047,.016]],
+['Хром','мг/дм³',.05,'<0,001','<0,001','<0,001','tox'],
+['Олово','мг/дм³',2,'<0,005','<0,005','<0,005','tox'],
+['Алюминий','мг/дм³',.2,[.085,.02],[.021,.007],[.025,.008]],
+['Селен','мг/дм³',.01,'<0,005','<0,005','<0,005','tox'],
+['Бериллий','мг/дм³',.0002,'<0,0001','<0,0001','<0,0001','tox'],
+['Фториды','мг/дм³',1.5,'<0,1','<0,1','<0,1'],
+['Медь','мг/дм³',1,[.009,.004],[.024,.01],[.0055,.0023]],
+['Марганец','мг/дм³',.1,[.019,.006],'<0,001','<0,001','tox'],
+['Магний','мг/дм³',50,[3.9,.6],[1.91,.29],[2.7,.4]],
+['Кобальт','мг/дм³',.1,'<0,001','<0,001','<0,001','tox'],
+['Кальций','мг/дм³',130,[13.6,2.2],[6.8,1.1],[9.5,1.5]],
+['Натрий','мг/дм³',200,[2.8,.4],[1.21,.18],[1.48,.22]],
+['Свинец','мг/дм³',.01,'<0,001','<0,001','<0,001','tox'],
+['Калий','мг/дм³',20,[.33,.08],[.26,.06],[.27,.06]]
+];
+const SHORT={'Окисляемость перманганатная':'Окисляемость','Щёлочность общая':'Щёлочность','Мутность по формазину':'Мутность'};
+const PT=['Точка 1','Точка 2','Точка 3'];
+const cellTxt=v=>typeof v==='string'?v:(v.length===1?String(v[0]):nf(v[0])+' ± '+nf(v[1]));
+const times=r=>r>=10?'в '+Math.round(r)+' раз ниже':'в '+nf(r,1)+' раза ниже';
+
+function renderLab(p){
+  const bars=$('#labBars'); bars.innerHTML='';
+  const rows=LAB.filter(r=>!r[6]||r[6]==='tox').filter(r=>Array.isArray(r[3+p])&&typeof r[2]==='number')
+    .map(r=>({n:SHORT[r[0]]||r[0],full:r[0],u:r[1],norm:r[2],v:r[3+p][0],e:r[3+p][1],share:r[3+p][0]/r[2]}))
+    .sort((a,b)=>b.share-a.share);
+  rows.forEach(r=>{
+    const row=el('div','bar-row');
+    row.dataset.tip=`<b>${r.full}</b><br>${nf(r.v)} ± ${nf(r.e)} ${r.u}<br>норматив: не более ${nf(r.norm)} ${r.u}<br>${nf(r.share*100,1)}% от норматива`;
+    row.append(el('div','',r.n));
+    const tr=el('div','track'); const f=el('div','fill'); f.style.width=Math.min(100,r.share*100)+'%'; tr.append(f); row.append(tr);
+    row.append(el('div','v',nf(r.v)+' <span class="muted" style="font-size:11px">'+r.u.replace('мг/дм³','мг/л')+'</span>'));
+    row.append(el('div','x',times(1/r.share)));
+    bars.append(row);
+  });
+  // ниже порога
+  const lod=LAB.filter(r=>typeof r[3+p]==='string');
+  $('#lodChips').innerHTML=''; lod.forEach(r=>{const c=el('span','chip',(SHORT[r[0]]||r[0])+' '+r[3+p]); c.dataset.tip=`<b>${r[0]}</b><br>ниже порога определения ${r[3+p].slice(1)} ${r[1]}<br>норматив: не более ${nf(r[2])} ${r[1]}`; $('#lodChips').append(c);});
+  const tox=LAB.filter(r=>r[6]==='tox'), toxLod=tox.filter(r=>typeof r[3+p]==='string').length;
+  $('#lodCount').textContent=lod.length+' показателей, из них элементов '+toxLod;
+  // органолептика
+  $('#orgChips').innerHTML='';
+  LAB.filter(r=>r[6]==='org').forEach(r=>$('#orgChips').append(el('span','chip',r[0]+': '+r[3+p][0]+' из 5')));
+  $('#orgChips').append(el('span','chip','Мутность '+LAB[2][3+p]+' ЕМФ'));
+  // pH
+  const ph=$('#phStrip'); ph.innerHTML=''; const lo=5,hi=11,pos=x=>((x-lo)/(hi-lo)*100)+'%';
+  ph.append(el('div','scale'));
+  const band=el('div','band'); band.style.left=pos(6); band.style.width=((9-6)/(hi-lo)*100)+'%'; ph.append(band);
+  [5,6,7,8,9,10,11].forEach(t=>{const k=el('div','tick',t===6?'6 норма':t===9?'9 норма':String(t)); k.style.left=pos(t); ph.append(k);});
+  [0,1,2].forEach(i=>{const v=LAB[0][3+i][0]; const m=el('div','mk'+(i===p?' on':'')+(v>9?' bad':''),nf(v,1)); m.style.left=pos(v); m.dataset.tip=`<b>${PT[i]}</b><br>pH ${nf(v,1)} ± 0,2<br>${v>9?'выше норматива 6–9':'в пределах норматива 6–9'}`; ph.append(m);});
+  const v=$('#ptVerdict'), bad=LAB[0][3+p][0]>9;
+  v.className='pill '+(bad?'crit':'good');
+  v.textContent=bad?'Не соответствует нормативу по pH — в кампании не участвует':'Соответствует СанПиН по всем показателям — профиль продукта';
+  $$('#ptSeg button').forEach(b=>b.setAttribute('aria-pressed',String(+b.dataset.pt===p)));
+}
+function renderLabTable(){
+  const t=$('#labTable');
+  t.innerHTML='<tr><th>№</th><th>Показатель</th><th>Ед.</th><th class="num">Точка 1</th><th class="num">Точка 2</th><th class="num">Точка 3</th><th class="num">Норматив</th></tr>'+
+  LAB.map((r,i)=>`<tr><td class="num">${i+1}</td><td>${r[0]}</td><td>${r[1]}</td><td class="num">${cellTxt(r[3])}</td><td class="num">${cellTxt(r[4])}</td><td class="num">${cellTxt(r[5])}</td><td class="num">${Array.isArray(r[2])?'6–9':nf(r[2])}</td></tr>`).join('');
+  // сумма ионов: Ca, Mg, Na, K, SO4, Cl, NO3 + HCO3 по щёлочности (61 мг на ммоль)
+  const get=(name,p)=>{const v=LAB.find(r=>r[0]===name)[3+p]; return Array.isArray(v)?v[0]:0;};
+  const sum=p=>['Кальций','Магний','Натрий','Калий','Сульфаты','Хлориды','Нитраты'].reduce((s,n)=>s+get(n,p),0)+get('Щёлочность общая',p)*61;
+  $('#ionSum').textContent='≈ '+Math.round(sum(1))+'–'+Math.round(sum(2))+' мг/л';
+}
+$('#ptSeg').addEventListener('click',e=>{const b=e.target.closest('button'); if(b) renderLab(+b.dataset.pt);});
+
+/* ---------- Аудитории ---------- */
+const AUD=[
+{t:'Сомелье и F&B-директор',tag:'Приоритет 1 · решает, что попадёт в меню',rows:[
+ ['Кто','Сомелье, F&B-директора и закупщики премиальных ресторанов и отелей Москвы и Петербурга. Вода есть в меню у 56 из 73 изученных точек; медиана российских позиций 790 ₽, импортных 1 180 ₽.'],
+ ['Что ему нужно','Позиция, о которой официант расскажет гостю за десять секунд, и вода, которая не меняет вкус вина и кофе.'],
+ ['Сообщение','Российская вода с историей на одну фразу и цифрами, которые можно показать гостю.'],
+ ['Доказательство','Слепая дегустация рядом с текущей позицией. Протокол на 34 показателя. Жёсткость 0,6 °Ж.'],
+ ['Каналы','Личная встреча с набором образцов, отраслевые Telegram-каналы, гастрономические фестивали.'],
+ ['Оффер','Два ящика на две недели продаж, готовая строка для карты воды, обучение официантов за 15 минут.'],
+ ['Цель','30 дегустаций, 8–12 точек, 70% закупают повторно через четыре недели.']]},
+{t:'Гость ресторана и отеля',tag:'Приоритет 1 · пробует первым',rows:[
+ ['Кто','Гость, который заказывает «негазированную» и берёт то, что посоветовал официант.'],
+ ['Что ему нужно','Запомнить одну деталь о бутылке на столе и рассказать её спутнику.'],
+ ['Сообщение','Очищена льдом. Мягкая.'],
+ ['Доказательство','Бутылка с номером партии и QR. Строка в карте воды с тремя числами, как у вина.'],
+ ['Каналы','Официант, бутылка на столе, карта воды, рум-сервис с форматом 0,33.'],
+ ['Оффер','Вода подаётся с короткой фразой официанта: «Её чистят льдом, а не фильтром».'],
+ ['Цель','Бутылок на 100 гостей не меньше, чем у позиции, которую заменили.']]},
+{t:'Читатель этикетки',tag:'Приоритет 2 · покупает онлайн',rows:[
+ ['Кто','Покупатель премиальной воды в стекле на Ozon и в водных магазинах: сейчас берёт VodaVoda за 339 ₽, Nedra за 369–433 ₽, Acqua Panna за 460 ₽.'],
+ ['Что ему нужно','Убедиться, что обещание на этикетке правда. Такие покупатели меряют воду TDS-метром и полосками pH и пишут об этом в отзывах.'],
+ ['Сообщение','Цифры на этикетке совпадут с вашим прибором.'],
+ ['Доказательство','Протокол партии по QR. Вкладыш «Проверь сам» с ожидаемыми показаниями.'],
+ ['Каналы','Свой магазин на Ozon, водные интернет-магазины, обзоры в Telegram.'],
+ ['Оффер','Коробка 6 × 0,75 л за 2 394 ₽ с разделителями и вкладышем.'],
+ ['Цель','Рейтинг от 4,6 после 30 отзывов, претензий до 1,5% заказов.']]},
+{t:'Чай и кофе',tag:'Приоритет 3 · гипотеза, проверяем дегустацией',rows:[
+ ['Кто','Чайные клубы, обжарщики и кофейни, домашние энтузиасты заваривания.'],
+ ['Что ему нужно','Мягкая вода со стабильным составом от партии к партии.'],
+ ['Сообщение','Мягкая вода с известным составом: жёсткость 0,6 °Ж, минерализация 100 мг/л.'],
+ ['Доказательство','Совместная дегустация одного чая на трёх водах у 3–5 партнёров. До неё сегмент остаётся гипотезой.'],
+ ['Каналы','Чайные клубы, обжарщики, их Telegram-каналы и рассылки.'],
+ ['Оффер','Совместный набор: чай партнёра и две бутылки воды.'],
+ ['Цель','5 партнёров и один совместный набор к 20-й неделе.']]},
+{t:'Подарки и переговорные',tag:'Приоритет 3 · с 17-й недели',rows:[
+ ['Кто','Компании, которые покупают воду в стекле для первых лиц, переговорных и подарков партнёрам.'],
+ ['Что ему нужно','Российский продукт, которым не стыдно гордиться перед гостем.'],
+ ['Сообщение','Вода, которую придумали российские инженеры: патенты в семи юрисдикциях.'],
+ ['Доказательство','Буклет о методе в коробке, номера патентов, протокол партии. Здесь история о технологии работает сильнее всего.'],
+ ['Каналы','Прямые продажи, агентства корпоративных подарков, сезон перед Новым годом и весенними праздниками.'],
+ ['Оффер','Подарочная коробка 2 × 0,75 л, именная партия от 300 бутылок.'],
+ ['Цель','10 корпоративных клиентов за шесть месяцев.']]}
+];
+function renderAud(i){
+  $('#audBody').innerHTML=`<div class="stack"><span class="pill ice">${AUD[i].tag}</span><dl class="kv">${AUD[i].rows.map(r=>`<dt>${r[0]}</dt><dd>${r[1]}</dd>`).join('')}</dl></div>`;
+  $$('#audSeg button').forEach((b,k)=>b.setAttribute('aria-pressed',String(k===i)));
+}
+AUD.forEach((a,i)=>{const b=el('button','',a.t); b.type='button'; b.addEventListener('click',()=>renderAud(i)); $('#audSeg').append(b);});
+
+/* ---------- Тексты ---------- */
+const COPY=[
+{t:'Этикетка',note:'Категорию воды пишем так, как она указана в декларации. Числа на обороте берём из протокола своей партии.',x:`ЛИЦО
+PRISTINAM
+очищена льдом
+вода питьевая негазированная · 0,75 л
+партия № 0147
+
+ОБОРОТ
+Мы не фильтруем воду. Мы её замораживаем.
+Чистая вода превращается в лёд, примеси остаются в незамёрзшей части и уходят. Лёд медленно тает и становится PRISTINAM.
+
+Жёсткость 0,6 °Ж · сухой остаток 100 мг/дм³ · натрий 1,2 мг/л · pH 8,6
+Протокол партии: 34 показателя по QR.
+Технология очистки защищена патентом РФ № 2780068.`},
+{t:'Строка в меню',note:'Три числа в строке делают воду похожей на винную позицию и дают официанту готовую фразу.',x:`PRISTINAM · Россия
+Вода, очищенная льдом. Мягкая, с чистым нейтральным вкусом.
+Жёсткость 0,6 °Ж · минерализация 100 мг/л · pH 8,6
+
+0,75 л — 790 ₽
+0,33 л — 470 ₽`},
+{t:'Карточка Ozon',note:'Первая строка списка зависит от линии: если в ней есть хотя бы один фильтр, оставьте только «Очищена вымораживанием».',x:`PRISTINAM вода питьевая негазированная, очищена льдом, стекло 0,75 л × 6 шт
+
+• Очищена вымораживанием: без мембран и сменных картриджей
+• Мягкая: жёсткость 0,6 °Ж, в 10–12 раз ниже гигиенического норматива
+• Лёгкая: сухой остаток 100–115 мг/дм³, натрий 1,2–1,5 мг/л
+• Постороннего вкуса и запаха нет: 0 баллов по протоколу
+• 34 показателя независимой лаборатории, протокол партии по QR
+• Внутри вкладыш «Проверь сам»: что покажут TDS-метр и полоски pH
+• Стекло, 6 бутылок в коробке с разделителями`},
+{t:'Питч сомелье',note:'30 секунд. Заканчивается предложением попробовать вслепую, а не просьбой о листинге.',x:`Эту воду чистит не фильтр, а лёд. Мы замораживаем воду, забираем чистый лёд, а то, что не замёрзло, сливаем вместе с примесями.
+
+Получается очень мягкая вода: жёсткость 0,6, минерализация около ста, натрия чуть больше миллиграмма на литр. Постороннего вкуса лаборатория не нашла.
+
+Поставьте её вслепую рядом с вашей текущей позицией и попробуйте с вином и с эспрессо. Протокол на 34 показателя открыт по QR на каждой бутылке, его можно показать гостю.`},
+{t:'Пост в Telegram',note:'Первый пост серии «Как это сделано». Дальше идут посты о протоколе, о жёсткости и о слепой дегустации.',x:`Как лёд чистит воду
+
+Морской лёд в разы преснее океана, из которого замёрз. Причина простая: кристалл льда строится из молекул воды, а соли и примеси в него не помещаются и остаются в жидкости.
+
+Мы делаем то же самое, только точно. Замораживаем воду, забираем лёд, незамёрзшую часть сливаем. Лёд тает, и получается PRISTINAM.
+
+Что вышло, проверила независимая лаборатория, 34 показателя:
+— жёсткость 0,6 °Ж при нормативе до 7;
+— сухой остаток 100 мг/дм³ при нормативе до 1000;
+— свинец, кадмий, мышьяк и ещё девять элементов ниже порога определения.
+
+Протокол каждой партии открыт по QR на бутылке.`},
+{t:'Заголовки для СМИ',note:'Первый заголовок работает для деловых изданий, второй и третий для гастрономических.',x:`В Москве начали разливать воду, очищенную льдом: технология защищена патентами в семи юрисдикциях
+
+Слепая дегустация: сомелье сравнили воду, очищенную льдом, с водой из источников
+
+Вода с протоколом: российский бренд открыл лабораторные данные по каждой партии`}
+];
+let copyIdx=0;
+function renderCopy(i){copyIdx=i; $('#copyBody').textContent=COPY[i].x; $('#copyNote').textContent=COPY[i].note;
+  $$('#copySeg button').forEach((b,k)=>b.setAttribute('aria-pressed',String(k===i))); $('#copyBtn').textContent='Скопировать текст';}
+COPY.forEach((c,i)=>{const b=el('button','',c.t); b.type='button'; b.addEventListener('click',()=>renderCopy(i)); $('#copySeg').append(b);});
+$('#copyBtn').addEventListener('click',()=>{
+  const done=()=>{$('#copyBtn').textContent='Скопировано';};
+  const fallback=()=>{const r=document.createRange(); r.selectNodeContents($('#copyBody')); const s=getSelection(); s.removeAllRanges(); s.addRange(r); $('#copyBtn').textContent='Текст выделен, нажмите Ctrl+C';};
+  try{navigator.clipboard.writeText(COPY[copyIdx].x).then(done,fallback);}catch(e){fallback();}
+});
+
+/* ---------- Калькулятор цены: цепочки исследования (low, base, high) ---------- */
+const P={vat:[.22,.22,.22],chain_prem:[.70,.55,.40],chain_cc:[.40,.30,.22],dist:[.25,.18,.12],retro:[.05,.04,.03],promo:[.04,.02,0],
+ menu_ratio:[2.4,2.25,2.1],horeca_dist:[.25,.18,.12],horeca_bonus:[.10,.06,.03],mp_comm:[.26,.23,.20],mp_log:[1.25,1,.8],
+ d2c_deliv:[.14,.11,.08],d2c_pay:[.02,.02,.02],d2c_mkt:[.12,.08,.04]};
+const g=(k,i)=>P[k][i];
+const retail=(s,i,c)=>s/(1+g('vat',i))/(1+g(c,i))/(1+g('dist',i))*(1-g('retro',i)-g('promo',i));
+const horeca=(m,i)=>m/g('menu_ratio',i)/(1+g('vat',i))/(1+g('horeca_dist',i))*(1-g('horeca_bonus',i));
+const ozon=(p,i)=>(p*(1-g('mp_comm',i)-.01)-(72+3*(6*.75)+25)/6*g('mp_log',i))/(1+g('vat',i));
+const d2c=(p,i)=>p*(1-g('d2c_deliv',i)-g('d2c_pay',i)-g('d2c_mkt',i))/(1+g('vat',i));
+const CH=[
+ ['Рестораны и отели','от цены меню',(s,m,i)=>horeca(m,i)],
+ ['Ozon','от цены карточки',(s,m,i)=>ozon(s,i)],
+ ['Свой магазин','от цены на сайте',(s,m,i)=>d2c(s,i)],
+ ['Cash & carry','от цены полки',(s,m,i)=>retail(s,i,'chain_cc')],
+ ['Премиальная сеть','от цены полки',(s,m,i)=>retail(s,i,'chain_prem')]
+];
+let sc=1;
+function renderPrice(){
+  const s=+$('#inShelf').value, m=+$('#inMenu').value, c=Math.max(0,+$('#inCogs').value||0);
+  $('#outShelf').textContent=s; $('#outMenu').textContent=rub(m);
+  const max=420, box=$('#priceBars'); box.innerHTML='';
+  CH.forEach(ch=>{
+    const v=ch[2](s,m,sc), lo=ch[2](s,m,0), hi=ch[2](s,m,2), mg=v>0?(v-c)/v:-1;
+    const row=el('div','pbar');
+    row.dataset.tip=`<b>${ch[0]}</b> · ${ch[1]}<br>цена производителя: ${rub(v)} ₽ без НДС<br>разброс допущений: ${rub(lo)}–${rub(hi)} ₽<br>маржа при себестоимости ${rub(c)} ₽: ${Math.round(mg*100)}%`;
+    row.append(el('div','',ch[0]));
+    const tr=el('div','track');
+    const f=el('div','fill'); f.style.width=Math.max(0,Math.min(100,v/max*100))+'%'; tr.append(f);
+    const r=el('div','rng'); r.style.left=Math.max(0,lo/max*100)+'%'; r.style.width=Math.max(0,Math.min(100,hi/max*100)-lo/max*100)+'%'; tr.append(r);
+    if(c>0&&c<max){const k=el('div','cogs'); k.style.left=(c/max*100)+'%'; tr.append(k);}
+    row.append(tr);
+    const cls=mg>=.4?'good':mg>=.3?'warn':'crit';
+    row.append(el('div','r',`<span class="mono"><b>${rub(v)} ₽</b></span><span class="pill ${cls}">маржа ${Math.round(mg*100)}%</span>`));
+    box.append(row);
+  });
+}
+['inShelf','inMenu','inCogs'].forEach(id=>$('#'+id).addEventListener('input',renderPrice));
+$('#scSeg').addEventListener('click',e=>{const b=e.target.closest('button'); if(!b)return; sc=+b.dataset.sc; $$('#scSeg button').forEach(x=>x.setAttribute('aria-pressed',String(x===b))); renderPrice();});
+
+/* ---------- Фазы ---------- */
+const PH=[
+{t:'0 · Подготовка',w:[1,4],goal:'Готов комплект бренда: бутылка, протокол, ролик, набор образцов.',items:[
+ 'Этикетка и фирменный стиль: PRISTINAM, «очищена льдом», номер партии.',
+ 'Страница партии с протоколом на 34 показателя и QR на бутылке.',
+ 'Съёмка процесса: ролик 30–40 секунд о том, как лёд отделяет примеси, и фото.',
+ 'Набор для сомелье: две бутылки, карточка с цифрами, готовая строка в меню.',
+ 'Список из 40 ресторанов и отелей Москвы и Петербурга с именами тех, кто решает.',
+ 'Чистка сайта: убрать «живую воду», «обогащённую минералами» и pH до 12,5 из текстов для покупателя.']},
+{t:'1 · Посев в ресторанах',w:[5,12],goal:'Вода стоит в меню 8–12 точек, сомелье рассказывают о ней сами.',items:[
+ '30 личных дегустаций у сомелье и F&B-директоров.',
+ 'Слепая дегустация «Вслепую»: 10–12 сомелье, PRISTINAM против четырёх премиальных вод, итоги публикуем.',
+ 'Пилот: два ящика на две недели, карта воды, обучение официантов.',
+ 'Тест формулировок на 300 покупателях: проверяем, что «очищена льдом» не читается как «пустая вода».',
+ 'Первые публикации: колонки сомелье и история инженеров.']},
+{t:'2 · Запуск онлайн',w:[9,20],goal:'Карточка с рейтингом от 4,6 и понятная цена.',items:[
+ 'Свой магазин на Ozon и листинг в водных интернет-магазинах.',
+ 'Коробка 6 × 0,75 л с разделителями и вкладышем «Проверь сам».',
+ 'Тест трёх цен: 299, 399 и 549 ₽.',
+ 'Первые 30 отзывов: вкладыш с просьбой об отзыве, без бонусов за оценку.',
+ 'Посевы ролика о льде в Telegram-каналах о еде, вине и ресторанах.',
+ 'Обзоры у авторов, которые меряют воду приборами.']},
+{t:'3 · Масштаб',w:[17,24],goal:'Второй формат, второй источник выручки, данные для разговора с сетями.',items:[
+ 'Формат 0,33 л для отелей и рум-сервиса.',
+ 'Подарочный набор и продажи компаниям к сезону подарков.',
+ 'Партнёрства с чайными клубами и обжарщиками, если дегустация подтвердила гипотезу.',
+ 'Переговоры с премиальными сетями с цифрами пилота на руках.',
+ 'Решение о цене 549 ₽ по итогам теста.']}
+];
+function renderPhase(i){
+  $('#phaseBody').innerHTML=`<div class="row"><h3>Фаза ${PH[i].t}</h3><span class="pill">недели ${PH[i].w[0]}–${PH[i].w[1]}</span></div><p><b>Итог фазы:</b> ${PH[i].goal}</p><ul class="clean">${PH[i].items.map(x=>`<li>${x}</li>`).join('')}</ul>`;
+  $$('#gantt button').forEach((b,k)=>b.setAttribute('aria-pressed',String(k===i)));
+}
+(function(){
+  const gt=$('#gantt');
+  for(let w=1;w<=24;w++){const d=el('div','wk',w%2===0||w===1?String(w):''); d.style.gridRow='1'; d.style.gridColumn=String(w); gt.append(d);}
+  PH.forEach((p,i)=>{const b=el('button','',p.t); b.type='button'; b.style.gridRow=String(i+2); b.style.gridColumn=p.w[0]+' / '+(p.w[1]+1); b.title='Фаза '+p.t+', недели '+p.w[0]+'–'+p.w[1]; b.addEventListener('click',()=>renderPhase(i)); gt.append(b);});
+})();
+
+/* ---------- Механики ---------- */
+const MECH=[
+['Протокол партии','QR на каждой бутылке ведёт на страницу партии: 34 показателя, дата, номер. Этого не делает ни один премиальный бренд в России.'],
+['Вслепую','Слепая дегустация для сомелье: PRISTINAM рядом с четырьмя премиальными водами. Итоги публикуем целиком, какими бы они ни были.'],
+['Лёд вместо фильтра','Ролик 30–40 секунд: вода замерзает, лёд забирают, остаток сливают. Без дикторского текста, с тремя титрами.'],
+['Карта воды','Готовая строка для меню с тремя числами: жёсткость, минерализация, pH. Вода читается как винная позиция.'],
+['Номерные партии','Номер партии на этикетке. Малый объём производства превращается из ограничения в признак ручной работы.'],
+['Проверь сам','Вкладыш в коробке: что покажут TDS-метр и полоски pH. Покупатели и так проверяют воду, мы делаем из проверки аргумент.']
+];
+MECH.forEach((m,i)=>{$('#mechs').append(el('div','card stack',`<span class="eyebrow">Механика ${i+1}</span><h3>${m[0]}</h3><p>${m[1]}</p>`));});
+
+/* ---------- Бюджет ---------- */
+const ALLOC=[
+['Посев в ресторанах: образцы, дегустации, обучение',25],
+['Контент: съёмка льда, фото, сайт с протоколом',20],
+['Онлайн-продажи: карточки, реклама на Ozon, упаковка',20],
+['PR и посевы в Telegram',15],
+['События: слепая дегустация',10],
+['Тесты: формулировки, вкус, цена',10]
+];
+const BLEND=.5*horeca(790,1)+.35*ozon(399,1)+.15*d2c(399,1);
+function renderBudget(){
+  const n=+$('#inUnits').value, l=+$('#inLpd').value, u=+$('#inUtil').value, b=+$('#inBud').value;
+  $('#outUnits').textContent=n; $('#outLpd').textContent=l; $('#outUtil').textContent=u; $('#outBud').textContent=nf(b,1);
+  const bottles=n*l*(u/100)*30/.75, rev=bottles*BLEND, share=b*1e6/(rev*12);
+  $('#kBottles').textContent=rub(bottles);
+  $('#kRev').textContent=nf(rev/1e6,1)+' млн ₽';
+  $('#kShare').textContent=Math.round(share*100)+'%';
+  const v=$('#kVerdict'), t=$('#kVerdictText');
+  if(share<=.15){v.className='pill good'; v.textContent='С запасом'; t.textContent='Объём выдержит бюджет больше.';}
+  else if(share<=.35){v.className='pill warn'; v.textContent='Рабочий диапазон'; t.textContent='Нормально для года запуска.';}
+  else{v.className='pill crit'; v.textContent='Перегрев'; t.textContent='Объём не окупит бюджет: добавьте установки или сократите PR и события.';}
+  const box=$('#alloc'); box.innerHTML='';
+  ALLOC.forEach(a=>{const row=el('div','alloc'); row.append(el('div','',a[0]));
+    const tr=el('div','track'), f=el('div','fill'); f.style.width=(a[1]/25*100)+'%'; tr.append(f); row.append(tr);
+    row.append(el('div','v',a[1]+'% · '+nf(b*a[1]/100,2)+' млн ₽')); box.append(row);});
+}
+['inUnits','inLpd','inUtil','inBud'].forEach(id=>$('#'+id).addEventListener('input',renderBudget));
+
+/* ---------- Первые 30 дней ---------- */
+const TODO=[
+'Утвердить имя, слоган «Очищена льдом. Доказана цифрами.» и три опоры сообщения.',
+'Заказать этикетку и коробку на 6 бутылок.',
+'Сделать страницу партии с протоколом и QR.',
+'Снять процесс заморозки: ролик и фото.',
+'Собрать список из 40 ресторанов и отелей и 30 наборов для сомелье.',
+'Назначить дату слепой дегустации и пригласить 10–12 сомелье.',
+'Открыть магазин на Ozon и подготовить три цены для теста.',
+'Убрать с сайта «живую воду», «обогащённую минералами» и pH до 12,5 из текстов для покупателя.',
+'Получить письменное согласие лаборатории на упоминание в рекламе.'
+];
+TODO.forEach((t,i)=>{const l=el('label','check'); l.htmlFor='todo'+i; const c=document.createElement('input'); c.type='checkbox'; c.id='todo'+i; l.append(c,el('span','',t)); $('#todo').append(l);});
+$('#todo').prepend(el('h3','','Список дел по маркетингу'));
+
+/* ---------- Подсказки и оглавление ---------- */
+const tip=$('#tip');
+document.addEventListener('mousemove',e=>{
+  const t=e.target.closest('[data-tip]');
+  if(!t){tip.classList.remove('on'); return;}
+  tip.innerHTML=t.dataset.tip; tip.classList.add('on');
+  const w=tip.offsetWidth,h=tip.offsetHeight; let x=e.clientX+14,y=e.clientY+14;
+  if(x+w>innerWidth-8)x=e.clientX-w-14; if(y+h>innerHeight-8)y=e.clientY-h-14;
+  tip.style.left=Math.max(8,x)+'px'; tip.style.top=Math.max(8,y)+'px';
+});
+const links=$$('#toc a');
+links.forEach(a=>a.addEventListener('click',e=>{e.preventDefault(); const s=document.getElementById(a.getAttribute('href').slice(1)); if(s)s.scrollIntoView({behavior:'smooth',block:'start'});}));
+if('IntersectionObserver' in window){
+  const io=new IntersectionObserver(es=>{es.forEach(en=>{if(en.isIntersecting){links.forEach(a=>a.classList.toggle('on',a.getAttribute('href')==='#'+en.target.id));}});},{rootMargin:'-20% 0px -70% 0px'});
+  $$('main section').forEach(s=>io.observe(s));
+}
+
+renderLab(1); renderLabTable(); renderAud(0); renderCopy(0); renderPrice(); renderPhase(1); renderBudget();
+})();
+</script>
+<script>const M={"glass":[{"b":"Voss","ru":false,"st":3,"r":[1144.0,1],"e":[1596.6,2],"p":[1410.9,3]},{"b":"Evian","ru":false,"st":1,"e":[972.1,2],"p":[972.1,2]},{"b":"Solan de Cabras","ru":false,"st":null,"e":[858.9,3],"p":[858.9,3]},{"b":"San Benedetto","ru":false,"st":2,"r":[721.3,4],"e":[817.0,3],"p":[817.0,7]},{"b":"Acqua Panna","ru":false,"st":4,"r":[520.0,3],"e":[727.8,5],"p":[670.3,8]},{"b":"Lauretana","ru":false,"st":2,"e":[661.6,4],"p":[661.6,4]},{"b":"Sant Aniol","ru":false,"st":null,"e":[655.2,2],"p":[655.2,2]},{"b":"Fiuggi","ru":false,"st":null,"e":[585.0,1],"p":[585.0,1]},{"b":"Surgiva","ru":false,"st":null,"e":[570.0,2],"p":[570.0,2]},{"b":"VodaVoda","ru":false,"st":3,"e":[505.8,2],"p":[505.8,2]},{"b":"Nedra","ru":true,"st":4,"r":[478.7,2],"e":[492.0,3],"p":[492.0,5]},{"b":"Legend of Baikal","ru":true,"st":2,"r":[434.0,11],"e":[415.8,10],"p":[433.8,21]},{"b":"Деловой стандарт","ru":true,"st":null,"e":[423.9,1],"p":[423.9,1]},{"b":"Tassay","ru":false,"st":null,"e":[413.7,2],"p":[413.7,2]},{"b":"Petroglyph","ru":true,"st":3,"r":[353.3,2],"e":[449.4,4],"p":[405.0,6]},{"b":"Baikal Pearl","ru":true,"st":null,"r":[381.1,5],"e":[377.6,8],"p":[381.1,13]},{"b":"Святой Источник","ru":true,"st":0,"r":[377.3,2],"e":[444.8,2],"p":[380.9,4]},{"b":"4 воды Дюр-Со","ru":true,"st":null,"e":[359.7,1],"p":[359.7,1]},{"b":"Edis","ru":true,"st":2,"r":[310.1,4],"e":[441.2,2],"p":[358.0,6]},{"b":"Dausuz","ru":true,"st":3,"e":[341.1,4],"p":[341.1,4]},{"b":"Jevea","ru":true,"st":2,"e":[339.1,2],"p":[339.1,2]},{"b":"Сенежская","ru":true,"st":null,"e":[302.7,1],"p":[302.7,1]},{"b":"BonAqua","ru":true,"st":0,"r":[299.7,2],"p":[299.7,2]},{"b":"Sever","ru":true,"st":4,"e":[286.6,1],"p":[286.6,1]},{"b":"Архыз Vita","ru":true,"st":1,"e":[234.0,1],"p":[234.0,1]},{"b":"Mever","ru":true,"st":null,"e":[225.8,1],"p":[225.8,1]},{"b":"Черноголовская","ru":true,"st":null,"r":[222.4,2],"e":[224.8,1],"p":[224.8,3]},{"b":"Ledenev","ru":true,"st":2,"e":[221.5,1],"p":[221.5,1]},{"b":"Тбау","ru":true,"st":2,"e":[215.0,1],"p":[215.0,1]},{"b":"Azure","ru":true,"st":3,"e":[160.8,1],"p":[160.8,1]}],"pet":[{"b":"Voss","ru":false,"st":3,"e":[1151.7,1],"p":[1151.7,1]},{"b":"Fiji","ru":false,"st":null,"e":[1007.8,2],"p":[1007.8,2]},{"b":"Лангвей","ru":false,"st":2,"e":[755.0,3],"p":[755.0,3]},{"b":"Prolom","ru":false,"st":0,"e":[528.3,1],"p":[528.3,1]},{"b":"Vittel","ru":false,"st":null,"e":[506.3,3],"p":[506.3,3]},{"b":"Solan de Cabras","ru":false,"st":null,"e":[495.5,1],"p":[495.5,1]},{"b":"San Benedetto","ru":false,"st":2,"r":[448.5,2],"e":[535.5,2],"p":[490.4,4]},{"b":"Evian","ru":false,"st":1,"r":[448.8,4],"e":[416.7,9],"p":[440.0,13]},{"b":"Fiuggi","ru":false,"st":null,"e":[428.3,1],"p":[428.3,1]},{"b":"Volvic","ru":false,"st":null,"e":[405.0,1],"p":[405.0,1]},{"b":"Petroglyph","ru":true,"st":3,"e":[400.0,5],"p":[400.0,5]},{"b":"Acqua Panna","ru":false,"st":4,"r":[340.0,1],"e":[443.8,1],"p":[391.9,2]},{"b":"VodaVoda","ru":false,"st":3,"r":[224.0,2],"e":[433.1,3],"p":[318.3,5]},{"b":"Virgo fons","ru":false,"st":0,"e":[310.8,1],"p":[310.8,1]},{"b":"Lauretana","ru":false,"st":2,"e":[306.7,1],"p":[306.7,1]},{"b":"AQUAdetox","ru":false,"st":1,"e":[303.3,1],"p":[303.3,1]},{"b":"Sant Aniol","ru":false,"st":null,"e":[300.0,1],"p":[300.0,1]},{"b":"Dausuz","ru":true,"st":3,"e":[278.1,2],"p":[278.1,2]},{"b":"Baikal Pearl","ru":true,"st":null,"r":[348.4,1],"e":[230.0,3],"p":[265.2,4]},{"b":"Baikal430","ru":true,"st":1,"r":[243.3,6],"e":[219.9,6],"p":[242.2,12]},{"b":"Legend of Baikal","ru":true,"st":2,"r":[214.0,7],"e":[242.1,5],"p":[235.6,12]},{"b":"Jevea","ru":true,"st":2,"r":[207.0,2],"e":[245.0,2],"p":[215.1,4]},{"b":"Aqua Minerale","ru":true,"st":0,"r":[153.8,5],"e":[185.0,1],"p":[156.9,6]},{"b":"Тбау","ru":true,"st":2,"e":[155.0,1],"p":[155.0,1]},{"b":"Fahrenheit","ru":true,"st":0,"r":[150.0,4],"e":[208.9,1],"p":[150.0,5]},{"b":"Ledenev","ru":true,"st":2,"e":[149.0,1],"p":[149.0,1]},{"b":"BonAqua","ru":true,"st":0,"r":[129.9,4],"e":[156.2,1],"p":[133.8,5]},{"b":"Pokrovska","ru":false,"st":0,"r":[116.0,1],"e":[150.8,1],"p":[133.4,2]},{"b":"Архыз Vita","ru":true,"st":1,"r":[101.8,3],"e":[136.4,5],"p":[125.1,8]},{"b":"Святой Источник","ru":true,"st":0,"r":[113.0,16],"e":[110.0,5],"p":[112.1,21]},{"b":"Калинов Родник","ru":true,"st":1,"r":[116.0,1],"e":[102.3,4],"p":[108.8,5]},{"b":"Черноголовка","ru":true,"st":1,"r":[86.8,2],"p":[86.8,2]}],"b75":{"Legend of Baikal":{"RETAIL":[240.5,4],"HORECA":[550.0,1],"ECOM":[257.9,4]},"Acqua Panna":{"RETAIL":[390.0,1],"ECOM":[459.6,3]},"Petroglyph":{"RETAIL":[265.0,2],"ECOM":[280.6,2]},"Nedra":{"RETAIL":[359.0,2],"HORECA":[790.0,5],"ECOM":[369.0,3]},"San Benedetto":{"RETAIL":[389.0,2],"HORECA":[990.0,20],"ECOM":[537.5,1]},"Святой Источник":{"RETAIL":[283.0,2],"HORECA":[770.0,6],"ECOM":[288.3,1]},"Tassay":{"HORECA":[1180.0,3]},"Surgiva":{"HORECA":[1275.0,4],"ECOM":[392.9,1]},"Baikal Pearl":{"HORECA":[675.0,4],"ECOM":[271.0,3]},"San Felice":{"HORECA":[1050.0,1]},"Сенежская":{"HORECA":[410.0,1]},"ЛАРЕЛИЯ":{"HORECA":[1050.0,1]},"Dausuz":{"HORECA":[635.0,2],"ECOM":[175.3,2]},"Evian":{"ECOM":[602.5,1]},"Jevea":{"ECOM":[227.5,1]},"Lauretana":{"ECOM":[460.0,1]},"VodaVoda":{"ECOM":[339.2,1]},"Voss":{"ECOM":[1128.8,1]},"Sant Aniol":{"ECOM":[416.0,1]},"Solan de Cabras":{"ECOM":[644.2,1]}},"pos":[{"b":"Baikal430","ru":true,"n":4,"t":2,"p":3,"fn":2,"s":1,"pr":false},{"b":"Legend of Baikal","ru":true,"n":3,"t":2,"p":2,"fn":3,"s":2,"pr":true},{"b":"Nedra","ru":true,"n":3,"t":0,"p":1,"fn":2,"s":4,"pr":true},{"b":"Petroglyph","ru":true,"n":3,"t":2,"p":2,"fn":1,"s":3,"pr":true},{"b":"Dausuz","ru":true,"n":4,"t":2,"p":2,"fn":2,"s":3,"pr":false},{"b":"Edis","ru":true,"n":3,"t":1,"p":3,"fn":2,"s":2,"pr":false},{"b":"Sever","ru":true,"n":1,"t":2,"p":2,"fn":0,"s":4,"pr":false},{"b":"Azure","ru":true,"n":1,"t":2,"p":3,"fn":0,"s":3,"pr":false},{"b":"Aurus","ru":true,"n":3,"t":2,"p":2,"fn":1,"s":4,"pr":false},{"b":"Fahrenheit","ru":true,"n":0,"t":3,"p":0,"fn":3,"s":0,"pr":false},{"b":"Ledenev","ru":true,"n":2,"t":2,"p":1,"fn":1,"s":2,"pr":false},{"b":"Pokrovska","ru":false,"n":3,"t":0,"p":1,"fn":4,"s":0,"pr":false},{"b":"AQUAdetox","ru":false,"n":2,"t":1,"p":0,"fn":4,"s":1,"pr":false},{"b":"Virgo fons","ru":false,"n":3,"t":0,"p":1,"fn":4,"s":0,"pr":false},{"b":"Prolom","ru":false,"n":3,"t":0,"p":1,"fn":4,"s":0,"pr":false},{"b":"Lauretana","ru":false,"n":3,"t":0,"p":4,"fn":3,"s":2,"pr":true},{"b":"VodaVoda","ru":false,"n":3,"t":0,"p":3,"fn":2,"s":3,"pr":true},{"b":"Acqua Panna","ru":false,"n":3,"t":0,"p":1,"fn":0,"s":4,"pr":true},{"b":"S.Pellegrino","ru":false,"n":2,"t":0,"p":0,"fn":0,"s":4,"pr":false},{"b":"Evian","ru":false,"n":3,"t":0,"p":3,"fn":2,"s":1,"pr":true},{"b":"Voss","ru":false,"n":2,"t":0,"p":3,"fn":0,"s":3,"pr":true},{"b":"Perrier","ru":false,"n":2,"t":0,"p":1,"fn":0,"s":1,"pr":false},{"b":"San Benedetto","ru":false,"n":2,"t":1,"p":2,"fn":1,"s":2,"pr":true},{"b":"Jevea","ru":true,"n":3,"t":1,"p":3,"fn":2,"s":2,"pr":false},{"b":"Тбау","ru":true,"n":3,"t":2,"p":3,"fn":2,"s":2,"pr":false},{"b":"Архыз Vita","ru":true,"n":4,"t":1,"p":4,"fn":2,"s":1,"pr":false},{"b":"Святой Источник","ru":true,"n":2,"t":1,"p":2,"fn":3,"s":0,"pr":false},{"b":"Aqua Minerale","ru":true,"n":0,"t":1,"p":1,"fn":2,"s":0,"pr":false},{"b":"BonAqua","ru":true,"n":0,"t":3,"p":3,"fn":0,"s":0,"pr":false},{"b":"Черноголовка","ru":true,"n":3,"t":1,"p":2,"fn":2,"s":1,"pr":false},{"b":"Калинов Родник","ru":true,"n":3,"t":2,"p":2,"fn":1,"s":1,"pr":false},{"b":"Карелия сияние озер","ru":true,"n":3,"t":0,"p":0,"fn":4,"s":0,"pr":false},{"b":"Лангвей","ru":false,"n":1,"t":4,"p":2,"fn":4,"s":2,"pr":false}],"tiers":[{"l":"HORECA · меню (0,75; материал не указан, негаз.)","m":970.0,"lo":410.0,"hi":1600.0,"n":45},{"l":"ECOM · B2B office e-shop","m":289.9,"lo":249.9,"hi":329.9,"n":2},{"l":"D2C/ECOM · водные e-shop","m":346.7,"lo":214.58,"hi":644.17,"n":19},{"l":"ECOM · маркетплейс","m":275.2,"lo":251.0,"hi":647.08,"n":5},{"l":"ECOM · Купер/Самокат/Лавка","m":309.0,"lo":99.99,"hi":409.0,"n":4},{"l":"RETAIL · онлайн-каталоги сетей","m":265.0,"lo":225.0,"hi":389.99,"n":5},{"l":"RETAIL · cash&carry","m":316.0,"lo":239.0,"hi":389.0,"n":8}],"pl":["METRO","Перекрёсток","ВкусВилл","Магнит","Ozon","Wildberries","Яндекс Маркет","Водные магазины","Быстрая доставка","Комус"],"pres":[{"b":"Legend of Baikal","ru":true,"c":{"METRO":12,"Перекрёсток":4,"ВкусВилл":1,"Ozon":2,"Wildberries":5,"Водные магазины":12,"Быстрая доставка":2,"Комус":6},"v":2,"k":8},{"b":"Acqua Panna","ru":false,"c":{"Перекрёсток":3,"Ozon":3,"Wildberries":1,"Яндекс Маркет":2,"Водные магазины":3,"Быстрая доставка":2},"v":2,"k":6},{"b":"S.Pellegrino","ru":false,"c":{"METRO":2,"Ozon":2,"Wildberries":1,"Водные магазины":3,"Быстрая доставка":1,"Комус":1},"v":3,"k":6},{"b":"Perrier","ru":false,"c":{"METRO":2,"Ozon":2,"Wildberries":2,"Водные магазины":2,"Быстрая доставка":2},"v":1,"k":5},{"b":"San Benedetto","ru":false,"c":{"METRO":8,"Ozon":2,"Водные магазины":4,"Комус":1},"v":28,"k":4},{"b":"Edis","ru":true,"c":{"METRO":8,"Ozon":5,"Wildberries":4,"Водные магазины":4,"Быстрая доставка":2},"v":0,"k":5},{"b":"Baikal Pearl","ru":true,"c":{"METRO":4,"Перекрёсток":1,"Водные магазины":5,"Комус":3},"v":9,"k":4},{"b":"Dausuz","ru":true,"c":{"Ozon":3,"Wildberries":3,"Водные магазины":6,"Быстрая доставка":2},"v":6,"k":4},{"b":"Nedra","ru":true,"c":{"METRO":2,"Ozon":2,"Водные магазины":4,"Быстрая доставка":1},"v":7,"k":4},{"b":"Voss","ru":false,"c":{"METRO":1,"Ozon":3,"Wildberries":3,"Водные магазины":3,"Быстрая доставка":2},"v":0,"k":5},{"b":"Petroglyph","ru":true,"c":{"Перекрёсток":2,"Ozon":1,"Wildberries":2,"Водные магазины":8},"v":0,"k":4},{"b":"Святой Источник","ru":true,"c":{"METRO":4,"Водные магазины":4},"v":7,"k":2},{"b":"Baikal Reserve","ru":true,"c":{"Водные магазины":3,"Комус":2},"v":8,"k":2},{"b":"Черноголовская","ru":true,"c":{"METRO":4,"Wildberries":1,"Водные магазины":2},"v":0,"k":3},{"b":"Evian","ru":false,"c":{"Ozon":1,"Водные магазины":2},"v":2,"k":2},{"b":"Tassay","ru":false,"c":{"Комус":2},"v":6,"k":1},{"b":"BonAqua","ru":true,"c":{"METRO":4},"v":4,"k":1},{"b":"Lauretana","ru":false,"c":{"Wildberries":2,"Водные магазины":4},"v":0,"k":2},{"b":"Surgiva","ru":false,"c":{"Водные магазины":2},"v":3,"k":1},{"b":"Тбау","ru":true,"c":{"Ozon":2,"Водные магазины":2},"v":0,"k":2},{"b":"Ledenev","ru":true,"c":{"Ozon":1,"Водные магазины":2},"v":0,"k":2},{"b":"Черноголовка","ru":true,"c":{"Wildberries":1},"v":1,"k":1},{"b":"Сенежская","ru":true,"c":{"Комус":1},"v":1,"k":1},{"b":"Borjomi","ru":false,"c":{},"v":18,"k":0},{"b":"Solan de Cabras","ru":false,"c":{"Водные магазины":4},"v":0,"k":1},{"b":"Jevea","ru":true,"c":{"Водные магазины":4},"v":0,"k":1},{"b":"Aqua Russa","ru":true,"c":{},"v":3,"k":0},{"b":"Деловой стандарт","ru":true,"c":{"Комус":3},"v":0,"k":1},{"b":"RusseQuelle","ru":true,"c":{},"v":3,"k":0},{"b":"Sant Aniol","ru":false,"c":{"Водные магазины":2},"v":0,"k":1},{"b":"Fiuggi","ru":false,"c":{"Водные магазины":2},"v":0,"k":1},{"b":"Sairme","ru":false,"c":{},"v":2,"k":0},{"b":"Pandrosa","ru":false,"c":{},"v":2,"k":0},{"b":"Sever","ru":true,"c":{"Водные магазины":2},"v":0,"k":1},{"b":"Aqua Minerale","ru":true,"c":{},"v":2,"k":0},{"b":"VodaVoda","ru":false,"c":{"Водные магазины":2},"v":0,"k":1},{"b":"Архыз Vita","ru":true,"c":{"Водные магазины":2},"v":0,"k":1},{"b":"4 воды Дюр-Со","ru":true,"c":{"Комус":2},"v":0,"k":1},{"b":"Azure","ru":true,"c":{"Водные магазины":2},"v":0,"k":1},{"b":"Нарзан","ru":true,"c":{},"v":2,"k":0},{"b":"Jermuk","ru":false,"c":{},"v":2,"k":0},{"b":"Mever","ru":true,"c":{"Комус":1},"v":0,"k":1}],"hor":[{"b":"San Benedetto","ru":false,"v":28,"mow":12,"spb":16,"seg":"fine_dining:2;luxury_hotel:8;mid:3;mid_plus:3;premium:12","m":[990.0,20]},{"b":"Borjomi","ru":false,"v":18,"mow":7,"spb":11,"seg":"business_hotel:1;luxury_hotel:4;mass_control:1;mid:4;mid_plus:4;premium:4","m":null},{"b":"Baikal Pearl","ru":true,"v":9,"mow":7,"spb":2,"seg":"business_hotel:1;luxury_hotel:2;mid_plus:4;premium:2","m":[675.0,4]},{"b":"Baikal Reserve","ru":true,"v":8,"mow":6,"spb":2,"seg":"business_hotel:1;luxury_hotel:2;mid_plus:3;premium:2","m":null},{"b":"Святой Источник","ru":true,"v":7,"mow":1,"spb":6,"seg":"mass_control:1;mid:3;mid_plus:1;premium:2","m":[770.0,6]},{"b":"Nedra","ru":true,"v":7,"mow":3,"spb":4,"seg":"luxury_hotel:3;mid_plus:2;premium:2","m":[790.0,5]},{"b":"Tassay","ru":false,"v":6,"mow":6,"spb":0,"seg":"coffee:2;luxury_hotel:1;premium:3","m":[1180.0,3]},{"b":"Dausuz","ru":true,"v":6,"mow":0,"spb":6,"seg":"luxury_hotel:4;mid:1;premium:1","m":[635.0,2]},{"b":"BonAqua","ru":true,"v":4,"mow":3,"spb":1,"seg":"mass_control:3;mid:1","m":null},{"b":"Surgiva","ru":false,"v":3,"mow":3,"spb":0,"seg":"fine_dining:1;premium:2","m":[1275.0,4]},{"b":"S.Pellegrino","ru":false,"v":3,"mow":1,"spb":2,"seg":"luxury_hotel:2;premium:1","m":null},{"b":"RusseQuelle","ru":true,"v":3,"mow":3,"spb":0,"seg":"fine_dining:1;mid_plus:2","m":null},{"b":"Aqua Russa","ru":true,"v":3,"mow":1,"spb":2,"seg":"luxury_hotel:2;mid:1","m":null},{"b":"Legend of Baikal","ru":true,"v":2,"mow":2,"spb":0,"seg":"coffee:1;premium:1","m":[550.0,1]},{"b":"Acqua Panna","ru":false,"v":2,"mow":1,"spb":1,"seg":"luxury_hotel:1;premium:1","m":null},{"b":"Evian","ru":false,"v":2,"mow":2,"spb":0,"seg":"premium:2","m":null},{"b":"Байкал / Baikal","ru":true,"v":2,"mow":2,"spb":0,"seg":"premium:2","m":null},{"b":"Нарзан","ru":true,"v":2,"mow":2,"spb":0,"seg":"mid_plus:1;premium:1","m":null},{"b":"Sairme","ru":false,"v":2,"mow":1,"spb":1,"seg":"mid:1;premium:1","m":null},{"b":"Aqua Minerale","ru":true,"v":2,"mow":2,"spb":0,"seg":"coffee:2","m":null},{"b":"Pandrosa","ru":false,"v":2,"mow":0,"spb":2,"seg":"mid_plus:1;premium:1","m":null},{"b":"Jermuk","ru":false,"v":2,"mow":2,"spb":0,"seg":"luxury_hotel:2","m":null}],"hseg":[{"s":"hotel_room_service/luxury_hotel","m":1350.0,"lo":1350.0,"hi":1500.0,"n":3},{"s":"restaurant/premium","m":1010.0,"lo":550.0,"hi":1540.0,"n":20},{"s":"hotel_restaurant/luxury_hotel","m":880.0,"lo":800.0,"hi":1600.0,"n":3},{"s":"restaurant/mid","m":850.0,"lo":410.0,"hi":990.0,"n":7},{"s":"restaurant/mid_plus","m":790.0,"lo":550.0,"hi":1050.0,"n":9}],"per":[{"b":"Evian","n":98,"tp":33.7,"tn":16.3,"pn":8.2,"trn":30.6,"kn":17.3,"soft":9.2,"clean":5.1,"light":0.0,"tap":6.1,"bland":0.0,"low":36.7},{"b":"Voss","n":56,"tp":17.9,"tn":7.1,"pn":8.9,"trn":14.3,"kn":28.6,"soft":3.6,"clean":5.4,"light":0.0,"tap":3.6,"bland":0.0,"low":39.3},{"b":"S.Pellegrino","n":83,"tp":27.7,"tn":2.4,"pn":7.2,"trn":10.8,"kn":12.0,"soft":7.2,"clean":1.2,"light":1.2,"tap":0.0,"bland":0.0,"low":31.3},{"b":"Petroglyph","n":72,"tp":43.1,"tn":4.2,"pn":9.7,"trn":8.3,"kn":5.6,"soft":12.5,"clean":2.8,"light":1.4,"tap":1.4,"bland":0.0,"low":19.4},{"b":"Fahrenheit","n":87,"tp":29.9,"tn":10.3,"pn":10.3,"trn":8.0,"kn":3.4,"soft":5.7,"clean":2.3,"light":1.1,"tap":2.3,"bland":2.3,"low":21.8},{"b":"San Benedetto","n":94,"tp":57.4,"tn":1.1,"pn":9.6,"trn":7.4,"kn":6.4,"soft":11.7,"clean":3.2,"light":2.1,"tap":2.1,"bland":0.0,"low":12.8},{"b":"Prolom","n":95,"tp":32.6,"tn":4.2,"pn":17.9,"trn":6.3,"kn":3.2,"soft":13.7,"clean":3.2,"light":0.0,"tap":3.2,"bland":1.1,"low":8.4},{"b":"Тбау","n":55,"tp":41.8,"tn":5.5,"pn":7.3,"trn":5.5,"kn":9.1,"soft":3.6,"clean":1.8,"light":1.8,"tap":0.0,"bland":0.0,"low":21.8},{"b":"Legend of Baikal","n":95,"tp":55.8,"tn":4.2,"pn":10.5,"trn":4.2,"kn":6.3,"soft":12.6,"clean":11.6,"light":1.1,"tap":0.0,"bland":1.1,"low":11.6},{"b":"Архыз Vita","n":95,"tp":27.4,"tn":5.3,"pn":3.2,"trn":3.2,"kn":5.3,"soft":5.3,"clean":5.3,"light":0.0,"tap":2.1,"bland":0.0,"low":16.8},{"b":"Pokrovska","n":97,"tp":26.8,"tn":6.2,"pn":5.2,"trn":3.1,"kn":5.2,"soft":10.3,"clean":3.1,"light":2.1,"tap":3.1,"bland":0.0,"low":16.5},{"b":"Virgo fons","n":97,"tp":42.3,"tn":1.0,"pn":4.1,"trn":3.1,"kn":4.1,"soft":10.3,"clean":3.1,"light":2.1,"tap":1.0,"bland":0.0,"low":5.2},{"b":"AQUAdetox","n":100,"tp":42.0,"tn":3.0,"pn":11.0,"trn":3.0,"kn":4.0,"soft":5.0,"clean":0.0,"light":1.0,"tap":2.0,"bland":2.0,"low":6.0},{"b":"Edis","n":83,"tp":42.2,"tn":4.8,"pn":4.8,"trn":2.4,"kn":10.8,"soft":4.8,"clean":6.0,"light":0.0,"tap":1.2,"bland":1.2,"low":21.7},{"b":"Jevea","n":100,"tp":57.0,"tn":3.0,"pn":3.0,"trn":2.0,"kn":3.0,"soft":17.0,"clean":1.0,"light":0.0,"tap":0.0,"bland":0.0,"low":3.0},{"b":"BonAqua","n":70,"tp":32.9,"tn":7.1,"pn":4.3,"trn":1.4,"kn":2.9,"soft":4.3,"clean":4.3,"light":0.0,"tap":2.9,"bland":0.0,"low":7.1},{"b":"Baikal430","n":83,"tp":59.0,"tn":3.6,"pn":7.2,"trn":1.2,"kn":1.2,"soft":10.8,"clean":9.6,"light":0.0,"tap":0.0,"bland":0.0,"low":2.4},{"b":"Aqua Minerale","n":90,"tp":35.6,"tn":3.3,"pn":2.2,"trn":1.1,"kn":3.3,"soft":2.2,"clean":3.3,"light":2.2,"tap":0.0,"bland":0.0,"low":12.2},{"b":"Черноголовка","n":93,"tp":26.9,"tn":2.2,"pn":2.2,"trn":1.1,"kn":2.2,"soft":6.5,"clean":1.1,"light":0.0,"tap":0.0,"bland":0.0,"low":9.7},{"b":"Калинов Родник","n":97,"tp":30.9,"tn":3.1,"pn":5.2,"trn":1.0,"kn":6.2,"soft":5.2,"clean":2.1,"light":0.0,"tap":1.0,"bland":1.0,"low":6.2},{"b":"VodaVoda","n":32,"tp":46.9,"tn":3.1,"pn":9.4,"trn":0.0,"kn":0.0,"soft":25.0,"clean":3.1,"light":3.1,"tap":0.0,"bland":0.0,"low":3.1},{"b":"Святой Источник","n":93,"tp":23.7,"tn":3.2,"pn":3.2,"trn":0.0,"kn":6.5,"soft":3.2,"clean":3.2,"light":0.0,"tap":2.2,"bland":0.0,"low":15.1}],"rev":[{"b":"Aurus","e":"ООО «Аурус Аква»","m":23.5},{"b":"Nedra","e":"ООО «Нео»","m":89},{"b":"Edis","e":"ООО «Натурплант»","m":141.8},{"b":"Jevea","e":"ООО «АкваАльянс»","m":159.1},{"b":"Petroglyph","e":"ООО «Петроглиф»","m":199.5},{"b":"Dausuz","e":"ООО ТД «Аква-Дью»","m":271.2},{"b":"Legend of Baikal","e":"ООО «ТК «Байкал Аква»","m":1200},{"b":"Baikal Pearl","e":"ГК «Море Байкал»","m":2000},{"b":"Sever","e":"ООО «Фонте Аква ПК», весь завод","m":3700},{"b":"Святой Источник","e":"ООО «Завод Святой Источник»","m":8100},{"b":"Черноголовка","e":"ООО «ПК «Аквалайф»","m":19700},{"b":"Fahrenheit","e":"ЗАО «МПК», вся компания","m":40100},{"b":"BonAqua","e":"ООО «Мултон Партнерс», 2023","m":77300},{"b":"Aqua Minerale","e":"ООО «ПепсиКо Холдингс»","m":279100}],"meta":{"obs":1555,"obs_ok":862,"brands":244,"venues":73,"venues_water":56,"reviews":2040}};</script>
+<script>
+(function(){
+'use strict';
+const $=s=>document.querySelector(s), $$=s=>Array.from(document.querySelectorAll(s));
+const el=(t,c,h)=>{const e=document.createElement(t); if(c)e.className=c; if(h!==undefined)e.innerHTML=h; return e;};
+const r0=x=>Math.round(x).toLocaleString('ru-RU');
+const r1=x=>x.toLocaleString('ru-RU',{maximumFractionDigits:1});
+const logS=(lo,hi)=>v=>(Math.log(v)-Math.log(lo))/(Math.log(hi)-Math.log(lo))*100;
+const linS=(lo,hi)=>v=>(v-lo)/(hi-lo)*100;
+const tag=ru=>ru?'<small>РФ</small>':'<small>импорт</small>';
+function axis(box,sc,ticks,fmt,us){
+  const a=el('div','rc-axis'); a.append(el('div'));
+  const ax=el('div','ax');
+  ticks.forEach(t=>{const s=el('span','',fmt(t)); s.style.left=sc(t)+'%'; ax.append(s);});
+  if(us){const s=el('span','usl',us[1]); s.style.left=sc(us[0])+'%'; ax.append(s);}
+  a.append(ax); a.append(el('div')); box.append(a);
+}
+function grid(trk,sc,ticks){ticks.forEach(t=>{const g=el('div','gl'); g.style.left=sc(t)+'%'; trk.append(g);});}
+
+/* ---------- 1. Ценовая лестница ---------- */
+let ladMat='glass', ladGrp='price';
+const US_PPL=399/0.75;
+function renderLadder(){
+  const data=M[ladMat], box=$('#ladder'); box.innerHTML='';
+  const sc=logS(80,2000), ticks=[100,200,400,800,1600];
+  axis(box,sc,ticks,t=>r0(t)+' ₽/л',ladMat==='glass'?[US_PPL,'PRISTINAM 532']:null);
+  const groups=[];
+  if(ladGrp==='price') groups.push(['',data]);
+  else if(ladGrp==='origin'){groups.push(['Импорт',data.filter(r=>!r.ru)]); groups.push(['Россия',data.filter(r=>r.ru)]);}
+  else{[4,3,2,1,0].forEach(s=>groups.push(['Статус '+s+' из 4',data.filter(r=>r.st===s)])); groups.push(['Без оценки статуса',data.filter(r=>r.st===null)]);}
+  groups.forEach(([name,rows])=>{
+    if(!rows.length) return;
+    if(name) box.append(el('div','rc-grp',name));
+    rows.forEach(r=>{
+      const row=el('div','rc-row');
+      const parts=[]; if(r.r)parts.push('розница: '+r0(r.r[0])+' ₽/л, n='+r.r[1]); if(r.e)parts.push('онлайн: '+r0(r.e[0])+' ₽/л, n='+r.e[1]);
+      row.dataset.tip='<b>'+r.b+'</b> · '+(r.ru?'Россия':'импорт')+(r.st!==null?' · статус '+r.st+' из 4':'')+'<br>'+parts.join('<br>')+'<br>все наблюдения: '+r0(r.p[0])+' ₽/л, n='+r.p[1];
+      row.append(el('div','lab',r.b+tag(r.ru)));
+      const t=el('div','trk'); grid(t,sc,ticks);
+      if(ladMat==='glass'){const u=el('div','us'); u.style.left=sc(US_PPL)+'%'; t.append(u);}
+      [['r','d1'],['e','d2']].forEach(([k,c])=>{ if(r[k]){const d=el('div','d '+c+(r[k][1]<3?' low':'')); d.style.left=sc(r[k][0])+'%'; t.append(d);} });
+      row.append(t);
+      row.append(el('div','val',r0(r.p[0])+' <small>₽/л · n='+r.p[1]+'</small>'));
+      box.append(row);
+    });
+  });
+  $('#ladNote').textContent=ladMat==='glass'
+    ?'30 брендов. Объёмы от 0,25 до 1 л сведены к рублям за литр, поэтому маленькие бутылки завышают цену литра: у Legend of Baikal в выборке много 0,33 л. Шкала логарифмическая. Справа — медиана по всем наблюдениям бренда.'
+    :'32 бренда, контрольная выборка. PRISTINAM в ПЭТ не выходит, линии нет. Шкала логарифмическая.';
+}
+$('#ladMat').addEventListener('click',e=>{const b=e.target.closest('button'); if(!b)return; ladMat=b.dataset.v; $$('#ladMat button').forEach(x=>x.setAttribute('aria-pressed',String(x===b))); renderLadder();});
+$('#ladGrp').addEventListener('click',e=>{const b=e.target.closest('button'); if(!b)return; ladGrp=b.dataset.v; $$('#ladGrp button').forEach(x=>x.setAttribute('aria-pressed',String(x===b))); renderLadder();});
+
+/* ---------- 2. Сводная таблица брендов ---------- */
+const BT=[
+['San Benedetto','Итальянская минеральная, стандарт ресторана','теснить','ice','рестораны'],
+['Святой Источник','Массовая природная вода; в ресторанах стоит линейка в стекле','теснить','ice','рестораны'],
+['Nedra','Природная вода, «не вмешиваемся в состав»','теснить','ice','отели, онлайн'],
+['Acqua Panna','Тосканский источник, вода высокой кухни','теснить','ice','онлайн'],
+['Evian','Альпийская вода','забирать покупателей','ice','онлайн'],
+['VodaVoda','Дизайн и мягкость','соседствовать','','та же выгода, у нас число'],
+['Lauretana','14 мг/л, «самая лёгкая»','обходить','','не спорить минерализацией'],
+['Petroglyph','Природная вода Алтая','соседствовать','','стоит ниже нас'],
+['Dausuz','Ледниковое происхождение','следить','','слово «ледниковая» занято, отели Петербурга'],
+['Sever','«Вода с характером», очистка без цифр','следить','','ближайший по смыслу, ресурс «Калинова Родника»'],
+['Edis','Природная, «без очистки»','следить','','называет очищенную воду «пустой»'],
+['Baikal Pearl','Глубина Байкала, лёгкая минерализация','не трогать','','дешевле нас, группа 2 млрд ₽'],
+['Legend of Baikal','Глубинные слои Байкала','не трогать','','пол розницы'],
+['Voss','Бутылка-дизайн','вне нашей цены','',''],
+['BonAqua','Семь ступеней очистки, масса','не наш ряд','','']
+];
+(function(){
+  const g=Object.fromEntries(M.glass.map(r=>[r.b,r])), h=Object.fromEntries(M.hor.map(r=>[r.b,r])), p=Object.fromEntries(M.per.map(r=>[r.b,r])), rv=Object.fromEntries(M.rev.map(r=>[r.b,r])), ps=Object.fromEntries(M.pos.map(r=>[r.b,r]));
+  const c=(v,suf)=>v?r0(v[0])+(suf||'')+' <span class="muted">('+v[1]+')</span>':'<span class="muted">—</span>';
+  let t='<tr><th>Бренд</th><th>Что обещает</th><th class="num">Статус</th><th class="num">Стекло, ₽/л<br>розница</th><th class="num">Стекло, ₽/л<br>онлайн</th><th class="num">0,75 л<br>онлайн, ₽</th><th class="num">Точек<br>HoReCa</th><th class="num">Меню<br>0,75 л, ₽</th><th class="num">Хвалят<br>вкус</th><th class="num">Не<br>доверяют</th><th class="num">Выручка<br>компании</th><th>Вердикт</th></tr>';
+  BT.forEach(b=>{
+    const G=g[b[0]]||{}, H=h[b[0]], P=p[b[0]], R=rv[b[0]], S=ps[b[0]], B=M.b75[b[0]]||{};
+    const rev=R?(R.m>=1000?r1(R.m/1000)+' млрд':r0(R.m)+' млн'):'<span class="muted">—</span>';
+    t+='<tr><td><b>'+b[0]+'</b><span class="tag">'+(G.ru||(H&&H.ru)||(S&&S.ru)?'РФ':'импорт')+'</span></td><td>'+b[1]+'</td><td class="num">'+(S?S.s:'—')+'</td><td class="num">'+c(G.r)+'</td><td class="num">'+c(G.e)+'</td><td class="num">'+c(B.ECOM)+'</td><td class="num">'+(H?H.v:'<span class="muted">—</span>')+'</td><td class="num">'+c(B.HORECA)+'</td><td class="num">'+(P?r0(P.tp)+'%':'<span class="muted">—</span>')+'</td><td class="num">'+(P?r0(P.trn)+'%':'<span class="muted">—</span>')+'</td><td class="num">'+rev+'</td><td class="verdict"><span class="pill '+b[3]+'">'+b[2]+'</span>'+(b[4]?'<br><span class="muted" style="font-size:12px;white-space:normal">'+b[4]+'</span>':'')+'</td></tr>';
+  });
+  $('#brandTable').innerHTML=t;
+})();
+
+/* ---------- 3. Карта позиционирования с выбором осей ---------- */
+const AX={t:'технология',s:'статус',n:'природа',p:'чистота',fn:'функция'};
+const TARGET={n:2,t:3,p:4,fn:1,s:3};
+const PGN={
+ 't,s':'Клетки «технология 3–4 + статус 3–4» пусты. PRISTINAM встаёт сюда: раскрытый метод при премиальной цене.',
+ 'n,s':'Статус растёт вместе с природой. Наш ответ: лёд как природный процесс, чтобы не оказаться рядом с Sever и Azure.',
+ 'p,s':'Высокая чистота заявлена только у недорогого статуса. Клетка «чистота 4 + статус 3» свободна.',
+ 'fn,s':'Чем больше обещание пользы, тем ниже статус. Мы держим функцию на 1: никакой пользы в сообщениях.',
+ 'n,t':'Рынок лежит по диагонали: либо природа, либо технология. PRISTINAM ставит технологию 3 при природе 2 и подаёт метод как природный.'
+};
+function renderGrid(){
+  const x=$('#axX').value, y=$('#axY').value, cells={};
+  M.pos.forEach(b=>{const k=b[x]+','+b[y]; (cells[k]=cells[k]||[]).push(b);});
+  let h='<tr><th></th>'+[0,1,2,3,4].map(v=>'<th>'+AX[x]+' '+v+'</th>').join('')+'</tr>';
+  for(let yy=4;yy>=0;yy--){ h+='<tr><th>'+AX[y]+' '+yy+'</th>';
+    for(let xx=0;xx<=4;xx++){
+      const us=(TARGET[x]===xx&&TARGET[y]===yy), list=(cells[xx+','+yy]||[]).map(b=>'<span class="'+(b.ru?'':'imp')+'">'+(b.pr?'<b>'+b.b+'</b>':b.b)+'</span>').join(', ');
+      h+=us?'<td class="us">PRISTINAM'+(list?'<div style="font:400 11px var(--f-body);letter-spacing:0;margin-top:3px;opacity:.9">рядом: '+(cells[xx+','+yy]||[]).map(b=>b.b).join(', ')+'</div>':'')+'</td>':'<td'+((x==='t'&&y==='s'&&xx>=3&&yy>=3)?' class="free"':'')+'>'+list+'</td>';
+    }
+    h+='</tr>'; }
+  $('#pgrid2').innerHTML=h;
+  $('#pgNote').textContent=PGN[x+','+y]||PGN[y+','+x]||'Чёрная клетка — целевая позиция PRISTINAM по выбранным шкалам: природа 2, технология 3, чистота 4, функция 1, статус 3.';
+}
+['axX','axY'].forEach((id,i)=>{const s=$('#'+id); Object.entries(AX).forEach(([k,v])=>{const o=el('option','',v[0].toUpperCase()+v.slice(1)); o.value=k; s.append(o);}); s.value=i?'s':'t'; s.addEventListener('change',renderGrid);});
+
+/* ---------- 4. «Мягкая» ---------- */
+(function(){
+  const box=$('#softBars'), rows=M.per.slice().sort((a,b)=>b.soft-a.soft).slice(0,12), sc=linS(0,33), ticks=[0,10,20,30];
+  axis(box,sc,ticks,t=>t+'%');
+  rows.forEach(r=>{const row=el('div','rc-row'); row.dataset.tip='<b>'+r.b+'</b><br>«мягкая» в '+r1(r.soft)+'% отзывов<br>отзывов в выборке: '+r.n;
+    row.append(el('div','lab',r.b)); const t=el('div','trk'); grid(t,sc,ticks); const b=el('div','bi'); b.style.width=sc(r.soft)+'%'; t.append(b); row.append(t);
+    row.append(el('div','val',r1(r.soft)+'% <small>n='+r.n+'</small>')); box.append(row);});
+})();
+
+/* ---------- 5. Слабые места ---------- */
+(function(){
+  const cols=[['trn','Доверие'],['pn','Цена'],['tn','Вкус'],['kn','Упаковка'],['low','Оценки 1–3★'],['tap','«Как из-под крана»']];
+  const cls=v=>v>=20?'h4':v>=10?'h3':v>=5?'h2':v>=2?'h1':'h0';
+  let t='<tr><th>Бренд</th><th>Отзывов</th>'+cols.map(c=>'<th>'+c[1]+'</th>').join('')+'</tr>';
+  M.per.forEach(r=>{t+='<tr><td>'+r.b+'</td><td>'+r.n+'</td>'+cols.map(c=>'<td class="'+cls(r[c[0]])+'">'+(r[c[0]]?r1(r[c[0]]):'·')+'</td>').join('')+'</tr>';});
+  $('#weakTable').innerHTML=t;
+})();
+
+/* ---------- 6. Ступени цены по каналам ---------- */
+(function(){
+  const NM=[['HORECA','Меню HoReCa',790],['B2B','Офисные поставщики',399],['водные','Водные магазины',399],['маркетплейс','Маркетплейсы',399],['Купер','Быстрая доставка',399],['онлайн-каталоги','Сети, онлайн-каталоги',399],['cash','Cash & carry',399]];
+  const box=$('#tiers'), sc=linS(0,1700), ticks=[0,400,800,1200,1600];
+  axis(box,sc,ticks,t=>r0(t)+' ₽');
+  const rows=M.tiers.map(t=>{const m=NM.find(n=>t.l.indexOf(n[0])>=0); return Object.assign({name:m[1],us:m[2]},t);}).sort((a,b)=>b.m-a.m);
+  rows.forEach(r=>{const row=el('div','rc-row'); row.dataset.tip='<b>'+r.name+'</b><br>медиана '+r0(r.m)+' ₽, n='+r.n+'<br>разброс '+r0(r.lo)+'–'+r0(r.hi)+' ₽<br>PRISTINAM: '+r.us+' ₽ ('+(r.us>r.m?'+':'−')+Math.abs(Math.round((r.us/r.m-1)*100))+'% к медиане)';
+    row.append(el('div','lab',r.name)); const t=el('div','trk'); grid(t,sc,ticks);
+    const g=el('div','rg'); g.style.left=sc(r.lo)+'%'; g.style.width=(sc(r.hi)-sc(r.lo))+'%'; t.append(g);
+    const m=el('div','md'); m.style.left=sc(r.m)+'%'; t.append(m);
+    const u=el('div','usd'); u.style.left=sc(r.us)+'%'; t.append(u); row.append(t);
+    row.append(el('div','val',r0(r.m)+' ₽ <small>n='+r.n+(r.n<3?', мало':'')+'</small>')); box.append(row);});
+})();
+
+/* ---------- 7. HoReCa ---------- */
+(function(){
+  const box=$('#horeca'), rows=M.hor.filter(r=>r.v>=3||r.m), sc=linS(0,30), ticks=[0,10,20,30];
+  axis(box,sc,ticks,t=>t+(t?' точек':''));
+  rows.forEach(r=>{const row=el('div','rc-row'); row.dataset.tip='<b>'+r.b+'</b><br>точек: '+r.v+' (Москва '+r.mow+', Петербург '+r.spb+')<br>'+(r.m?'меню 0,75 л негаз.: '+r0(r.m[0])+' ₽, n='+r.m[1]:'цены негазированной 0,75 л в меню нет');
+    row.append(el('div','lab',r.b+tag(r.ru))); const t=el('div','trk'); grid(t,sc,ticks);
+    const a=el('div','b1'); a.style.left='0'; a.style.width=sc(r.mow)+'%'; t.append(a);
+    if(r.spb){const b=el('div','b2'); b.style.left='calc('+sc(r.mow)+'% + '+(r.mow?2:0)+'px)'; b.style.width=sc(r.spb)+'%'; t.append(b);} else a.style.borderRadius='0 4px 4px 0';
+    row.append(t);
+    row.append(el('div','val',r.v+' <small>· '+(r.m?r0(r.m[0])+' ₽ (n='+r.m[1]+')':'—')+'</small>')); box.append(row);});
+  const SG={'hotel_room_service/luxury_hotel':'Рум-сервис luxury-отелей','restaurant/premium':'Премиальные рестораны','hotel_restaurant/luxury_hotel':'Рестораны luxury-отелей','restaurant/mid':'Рестораны среднего сегмента','restaurant/mid_plus':'Рестораны «средний плюс»'};
+  $('#hsegTable').innerHTML='<tr><th>Тип заведения</th><th class="num">Медиана (n)</th><th class="num">Разброс</th><th class="num">790 ₽</th></tr>'+
+    M.hseg.map(s=>'<tr><td>'+(SG[s.s]||s.s)+'</td><td class="num">'+r0(s.m)+' ₽ ('+s.n+')</td><td class="num">'+r0(s.lo)+'–'+r0(s.hi)+'</td><td class="num">'+(790>s.m?'+':'−')+Math.abs(Math.round((790/s.m-1)*100))+'%</td></tr>').join('');
+})();
+
+/* ---------- 8. Присутствие по площадкам ---------- */
+(function(){
+  const cls=v=>v>=7?'h4':v>=4?'h3':v>=2?'h2':v>=1?'h1':'h0', vcls=v=>v>=15?'h4':v>=7?'h3':v>=3?'h2':v>=1?'h1':'h0';
+  const rows=M.pres.filter(r=>(r.k+(r.v?1:0))>=2||r.v>=6).slice(0,24);
+  let t='<tr><th>Бренд</th>'+M.pl.map(p=>'<th>'+p.replace(' ','<br>')+'</th>').join('')+'<th class="sep">Заведений<br>HoReCa</th></tr>';
+  rows.forEach(r=>{t+='<tr><td>'+r.b+'<span class="tag">'+(r.ru?'РФ':'имп.')+'</span></td>'+M.pl.map(p=>{const v=r.c[p]||0; return '<td class="'+cls(v)+'">'+(v||'·')+'</td>';}).join('')+'<td class="sep '+vcls(r.v)+'">'+(r.v||'·')+'</td></tr>';});
+  $('#presTable').innerHTML=t;
+})();
+
+/* ---------- 9. Масштаб компаний ---------- */
+(function(){
+  const box=$('#revDots'), sc=logS(10,400000), ticks=[10,100,1000,10000,100000];
+  axis(box,sc,ticks,t=>t>=1000?(t/1000)+' млрд':t+' млн');
+  M.rev.forEach(r=>{const row=el('div','rc-row'); row.dataset.tip='<b>'+r.b+'</b><br>'+r.e+'<br>выручка '+(r.m>=1000?r1(r.m/1000)+' млрд ₽':r1(r.m)+' млн ₽');
+    row.append(el('div','lab',r.b)); const t=el('div','trk'); grid(t,sc,ticks); const d=el('div','d d1'); d.style.left=sc(r.m)+'%'; d.style.background='var(--ice)'; t.append(d); row.append(t);
+    row.append(el('div','val',(r.m>=1000?r1(r.m/1000)+' млрд ₽':r0(r.m)+' млн ₽'))); box.append(row);});
+})();
+
+renderLadder(); renderGrid();
+})();
+</script>
+</body>
+</html>
