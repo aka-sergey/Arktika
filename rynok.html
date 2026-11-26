@@ -228,6 +228,86 @@ select.sel{font:inherit;font-size:14px;padding:6px 8px;border:1px solid var(--li
 .find b.n{font-family:var(--f-mono);font-size:26px;font-weight:600;display:block;line-height:1.1;margin-bottom:2px}
 td.verdict{white-space:nowrap}
 </style>
+<style>
+/* v4: карта 2×2, окно с отзывами, таблица каналов, макет QR, схемы очистки */
+.quad-wrap{overflow-x:auto}
+.quad{min-width:680px;width:100%;height:auto;display:block}
+.quad text{font-family:var(--f-body);fill:var(--ink)}
+.quad .qcap{font-size:12px;fill:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.04em}
+.quad .ax{font-size:11px;fill:var(--muted);font-family:var(--f-mono)}
+.quad .lb{font-size:11.5px}
+.quad .us-lb{font-size:13px;font-weight:700}
+.quad .q-bg{fill:var(--sunk)}
+.quad .q-free{fill:var(--ice-soft)}
+.quad .ln{stroke:var(--line);stroke-width:1}
+.quad .mid{stroke:var(--muted);stroke-width:1;stroke-dasharray:4 4}
+.quad .ru{fill:var(--ice)}
+.quad .im{fill:var(--surface);stroke:var(--muted);stroke-width:2}
+.quad .usp{fill:var(--ink)}
+.scale-legend{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px;font-size:13.5px}
+.scale-legend div{background:var(--sunk);border-radius:8px;padding:10px 12px}
+.scale-legend b{display:block;margin-bottom:2px}
+td.clk{cursor:pointer;text-decoration:underline dotted;text-underline-offset:3px}
+td.clk:hover,td.clk:focus-visible{outline:2px solid var(--ice);outline-offset:-2px}
+.modal{position:fixed;inset:0;background:rgba(6,14,22,.55);display:flex;align-items:center;justify-content:center;padding:16px;z-index:60}
+.modal[hidden]{display:none}
+.modal-box{background:var(--surface);color:var(--ink);border-radius:12px;max-width:620px;width:100%;max-height:86vh;overflow:auto;padding:22px;display:flex;flex-direction:column;gap:12px;border:1px solid var(--line)}
+.modal-box ul{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:8px}
+.modal-box li{background:var(--sunk);border-left:3px solid var(--ice);border-radius:6px;padding:10px 12px;font-size:15px}
+.modal-box li small{display:block;color:var(--muted);font-size:12px;margin-top:4px;font-family:var(--f-mono)}
+.mbar{display:flex;align-items:center;gap:10px;min-width:220px}
+.mbar i{display:block;height:10px;background:var(--ice);border-radius:0 4px 4px 0}
+.mbar span{font-family:var(--f-mono);white-space:nowrap;font-variant-numeric:tabular-nums}
+.mock{display:grid;grid-template-columns:150px minmax(240px,300px) minmax(250px,300px);gap:28px;align-items:center;justify-content:center}
+@media (max-width:860px){.mock{grid-template-columns:1fr;justify-items:center}}
+.mock figcaption{font-size:12px;color:var(--muted);text-align:center;margin-top:8px}
+.mock figure{margin:0}
+.blabel{background:#0c1b2a;color:#e9f1f6;border-radius:6px;padding:22px 20px;display:flex;flex-direction:column;gap:12px;box-shadow:0 12px 30px rgba(6,14,22,.25)}
+.blabel .bn{font-family:var(--f-display);font-weight:700;letter-spacing:.2em;font-size:15px}
+.blabel .bt{font-size:12px;line-height:1.45;color:#b9c9d6}
+.blabel .nums{display:grid;grid-template-columns:1fr 1fr;gap:8px 14px;border-top:1px solid #2a4055;border-bottom:1px solid #2a4055;padding:12px 0}
+.blabel .nums b{font-family:var(--f-mono);font-size:16px;font-weight:600;display:block}
+.blabel .nums span{font-size:10.5px;color:#93a5b4;text-transform:uppercase;letter-spacing:.06em}
+.blabel .qrrow{display:flex;gap:14px;align-items:center}
+.blabel .qr{background:#fff;border-radius:4px;padding:6px;flex:none;width:96px;height:96px}
+.blabel .qrrow p{font-size:12px;line-height:1.4;color:#e9f1f6;max-width:none}
+.blabel .qrrow small{display:block;color:#93a5b4;font-family:var(--f-mono);font-size:10.5px;margin-top:4px}
+.phone{background:#0c1b2a;border-radius:30px;padding:10px;box-shadow:0 12px 30px rgba(6,14,22,.25)}
+.phone .scr{background:#f4f7f9;color:#0c1b2a;border-radius:22px;padding:16px 14px;display:flex;flex-direction:column;gap:10px;font-size:12.5px}
+.phone .ph-h{display:flex;justify-content:space-between;align-items:baseline}
+.phone .ph-h b{font-family:var(--f-display);font-size:11px;letter-spacing:.18em}
+.phone .ph-h span{font-family:var(--f-mono);font-size:10.5px;color:#536373}
+.phone h4{margin:0;font-size:17px;line-height:1.2}
+.phone .ok{background:#dff1e7;color:#17754a;border-radius:999px;padding:4px 10px;font-weight:600;font-size:11.5px;align-self:flex-start}
+.phone .tl{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.phone .tl div{background:#fff;border:1px solid #d3dce3;border-radius:8px;padding:8px}
+.phone .tl b{font-family:var(--f-mono);font-size:15px;display:block}
+.phone .tl span{font-size:10px;color:#536373}
+.phone .rw{display:grid;grid-template-columns:84px 1fr 54px;gap:6px;align-items:center;font-size:11px}
+.phone .rw i{display:block;height:6px;background:#e8eef2;border-radius:3px;position:relative}
+.phone .rw i u{position:absolute;left:0;top:0;bottom:0;background:#0a6788;border-radius:3px}
+.phone .rw em{font-style:normal;font-family:var(--f-mono);text-align:right;color:#536373}
+.phone .cta{background:#0a6788;color:#fff;border-radius:8px;padding:9px;text-align:center;font-weight:600}
+.phone .note{background:#d9ebf2;border-radius:8px;padding:8px;font-size:11px;line-height:1.4}
+.diag{width:100%;height:auto;display:block;max-width:760px;margin:0 auto}
+.diag text{font-family:var(--f-body);fill:var(--ink)}
+.diag .box{fill:var(--sunk);stroke:var(--line);stroke-width:1.5}
+.diag .ice{fill:var(--ice-soft);stroke:var(--ice);stroke-width:1.5}
+.diag .hex{fill:var(--surface);stroke:var(--ice);stroke-width:1.2;opacity:.9}
+.diag .arr{stroke:var(--muted);stroke-width:2;fill:none}
+.diag .cap{font-size:15px;font-weight:700}
+.diag .sub{font-size:12.5px;fill:var(--muted)}
+.diag .m1{fill:#2f9e6b}.diag .m2{fill:#c98a2b}.diag .m3{fill:#8a6fb3}
+.find b.n{font-size:20px}
+#ladder .rc-row,#ladder .rc-axis{grid-template-columns:168px minmax(80px,1fr) 150px}
+#horeca .rc-row,#horeca .rc-axis{grid-template-columns:168px minmax(80px,1fr) 190px}
+@media (max-width:700px){#ladder .rc-row,#ladder .rc-axis,#horeca .rc-row,#horeca .rc-axis{grid-template-columns:104px minmax(60px,1fr)}}
+</style>
+<style>
+main a{color:var(--ice)}
+.pbar{grid-template-columns:150px minmax(60px,1fr) 190px}
+@media (max-width:640px){.pbar{grid-template-columns:96px minmax(40px,1fr) 150px}}
+</style>
 </head>
 <body>
 <div class="wrap">
@@ -242,10 +322,11 @@ td.verdict{white-space:nowrap}
   <a href="#auditorii">Аудитории</a>
   <a href="#soobshenia">Сообщения и тексты</a>
   <a href="#otchet">Продукт в цифрах</a>
+  <a href="#ochistka">Как устроена очистка</a>
+  <a href="#qr">Протокол по QR</a>
   <a href="#cena">Линейка и цена</a>
-  <a href="#kampania">Кампания</a>
-  <a href="#budget">Бюджет и KPI</a>
-  <a href="#start">Первые 30 дней</a>
+  <a href="#kampania">Кампания и команда</a>
+  <a href="#osnova">Допущения и источники</a>
 </nav>
 
 <main>
@@ -267,13 +348,13 @@ td.verdict{white-space:nowrap}
   <div class="tbl-wrap">
     <table>
       <tr><th style="width:190px">Решение</th><th>Что делаем</th></tr>
-      <tr><td><b>Куда входим</b></td><td>В зазор между российским премиумом (до 490 ₽/л в стекле) и импортом (от 570 ₽/л). При 399 ₽ за 0,75 л PRISTINAM стоит 532 ₽/л и становится самой дорогой российской водой, оставаясь дешевле импорта.</td></tr>
-      <tr><td><b>Кого теснить</b></td><td>В ресторанах San Benedetto (28 из 56 меню, 990 ₽) и Святой Источник (770 ₽ за массовое имя). В отелях и онлайн Nedra. Онлайн Acqua Panna и покупателей Evian, которые перестали верить импорту.</td></tr>
+      <tr><td><b>Куда входим</b></td><td>В зазор между российским премиумом (до 490 Руб./л в стекле) и импортом (от 570 Руб./л). При 399 Руб. за 0,75 л PRISTINAM стоит 532 Руб./л и становится самой дорогой российской водой, оставаясь дешевле импорта.</td></tr>
+      <tr><td><b>Кого теснить</b></td><td>В ресторанах San Benedetto (28 из 56 меню, 990 Руб.) и Святой Источник (770 Руб. за массовое имя). В отелях и онлайн Nedra. Онлайн Acqua Panna и покупателей Evian, которые перестали верить импорту.</td></tr>
       <tr><td><b>Позиционирование</b></td><td>Мягкая вода к столу, очищенная льдом. Ведём вкусом и мягкостью, доказываем цифрами лаборатории, метод подаём как природный процесс, а не как «технологию очистки».</td></tr>
       <tr><td><b>Идея кампании</b></td><td>«Сделано льдом». Три опоры: лёд (метод), мягкость (ощущение), протокол (доказательство).</td></tr>
       <tr><td><b>Кому продаём</b></td><td>Сомелье и F&amp;B-директорам премиальных ресторанов и отелей Москвы и Петербурга; покупателям премиальной воды в стекле, которые читают этикетку.</td></tr>
-      <tr><td><b>Продукт и цена</b></td><td>Стекло 0,75 л: 399 ₽ на полке, 790 ₽ в меню. Стекло 0,33 л: 219 ₽ и 470 ₽. Без ПЭТ и без газа на старте.</td></tr>
-      <tr><td><b>Каналы</b></td><td>Сначала рестораны и отели (8–12 пилотных точек), с 9-й недели Ozon и водные интернет-магазины, затем подарки и отели 0,33. Без ТВ, наружной рекламы и массовых сетей.</td></tr>
+      <tr><td><b>Продукт и цена</b></td><td>Стекло 0,75 л: 399 Руб. на полке, 790 Руб. в меню. Стекло 0,33 л: 219 Руб. и 470 Руб. Без ПЭТ и без газа на старте.</td></tr>
+      <tr><td><b>Каналы</b></td><td>Сначала рестораны и отели (8–12 пилотных точек), с 9-й недели свой интернет-магазин и водные магазины, затем Азбука Вкуса, подарки и отели 0,33. Без Ozon, METRO, ТВ и наружной рекламы.</td></tr>
       <tr><td><b>Чего не говорим</b></td><td>Ни слова о здоровье, «живой», «щелочной для организма», «структурированной». pH и патент стоят в доказательствах, не в заголовке.</td></tr>
     </table>
   </div>
@@ -288,8 +369,8 @@ td.verdict{white-space:nowrap}
   </div>
 
   <div class="grid g3">
-    <div class="card stack find"><span class="pill ice">Цена</span><b class="n">492 → 532 → 670 ₽/л</b><h3>Зазор между Россией и импортом</h3><p>Самый дорогой российский бренд в стекле — Nedra, 492 ₽/л. Европейский импорт начинается с 506–570 ₽/л и доходит до 670–820 ₽/л у Acqua Panna и San Benedetto. Наши 399 ₽ за 0,75 л дают 532 ₽/л: выше всех российских марок и ниже основного импорта.</p></div>
-    <div class="card stack find"><span class="pill ice">Рестораны</span><b class="n">28 из 56</b><h3>Одна марка держит половину меню</h3><p>San Benedetto стоит в 28 из 56 заведений, где в меню есть вода, с медианой 990 ₽ за 0,75 л. Российские негазированные позиции стоят 675–790 ₽. Место второй, более дешёвой строки с историей свободно.</p></div>
+    <div class="card stack find"><span class="pill ice">Цена</span><b class="n">492 → 532 → 670 Руб./л</b><h3>Зазор между Россией и импортом</h3><p>Самый дорогой российский бренд в стекле — Nedra, 492 Руб./л. Европейский импорт начинается с 506–570 Руб./л и доходит до 670–820 Руб./л у Acqua Panna и San Benedetto. Наши 399 Руб. за 0,75 л дают 532 Руб./л: выше всех российских марок и ниже основного импорта.</p></div>
+    <div class="card stack find"><span class="pill ice">Рестораны</span><b class="n">28 из 56</b><h3>Одна марка держит половину меню</h3><p>San Benedetto стоит в 28 из 56 заведений, где в меню есть вода, с медианой 990 Руб. за 0,75 л. Российские негазированные позиции стоят 675–790 Руб. Место второй, более дешёвой строки с историей свободно.</p></div>
     <div class="card stack find"><span class="pill ice">Доверие</span><b class="n">31% против 0–4%</b><h3>Импорту перестали верить</h3><p>У Evian 31% отзывов содержат негатив о подлинности, у Voss 14%, у S.Pellegrino 11%, у San Benedetto 7%. У большинства российских брендов 0–4%. Открытый протокол партии бьёт именно сюда.</p></div>
   </div>
 
@@ -297,14 +378,14 @@ td.verdict{white-space:nowrap}
     <h3>Кого теснить: шесть целей</h3>
     <div class="tbl-wrap"><table>
       <tr><th>Цель</th><th>Где</th><th>Что у них сейчас</th><th>Слабое место</th><th>Чем берём</th><th>Очередь</th></tr>
-      <tr><td><b>San Benedetto</b></td><td>Рестораны и отели Москвы и Петербурга</td><td>28 точек, меню 990 ₽ (n=20), в METRO 389 ₽</td><td>Импорт; самая высокая цена среди массовых позиций меню; 7% отзывов с сомнением в подлинности</td><td>Вторая негазированная строка на 20% дешевле, поставка из Москвы, история для гостя</td><td class="verdict"><span class="pill ice">1</span></td></tr>
-      <tr><td><b>Святой Источник в меню</b></td><td>Рестораны, 6 из 7 точек в Петербурге</td><td>7 точек, меню 770 ₽ (n=6)</td><td>Массовое имя: в рознице 113 ₽/л в ПЭТ, статус 0 из 4</td><td>Та же цена в меню, но бутылка и история премиального уровня</td><td class="verdict"><span class="pill ice">1</span></td></tr>
-      <tr><td><b>Nedra</b></td><td>Luxury-отели, рестораны, онлайн</td><td>7 точек, меню 790 ₽ (n=5), онлайн 369 ₽ (n=3)</td><td>Выручка компании 89 млн ₽, розлив по контракту, отзывов нет, метод не раскрыт</td><td>Та же цена в меню плюс цифры и протокол, которых у Nedra нет</td><td class="verdict"><span class="pill">2</span></td></tr>
-      <tr><td><b>Acqua Panna и импорт онлайн</b></td><td>Ozon, водные магазины</td><td>460 ₽ за 0,75 л онлайн (n=3), 670 ₽/л по всем форматам</td><td>Цена; общая для импорта проблема подлинности</td><td>399 ₽ и протокол партии по QR</td><td class="verdict"><span class="pill">2</span></td></tr>
-      <tr><td><b>Evian</b></td><td>Онлайн</td><td>Стекло 972 ₽/л (n=2), ПЭТ 417–449 ₽/л</td><td>31% отзывов с негативом о доверии, 16% с негативом о вкусе</td><td>Забираем разочарованных: «цифры совпадут с вашим прибором»</td><td class="verdict"><span class="pill">2</span></td></tr>
-      <tr><td><b>Tassay, Surgiva</b></td><td>Премиальные рестораны Москвы</td><td>Меню 1 180 и 1 275 ₽ (n=3 и 4), 6 и 3 точки</td><td>Самая дорогая негазированная строка</td><td>Позиция на треть дешевле</td><td class="verdict"><span class="pill">3</span></td></tr>
+      <tr><td><b>San Benedetto</b></td><td>Рестораны и отели Москвы и Петербурга</td><td>28 точек, меню 990 Руб. (n=20), в METRO 389 Руб.</td><td>Импорт; самая высокая цена среди массовых позиций меню; 7% отзывов с сомнением в подлинности</td><td>Вторая негазированная строка на 20% дешевле, поставка из Москвы, история для гостя</td><td class="verdict"><span class="pill ice">1</span></td></tr>
+      <tr><td><b>Святой Источник в меню</b></td><td>Рестораны, 6 из 7 точек в Петербурге</td><td>7 точек, меню 770 Руб. (n=6)</td><td>Массовое имя: в рознице 113 Руб./л в ПЭТ, статус 0 из 4</td><td>Та же цена в меню, но бутылка и история премиального уровня</td><td class="verdict"><span class="pill ice">1</span></td></tr>
+      <tr><td><b>Nedra</b></td><td>Luxury-отели, рестораны, онлайн</td><td>7 точек, меню 790 Руб. (n=5), онлайн 369 Руб. (n=3)</td><td>Выручка компании 89 млн Руб., розлив по контракту, отзывов нет, метод не раскрыт</td><td>Та же цена в меню плюс цифры и протокол, которых у Nedra нет</td><td class="verdict"><span class="pill">2</span></td></tr>
+      <tr><td><b>Acqua Panna и импорт онлайн</b></td><td>Водные магазины, свой магазин</td><td>460 Руб. за 0,75 л онлайн (n=3), 670 Руб./л по всем форматам</td><td>Цена; общая для импорта проблема подлинности</td><td>399 Руб. и протокол партии по QR</td><td class="verdict"><span class="pill">2</span></td></tr>
+      <tr><td><b>Evian</b></td><td>Онлайн</td><td>Стекло 972 Руб./л (n=2), ПЭТ 417–449 Руб./л</td><td>31% отзывов с негативом о доверии, 16% с негативом о вкусе</td><td>Забираем разочарованных: «цифры совпадут с вашим прибором»</td><td class="verdict"><span class="pill">2</span></td></tr>
+      <tr><td><b>Tassay, Surgiva</b></td><td>Премиальные рестораны Москвы</td><td>Меню 1 180 и 1 275 Руб. (n=3 и 4), 6 и 3 точки</td><td>Самая дорогая негазированная строка</td><td>Позиция на треть дешевле</td><td class="verdict"><span class="pill">3</span></td></tr>
     </table></div>
-    <p><b>Кого не трогаем.</b> Baikal Pearl и Baikal Reserve: 675 ₽ в меню, 9 и 8 точек, за ними группа с выручкой 2 млрд ₽ — они дешевле нас и с ресурсом. Legend of Baikal: 240 ₽ на полке и 12 позиций в METRO, это пол розницы. Borjomi: 18 точек, но это газированная минеральная вода, другая строка меню. Массовые марки в ПЭТ.</p>
+    <p><b>Кого не трогаем.</b> Baikal Pearl и Baikal Reserve: 675 Руб. в меню, 9 и 8 точек, за ними группа с выручкой 2 млрд Руб. — они дешевле нас и с ресурсом. Legend of Baikal: 240 Руб. на полке и 12 позиций в METRO, это пол розницы. Borjomi: 18 точек, но это газированная минеральная вода, другая строка меню. Массовые марки в ПЭТ.</p>
   </div>
 </section>
 
@@ -313,7 +394,7 @@ td.verdict{white-space:nowrap}
   <div class="sec-head">
     <div class="eyebrow">Цены и бренды</div>
     <h2>Ценовая лестница брендов</h2>
-    <p>Негазированная вода, обычная цена без акций, рубли за литр. Розница и онлайн показаны отдельными точками. Чёрная линия — PRISTINAM при цене 399 ₽ за 0,75 л.</p>
+    <p>Негазированная вода, обычная цена без акций, рубли за литр. Розница и онлайн показаны отдельными точками. Чёрная линия — PRISTINAM при цене 399 Руб. за 0,75 л.</p>
   </div>
   <div class="card stack">
     <div class="row" style="justify-content:space-between">
@@ -331,26 +412,26 @@ td.verdict{white-space:nowrap}
     <div class="card stack">
       <h3>Что видно на лестнице</h3>
       <ul class="clean">
-        <li>Российское стекло занимает коридор от 160 до 490 ₽/л. Выше 500 ₽/л нет ни одной российской марки.</li>
-        <li>Импорт, кроме казахстанской Tassay (414 ₽/л), стоит от 506 до 1 410 ₽/л. В рознице он дешевле, чем онлайн: Acqua Panna 520 против 728 ₽/л, San Benedetto 721 против 817 ₽/л.</li>
-        <li>Самые плотные данные у Legend of Baikal (21 наблюдение, 434 ₽/л) и Baikal Pearl (13 наблюдений, 381 ₽/л): это устойчивый пол российского стекла.</li>
-        <li>«Очищенные» марки внизу: Sever 287 ₽/л, BonAqua в стекле 300 ₽/л, Azure 161 ₽/л. Очистка без доказательств цену не поднимает.</li>
-        <li>В ПЭТ выше 400 ₽/л стоят только импорт, «Лангвей» и Petroglyph. Байкальские марки держатся на 215–245 ₽/л, масса на 90–155 ₽/л, поэтому в ПЭТ мы не идём.</li>
+        <li>Российское стекло занимает коридор от 160 до 490 Руб./л. Выше 500 Руб./л нет ни одной российской марки.</li>
+        <li>Импорт, кроме казахстанской Tassay (414 Руб./л), стоит от 506 до 1 410 Руб./л. В рознице он дешевле, чем онлайн: Acqua Panna 520 против 728 Руб./л, San Benedetto 721 против 817 Руб./л.</li>
+        <li>Самые плотные данные у Legend of Baikal (21 наблюдение, 434 Руб./л) и Baikal Pearl (13 наблюдений, 381 Руб./л): это устойчивый пол российского стекла.</li>
+        <li>«Очищенные» марки внизу: Sever 287 Руб./л, BonAqua в стекле 300 Руб./л, Azure 161 Руб./л. Очистка без доказательств цену не поднимает.</li>
+        <li>В ПЭТ выше 400 Руб./л стоят только импорт, «Лангвей» и Petroglyph. Байкальские марки держатся на 215–245 Руб./л, масса на 90–155 Руб./л, поэтому в ПЭТ мы не идём.</li>
       </ul>
     </div>
     <div class="card stack">
       <h3>Что это значит для нашей цены</h3>
       <ul class="clean">
-        <li>399 ₽ за 0,75 л ставит PRISTINAM над Nedra (369 ₽ онлайн), рядом с San Benedetto в METRO (389 ₽) и под Acqua Panna онлайн (460 ₽).</li>
+        <li>399 Руб. за 0,75 л ставит PRISTINAM над Nedra (369 Руб. онлайн), рядом с San Benedetto в METRO (389 Руб.) и под Acqua Panna онлайн (460 Руб.).</li>
         <li>Мы становимся самой дорогой российской водой в стекле. Это позиция, а не риск, только если бутылка, история и протокол держат уровень импорта.</li>
-        <li>Запас вверх есть: до основного импорта ещё 140–280 ₽/л. Запаса вниз нет: при 299 ₽ мы попадаем в коридор Legend и Petroglyph и теряем отличие.</li>
+        <li>Запас вверх есть: до основного импорта ещё 140–280 Руб./л. Запаса вниз нет: при 299 Руб. мы попадаем в коридор Legend и Petroglyph и теряем отличие.</li>
       </ul>
     </div>
   </div>
 
   <div class="card stack">
     <h3>Сводная таблица брендов</h3>
-    <p class="muted" style="font-size:13.5px">Цены: медиана, в скобках число наблюдений. Отзывы: доля от содержательных отзывов бренда на маркетплейсах. Выручка — у основного юрлица, а не у бренда. Пустая клетка означает, что данных нет, а не что товара нет. У Dausuz цена 0,75 л онлайн ненадёжна: одна из двух найденных цен — 100 ₽.</p>
+    <p class="muted" style="font-size:13.5px">Цены: медиана, в скобках число наблюдений. Отзывы: доля от содержательных отзывов бренда на маркетплейсах. Выручка — у основного юрлица, а не у бренда. Пустая клетка означает, что данных нет, а не что товара нет. У Dausuz цена 0,75 л онлайн ненадёжна: одна из двух найденных цен — 100 Руб.</p>
     <div class="tbl-wrap"><table id="brandTable" style="min-width:1040px"></table></div>
   </div>
 </section>
@@ -360,16 +441,35 @@ td.verdict{white-space:nowrap}
   <div class="sec-head">
     <div class="eyebrow">Позиционирование среди брендов</div>
     <h2>Карты позиционирования</h2>
-    <p>33 бренда оценены по пяти шкалам от 0 до 4 по тому, что они сами заявляют: природа, технология, чистота, функция и статус. Выберите оси и посмотрите, где тесно и где пусто.</p>
+    <p>Где стоят бренды по цене и по тому, на чём они строят ценность: на природном происхождении или на технологии. Положение брендов взято из исследования: измеренные цены и оценки заявлений 33 брендов.</p>
   </div>
   <div class="card stack">
-    <div class="row">
-      <label class="ctl" for="axX" style="flex-direction:row;align-items:center;gap:8px">По горизонтали <select class="sel" id="axX"></select></label>
-      <label class="ctl" for="axY" style="flex-direction:row;align-items:center;gap:8px">По вертикали <select class="sel" id="axY"></select></label>
-      <div class="legend"><span><b style="color:var(--ink)">жирным</b> — цена в стекле от 400 ₽/л</span><span class="muted">серым — импорт</span></div>
+    <div class="row" style="justify-content:space-between">
+      <h3>Цена × источник ценности: где стоят бренды на самом деле</h3>
+      <div class="seg" id="quadMat" role="group" aria-label="Материал"><button data-v="glass" aria-pressed="true">Стекло</button><button data-v="pet" aria-pressed="false">ПЭТ</button></div>
     </div>
-    <div style="overflow-x:auto"><table class="pgrid" id="pgrid2" aria-label="Карта позиционирования брендов"></table></div>
-    <p id="pgNote" style="font-size:14.5px"></p>
+    <p class="muted" style="font-size:14px">По горизонтали — измеренная цена за литр (обычная цена, негазированная, розница и онлайн). По вертикали — на чём бренд строит ценность: вверху технология, внизу природное происхождение. Положение каждой точки взято из исследования, это не схема.</p>
+    <div class="legend"><span><svg width="12" height="12"><circle cx="6" cy="6" r="5" fill="var(--ice)"/></svg> российский бренд</span><span><svg width="12" height="12"><circle cx="6" cy="6" r="4" fill="var(--surface)" stroke="var(--muted)" stroke-width="2"/></svg> импорт</span><span><svg width="12" height="12"><rect x="2" y="2" width="8" height="8" transform="rotate(45 6 6)" fill="var(--ink)"/></svg> PRISTINAM, 399 Руб. за 0,75 л</span></div>
+    <div class="quad-wrap"><svg class="quad" id="quad" viewBox="0 0 920 540" role="img" aria-label="Карта: цена и источник ценности брендов"></svg></div>
+    <p id="quadNote" style="font-size:15px"></p>
+    <div class="scale-legend">
+      <div><b>Как посчитана вертикаль</b>Оценка «технология» минус оценка «природа». Обе стоят от 0 до 4. Плюс означает, что бренд продаёт способ обработки, минус — что продаёт источник.</div>
+      <div><b>Откуда оценки</b>Их поставил исследователь по сайтам, этикеткам и рекламе 33 брендов: что бренд сам о себе заявляет. Это не мнение покупателей.</div>
+      <div><b>Что такое «статус»</b>Насколько бренд заявляет премиальность: высокая кухня, дизайн бутылки, ограниченность, цена. 0 — массовая вода, 4 — вода для ресторана со звёздами.</div>
+      <div><b>Граница «дорого»</b>Вертикальная линия стоит на медиане цены показанных брендов. Правее — дорогая половина рынка.</div>
+    </div>
+    <details>
+      <summary>Все пять шкал: таблица с выбором осей</summary>
+      <div class="stack" style="margin-top:12px">
+        <div class="row">
+          <label class="ctl" for="axX" style="flex-direction:row;align-items:center;gap:8px">По горизонтали <select class="sel" id="axX"></select></label>
+          <label class="ctl" for="axY" style="flex-direction:row;align-items:center;gap:8px">По вертикали <select class="sel" id="axY"></select></label>
+          <div class="legend"><span><b style="color:var(--ink)">жирным</b> — цена в стекле от 400 Руб./л</span><span class="muted">серым — импорт</span></div>
+        </div>
+        <div style="overflow-x:auto"><table class="pgrid" id="pgrid2" aria-label="Карта позиционирования брендов"></table></div>
+        <p id="pgNote" style="font-size:14.5px"></p>
+      </div>
+    </details>
   </div>
 
   <div class="grid g2">
@@ -380,7 +480,7 @@ td.verdict{white-space:nowrap}
       <p style="font-size:14.5px">Слово встречается у всех, но ни у кого не доходит до трети отзывов, и ни один бренд не подкрепляет его числом. PRISTINAM может забрать «мягкую» за собой: жёсткость 0,6 °Ж на этикетке.</p>
     </div>
     <div class="card stack">
-      <h3>Что видно на картах</h3>
+      <h3>Что видно на остальных шкалах</h3>
       <ul class="clean">
         <li><b>Технология × статус.</b> Справа вверху пусто: высокую технологичность заявляют только Fahrenheit, BonAqua и «Лангвей», и все три вне премиума.</li>
         <li><b>Природа × статус.</b> Весь статус собран у «природных» марок: Nedra, Acqua Panna, VodaVoda, Petroglyph, Dausuz. Sever и Azure заявляют статус без природы и стоят дёшево.</li>
@@ -392,7 +492,7 @@ td.verdict{white-space:nowrap}
 
   <div class="card stack">
     <h3>Слабые места брендов в отзывах</h3>
-    <p class="muted" style="font-size:13.5px">Доля отзывов с негативом по теме, % от содержательных отзывов бренда. Отзывы собраны на Ozon и Wildberries; точность разметки тем 73–83%, поэтому читать нужно порядок величин, а не десятые доли.</p>
+    <p class="muted" style="font-size:13.5px"><b>Нажмите на число, чтобы увидеть сами отзывы.</b> Доля отзывов с негативом по теме, % от содержательных отзывов бренда. Отзывы собраны на Ozon и Wildberries; точность разметки тем 73–83%, поэтому читать нужно порядок величин, а не десятые доли.</p>
     <div class="tbl-wrap"><table class="heat" id="weakTable"></table></div>
     <p style="font-size:14.5px">Доверие теряют импортные марки: покупатели подозревают подделку и пишут о помятых и вскрытых бутылках. На цену чаще всего жалуются у Prolom и AQUAdetox, марок с обещанием пользы. К вкусу претензий мало у всех, кроме Evian и Fahrenheit.</p>
   </div>
@@ -406,10 +506,10 @@ td.verdict{white-space:nowrap}
   </div>
 
   <div class="card stack">
-    <h3>Цена бутылки 0,75 л в стекле по каналам</h3>
-    <div class="legend"><span><i style="background:var(--line);width:22px;height:5px;border-radius:3px"></i>разброс цен</span><span><i style="background:var(--ice);width:5px;height:14px;border-radius:2px"></i>медиана</span><span><i style="background:var(--ink);transform:rotate(45deg)"></i>PRISTINAM: 399 ₽ на полке, 790 ₽ в меню</span></div>
-    <div class="rc" id="tiers"></div>
-    <p style="font-size:14.5px">Наши 399 ₽ выше медианы каждого розничного и онлайн-канала на 15–50%, но внутри разброса цен в водных магазинах и на маркетплейсах. В меню 790 ₽ ниже общей медианы 970 ₽: в ресторанах мы входим как доступная позиция, а на полке как дорогая. Поэтому первая дверь — рестораны.</p>
+    <h3>Сколько стоит бутылка 0,75 л в стекле в каждом канале</h3>
+    <p class="muted" style="font-size:14px">Негазированная вода, обычная цена. Медиана — цена, дешевле которой стоит половина найденных предложений. В последнем столбце — насколько PRISTINAM дороже или дешевле этой медианы.</p>
+    <div class="tbl-wrap"><table id="tiersTable"></table></div>
+    <p style="font-size:14.5px"><b>Вывод.</b> На полке и онлайн наши 399 Руб. дороже рынка в каждом канале. В меню наши 790 Руб. дешевле рынка. Поэтому первая дверь — рестораны: там мы входим как доступная позиция, а в магазине как дорогая.</p>
   </div>
 
   <div class="card stack">
@@ -424,7 +524,7 @@ td.verdict{white-space:nowrap}
       <div class="stack">
         <h3>Что отсюда следует</h3>
         <ul class="clean">
-          <li>Премиальные рестораны продают негазированную 0,75 л за 1 010 ₽ по медиане. Наши 790 ₽ на 22% ниже этой медианы и равны цене Nedra.</li>
+          <li>Премиальные рестораны продают негазированную 0,75 л за 1 010 Руб. по медиане. Наши 790 Руб. на 22% ниже этой медианы и равны цене Nedra.</li>
           <li>В Петербурге San Benedetto стоит в 16 точках, Святой Источник в 6, Dausuz в 6. Там же самая лёгкая замена.</li>
           <li>В Москве плотнее Baikal Pearl и Baikal Reserve (7 и 6 точек) и Tassay (6): здесь целимся в верхнюю цену, а не в байкальскую группу.</li>
           <li>Фильтрованной воды заведения нет ни в одном из 73 меню: рестораны продают воду только в бутылке.</li>
@@ -453,21 +553,21 @@ td.verdict{white-space:nowrap}
 
   <div class="grid g2">
     <div class="card stack">
-      <h3>Масштаб компаний за брендами</h3>
-      <p class="muted" style="font-size:13.5px">Выручка основного юрлица за 2025 год, шкала логарифмическая. Это масштаб компании, а не продажи бренда.</p>
+      <h3>Кто стоит за брендами: размер компаний</h3>
+      <p class="muted" style="font-size:13.5px">Выручка компании, которая выпускает бренд, за 2025 год. Она показывает, сколько денег у конкурента на ответ нам: скидки, полку, рекламу. Это не продажи самой воды: у «ПепсиКо» в выручке все напитки и снеки. Шкала логарифмическая: каждое деление в десять раз больше предыдущего.</p>
       <div class="rc" id="revDots"></div>
+      <p style="font-size:14.5px">Прямые конкуренты в премиальном стекле — небольшие компании с выручкой 89–270 млн Руб. Ресурсных игроков трое: байкальская группа, структура Эн+ за Legend of Baikal и «Калинов Родник» за Sever.</p>
     </div>
     <div class="card stack">
       <h3>Порядок входа по каналам</h3>
       <div class="tbl-wrap"><table>
         <tr><th>Шаг</th><th>Канал</th><th>Почему</th></tr>
-        <tr><td class="num">1</td><td>Премиальные рестораны и отели</td><td>790 ₽ ниже медианы меню; половину меню держит один импортный бренд; производителю остаётся 229 ₽ с бутылки</td></tr>
-        <tr><td class="num">2</td><td>Водные магазины и свой магазин</td><td>Там стоят все премиальные марки; производителю остаётся 258 ₽</td></tr>
-        <tr><td class="num">3</td><td>Ozon</td><td>Отзывы и проверка цены; 233 ₽ производителю</td></tr>
-        <tr><td class="num">4</td><td>METRO</td><td>Единственная сеть с премиальным стеклом и закупками ресторанов; 200 ₽ производителю</td></tr>
-        <tr><td class="num">5</td><td>Премиальные сети</td><td>Только с цифрами пилота: производителю остаётся 168 ₽, меньше всех каналов</td></tr>
+        <tr><td class="num">1</td><td>Премиальные рестораны и отели</td><td>790 Руб. в меню ниже рынка; половину меню держит один импортный бренд; производителю остаётся 229 Руб. с бутылки</td></tr>
+        <tr><td class="num">2</td><td>Свой интернет-магазин и водные магазины</td><td>В водных магазинах стоят все премиальные марки; производителю остаётся 258 Руб.; здесь же проверяем цену и собираем первые отзывы</td></tr>
+        <tr><td class="num">3</td><td>Азбука Вкуса</td><td>Премиальная сеть с нашим покупателем и один договор вместо десятков. По расчёту производителю остаётся 168 Руб. через дистрибьютора или около 198 Руб. при прямом договоре</td></tr>
       </table></div>
-      <p style="font-size:14.5px">Прямые конкуренты в премиальном стекле — небольшие компании с выручкой 89–270 млн ₽. Ресурсных игроков трое: байкальская группа, структура Эн+ за Legend of Baikal и «Калинов Родник» за Sever.</p>
+      <p style="font-size:14.5px"><b>Ozon и METRO в план не включены</b> по решению владельца. Отзывы и проверку цены переносим в свой магазин и водные магазины. Рестораны, которые закупаются в cash & carry, обслуживаем прямой доставкой.</p>
+      <p style="font-size:14.5px"><b>По Азбуке Вкуса в исследовании цен нет:</b> сайт сети не открылся для сбора. До переговоров полку нужно снять вручную: какие марки в стекле стоят и почём.</p>
     </div>
   </div>
 </section>
@@ -483,7 +583,7 @@ td.verdict{white-space:nowrap}
   <div class="grid g2">
     <div class="card stack">
       <h3>Главный ход: лёд — это природа, а не техника</h3>
-      <p>Рынок делит воду на «нетронутую природную» и «очищенную техникой». За первую платят премию, вторая стоит как масса: Aqua Minerale 152 ₽/л, BonAqua 123 ₽/л.</p>
+      <p>Рынок делит воду на «нетронутую природную» и «очищенную техникой». За первую платят премию, вторая стоит как масса: Aqua Minerale 152 Руб./л, BonAqua 123 Руб./л.</p>
       <p>Замораживание снимает это деление. Когда вода замерзает, кристалл льда строится из молекул воды и выталкивает примеси: морской лёд в разы преснее океана. PRISTINAM повторяет природный процесс с инженерной точностью.</p>
       <p>Поэтому в заголовках стоит слово «лёд». Слова «технология», «установка», «патент» уходят в доказательства.</p>
     </div>
@@ -493,7 +593,7 @@ td.verdict{white-space:nowrap}
         <li>В отзывах о премиальной воде люди хвалят вкус и мягкость. Технологические обещания брендов повторяются в 0–3% отзывов.</li>
         <li>Клетка «раскрытый метод + высокий статус» на карте рынка пуста: 0 из 33 брендов.</li>
         <li>Ни один премиальный бренд в России не публикует метод и протокол партии.</li>
-        <li>Sever подаёт очистку одной фразой без цифр и стоит 287 ₽/л против 479 ₽/л у Nedra.</li>
+        <li>Sever подаёт очистку одной фразой без цифр и стоит 287 Руб./л против 479 Руб./л у Nedra.</li>
         <li>Щелочные бренды продают пользу, покупатели проверяют pH полосками и ставят одну звезду. Туда не идём.</li>
       </ul>
     </div>
@@ -516,14 +616,14 @@ td.verdict{white-space:nowrap}
     <h3>Против кого и чем отвечаем</h3>
     <div class="tbl-wrap"><table>
       <tr><th>Конкурент</th><th>Что обещает</th><th class="num">Цена 0,75 стекло</th><th>Наш ответ</th></tr>
-      <tr><td>Nedra</td><td>Природная вода, «не вмешиваемся в состав», fine dining</td><td class="num">369 ₽ онлайн<br>790–1 350 ₽ меню</td><td>Открытый метод и цифры, которых у Nedra нет. Цена в меню на нижней границе Nedra.</td></tr>
-      <tr><td>Legend of Baikal</td><td>Глубина Байкала</td><td class="num">240 ₽ полка</td><td>Стоим выше этого пола за счёт мягкости с числом и протокола.</td></tr>
-      <tr><td>Baikal Pearl / Baikal430</td><td>Сверхлёгкая минерализация до 0,12 г/л (заявление бренда)</td><td class="num">271 ₽ онлайн</td><td>Та же лёгкость, 100–115 мг/дм³, плюс жёсткость 0,6 °Ж и метод.</td></tr>
-      <tr><td>Sever / Azure</td><td>«Многоступенчатая очистка» в премиальном стекле</td><td class="num">287 ₽/л</td><td>Раскрываем метод полностью и показываем протокол.</td></tr>
-      <tr><td>VodaVoda</td><td>Дизайн и «мягкая вода»</td><td class="num">339 ₽ онлайн</td><td>Та же выгода, но с числом и объяснением, откуда мягкость.</td></tr>
-      <tr><td>San Benedetto</td><td>Итальянский стандарт ресторана</td><td class="num">990–1 050 ₽ меню</td><td>Российская вода с историей для гостя, в меню на 20–25% дешевле.</td></tr>
-      <tr><td>Lauretana</td><td>14 мг/л, «самая лёгкая»</td><td class="num">460 ₽ онлайн</td><td>Числом минерализации не спорим. Спорим мягкостью, ценой и методом.</td></tr>
-      <tr><td>Fahrenheit</td><td>pH 9,5 и технология</td><td class="num">75 ₽ за 0,5 ПЭТ</td><td>В «щелочную» полку не идём: pH у нас в протоколе, а не на фасаде.</td></tr>
+      <tr><td>Nedra</td><td>Природная вода, «не вмешиваемся в состав», fine dining</td><td class="num">369 Руб. онлайн<br>790–1 350 Руб. меню</td><td>Открытый метод и цифры, которых у Nedra нет. Цена в меню на нижней границе Nedra.</td></tr>
+      <tr><td>Legend of Baikal</td><td>Глубина Байкала</td><td class="num">240 Руб. полка</td><td>Стоим выше этого пола за счёт мягкости с числом и протокола.</td></tr>
+      <tr><td>Baikal Pearl / Baikal430</td><td>Сверхлёгкая минерализация до 0,12 г/л (заявление бренда)</td><td class="num">271 Руб. онлайн</td><td>Та же лёгкость, 100–115 мг/дм³, плюс жёсткость 0,6 °Ж и метод.</td></tr>
+      <tr><td>Sever / Azure</td><td>«Многоступенчатая очистка» в премиальном стекле</td><td class="num">287 Руб./л</td><td>Раскрываем метод полностью и показываем протокол.</td></tr>
+      <tr><td>VodaVoda</td><td>Дизайн и «мягкая вода»</td><td class="num">339 Руб. онлайн</td><td>Та же выгода, но с числом и объяснением, откуда мягкость.</td></tr>
+      <tr><td>San Benedetto</td><td>Итальянский стандарт ресторана</td><td class="num">990–1 050 Руб. меню</td><td>Российская вода с историей для гостя, в меню на 20–25% дешевле.</td></tr>
+      <tr><td>Lauretana</td><td>14 мг/л, «самая лёгкая»</td><td class="num">460 Руб. онлайн</td><td>Числом минерализации не спорим. Спорим мягкостью, ценой и методом.</td></tr>
+      <tr><td>Fahrenheit</td><td>pH 9,5 и технология</td><td class="num">75 Руб. за 0,5 ПЭТ</td><td>В «щелочную» полку не идём: pH у нас в протоколе, а не на фасаде.</td></tr>
     </table></div>
   </div>
 </section>
@@ -592,6 +692,7 @@ td.verdict{white-space:nowrap}
     <div class="eyebrow">Продукт</div>
     <h2>Что доказывает отчёт лаборатории</h2>
     <p>В отчёте три точки отбора и 34 показателя. Точки 2 и 3 дают воду с pH 8,2–8,6: это профиль продукта для бутылки, вся кампания стоит на нём. Точка 1 показывает режим pH 10,2: лаборатория отметила его как выход за норматив 6–9, поэтому в бутылку и в рекламу он не идёт.</p>
+    <p><a href="https://aka-sergey.github.io/Arktika/pristinam-lab-report-2025-03-07.pdf" target="_blank" rel="noopener">Открыть полный отчёт лаборатории (PDF, 6 страниц)</a></p>
   </div>
 
   <div class="card stack">
@@ -660,6 +761,98 @@ td.verdict{white-space:nowrap}
   </div>
 </section>
 
+<!-- ============ ОЧИСТКА ============ -->
+<section id="ochistka">
+  <div class="sec-head">
+    <div class="eyebrow">Справочно</div>
+    <h2>Чем очистка льдом отличается от фильтра</h2>
+    <p>Справка для тех, кто будет объяснять продукт сомелье, закупщику или журналисту. Схемы условные: они показывают принцип, а не точные пропорции веществ.</p>
+  </div>
+  <div class="card stack">
+    <h3>Как работает перекристаллизация</h3>
+    <svg class="diag" viewBox="0 0 760 470" role="img" aria-label="Схема: исходная вода при замораживании разделяется на лёд и незамёрзший остаток">
+<rect class="box" x="260" y="16" width="240" height="130" rx="14"/><circle class="m1" cx="291.7" cy="39.8" r="6"/><rect class="m2" x="321.0" y="33.8" width="12" height="12" rx="1.5"/><path class="m3" d="M362.3 32.8L369.3 45.8H355.3Z"/><circle class="m1" cx="397.7" cy="39.8" r="6"/><rect class="m2" x="427.0" y="33.8" width="12" height="12" rx="1.5"/><path class="m3" d="M468.3 32.8L475.3 45.8H461.3Z"/><path class="m3" d="M291.7 60.2L298.7 73.2H284.7Z"/><circle class="m1" cx="327.0" cy="67.2" r="6"/><rect class="m2" x="356.3" y="61.2" width="12" height="12" rx="1.5"/><path class="m3" d="M397.7 60.2L404.7 73.2H390.7Z"/><circle class="m1" cx="433.0" cy="67.2" r="6"/><rect class="m2" x="462.3" y="61.2" width="12" height="12" rx="1.5"/><rect class="m2" x="285.7" y="88.8" width="12" height="12" rx="1.5"/><path class="m3" d="M327.0 87.8L334.0 100.8H320.0Z"/><circle class="m1" cx="362.3" cy="94.8" r="6"/><rect class="m2" x="391.7" y="88.8" width="12" height="12" rx="1.5"/><path class="m3" d="M433.0 87.8L440.0 100.8H426.0Z"/><circle class="m1" cx="468.3" cy="94.8" r="6"/><circle class="m1" cx="291.7" cy="122.2" r="6"/><rect class="m2" x="321.0" y="116.2" width="12" height="12" rx="1.5"/><path class="m3" d="M362.3 115.2L369.3 128.2H355.3Z"/><circle class="m1" cx="397.7" cy="122.2" r="6"/><rect class="m2" x="427.0" y="116.2" width="12" height="12" rx="1.5"/><path class="m3" d="M468.3 115.2L475.3 128.2H461.3Z"/>
+<text class="cap" x="380" y="172" text-anchor="middle">Исходная вода</text>
+<path class="arr" d="M380 184V214M380 214H170V246M380 214H590V246"/><path class="arr" d="M162 238l8 9 8-9M582 238l8 9 8-9"/>
+<rect class="ice" x="60" y="252" width="220" height="124" rx="14"/><polygon class="hex" points="87.9,262.0 101.7,270.0 101.7,286.0 87.9,294.0 74.0,286.0 74.0,270.0"/><polygon class="hex" points="115.6,262.0 129.4,270.0 129.4,286.0 115.6,294.0 101.7,286.0 101.7,270.0"/><polygon class="hex" points="143.3,262.0 157.1,270.0 157.1,286.0 143.3,294.0 129.4,286.0 129.4,270.0"/><polygon class="hex" points="171.0,262.0 184.9,270.0 184.9,286.0 171.0,294.0 157.1,286.0 157.1,270.0"/><polygon class="hex" points="198.7,262.0 212.6,270.0 212.6,286.0 198.7,294.0 184.9,286.0 184.9,270.0"/><polygon class="hex" points="226.4,262.0 240.3,270.0 240.3,286.0 226.4,294.0 212.6,286.0 212.6,270.0"/><polygon class="hex" points="101.7,286.0 115.6,294.0 115.6,310.0 101.7,318.0 87.9,310.0 87.9,294.0"/><polygon class="hex" points="129.4,286.0 143.3,294.0 143.3,310.0 129.4,318.0 115.6,310.0 115.6,294.0"/><polygon class="hex" points="157.1,286.0 171.0,294.0 171.0,310.0 157.1,318.0 143.3,310.0 143.3,294.0"/><polygon class="hex" points="184.9,286.0 198.7,294.0 198.7,310.0 184.9,318.0 171.0,310.0 171.0,294.0"/><polygon class="hex" points="212.6,286.0 226.4,294.0 226.4,310.0 212.6,318.0 198.7,310.0 198.7,294.0"/><polygon class="hex" points="240.3,286.0 254.1,294.0 254.1,310.0 240.3,318.0 226.4,310.0 226.4,294.0"/><polygon class="hex" points="87.9,310.0 101.7,318.0 101.7,334.0 87.9,342.0 74.0,334.0 74.0,318.0"/><polygon class="hex" points="115.6,310.0 129.4,318.0 129.4,334.0 115.6,342.0 101.7,334.0 101.7,318.0"/><polygon class="hex" points="143.3,310.0 157.1,318.0 157.1,334.0 143.3,342.0 129.4,334.0 129.4,318.0"/><polygon class="hex" points="171.0,310.0 184.9,318.0 184.9,334.0 171.0,342.0 157.1,334.0 157.1,318.0"/><polygon class="hex" points="198.7,310.0 212.6,318.0 212.6,334.0 198.7,342.0 184.9,334.0 184.9,318.0"/><polygon class="hex" points="226.4,310.0 240.3,318.0 240.3,334.0 226.4,342.0 212.6,334.0 212.6,318.0"/><polygon class="hex" points="101.7,334.0 115.6,342.0 115.6,358.0 101.7,366.0 87.9,358.0 87.9,342.0"/><polygon class="hex" points="129.4,334.0 143.3,342.0 143.3,358.0 129.4,366.0 115.6,358.0 115.6,342.0"/><polygon class="hex" points="157.1,334.0 171.0,342.0 171.0,358.0 157.1,366.0 143.3,358.0 143.3,342.0"/><polygon class="hex" points="184.9,334.0 198.7,342.0 198.7,358.0 184.9,366.0 171.0,358.0 171.0,342.0"/><polygon class="hex" points="212.6,334.0 226.4,342.0 226.4,358.0 212.6,366.0 198.7,358.0 198.7,342.0"/><polygon class="hex" points="240.3,334.0 254.1,342.0 254.1,358.0 240.3,366.0 226.4,358.0 226.4,342.0"/><circle class="m1" cx="150.0" cy="318.0" r="5"/><rect class="m2" x="217.0" y="339.0" width="10" height="10" rx="1.5"/>
+<text class="cap" x="170" y="402" text-anchor="middle">Лёд, затем очищенная вода</text><text class="sub" x="170" y="420" text-anchor="middle">остаётся малая часть минералов</text>
+<rect class="box" x="480" y="252" width="220" height="124" rx="14"/><rect class="m2" x="496.5" y="264.8" width="12" height="12" rx="1.5"/><path class="m3" d="M527.5 263.8L534.5 276.8H520.5Z"/><circle class="m1" cx="552.5" cy="270.8" r="6"/><rect class="m2" x="571.5" y="264.8" width="12" height="12" rx="1.5"/><path class="m3" d="M602.5 263.8L609.5 276.8H595.5Z"/><circle class="m1" cx="627.5" cy="270.8" r="6"/><rect class="m2" x="646.5" y="264.8" width="12" height="12" rx="1.5"/><path class="m3" d="M677.5 263.8L684.5 276.8H670.5Z"/><circle class="m1" cx="502.5" cy="292.4" r="6"/><rect class="m2" x="521.5" y="286.4" width="12" height="12" rx="1.5"/><path class="m3" d="M552.5 285.4L559.5 298.4H545.5Z"/><circle class="m1" cx="577.5" cy="292.4" r="6"/><rect class="m2" x="596.5" y="286.4" width="12" height="12" rx="1.5"/><path class="m3" d="M627.5 285.4L634.5 298.4H620.5Z"/><circle class="m1" cx="652.5" cy="292.4" r="6"/><rect class="m2" x="671.5" y="286.4" width="12" height="12" rx="1.5"/><path class="m3" d="M502.5 307.0L509.5 320.0H495.5Z"/><circle class="m1" cx="527.5" cy="314.0" r="6"/><rect class="m2" x="546.5" y="308.0" width="12" height="12" rx="1.5"/><path class="m3" d="M577.5 307.0L584.5 320.0H570.5Z"/><circle class="m1" cx="602.5" cy="314.0" r="6"/><rect class="m2" x="621.5" y="308.0" width="12" height="12" rx="1.5"/><path class="m3" d="M652.5 307.0L659.5 320.0H645.5Z"/><circle class="m1" cx="677.5" cy="314.0" r="6"/><rect class="m2" x="496.5" y="329.6" width="12" height="12" rx="1.5"/><path class="m3" d="M527.5 328.6L534.5 341.6H520.5Z"/><circle class="m1" cx="552.5" cy="335.6" r="6"/><rect class="m2" x="571.5" y="329.6" width="12" height="12" rx="1.5"/><path class="m3" d="M602.5 328.6L609.5 341.6H595.5Z"/><circle class="m1" cx="627.5" cy="335.6" r="6"/><rect class="m2" x="646.5" y="329.6" width="12" height="12" rx="1.5"/><path class="m3" d="M677.5 328.6L684.5 341.6H670.5Z"/><circle class="m1" cx="502.5" cy="357.2" r="6"/><rect class="m2" x="521.5" y="351.2" width="12" height="12" rx="1.5"/><path class="m3" d="M552.5 350.2L559.5 363.2H545.5Z"/><circle class="m1" cx="577.5" cy="357.2" r="6"/><rect class="m2" x="596.5" y="351.2" width="12" height="12" rx="1.5"/><path class="m3" d="M627.5 350.2L634.5 363.2H620.5Z"/><circle class="m1" cx="652.5" cy="357.2" r="6"/><rect class="m2" x="671.5" y="351.2" width="12" height="12" rx="1.5"/>
+<text class="cap" x="590" y="402" text-anchor="middle">Незамёрзший остаток</text><text class="sub" x="590" y="420" text-anchor="middle">сливается вместе с примесями</text>
+<circle class="m1" cx="170.0" cy="452.0" r="5"/><text class="sub" x="182" y="456">минералы: кальций, магний</text><rect class="m2" x="367.0" y="447.0" width="10" height="10" rx="1.5"/><text class="sub" x="384" y="456">прочие соли</text><path class="m3" d="M486.0 446.0L492.0 457.0H480.0Z"/><text class="sub" x="499" y="456">загрязнения</text></svg>
+    <p>Когда вода замерзает, кристалл льда строится из молекул воды. Растворённые соли и примеси в кристалл почти не встраиваются и остаются в незамёрзшей части. Лёд отделяют и растапливают, остаток сливают.</p>
+    <p>По отчёту лаборатории в готовой воде остаётся сухой остаток 100–115 мг/дм³, кальций 6,8–9,5 мг/дм³ и магний 1,9–2,7 мг/дм³.</p>
+  </div>
+  <div class="card stack">
+    <h3>Два разных способа разделить воду и примеси</h3>
+    <svg class="diag" viewBox="0 0 760 330" role="img" aria-label="Схема: мембрана обратного осмоса и кристаллизация льда">
+<rect class="box" x="30" y="16" width="330" height="220" rx="14"/><circle class="m1" cx="62.2" cy="47.6" r="6"/><rect class="m2" x="92.8" y="41.6" width="12" height="12" rx="1.5"/><path class="m3" d="M135.2 40.6L142.2 53.6H128.2Z"/><circle class="m1" cx="171.8" cy="47.6" r="6"/><path class="m3" d="M62.2 79.8L69.2 92.8H55.2Z"/><circle class="m1" cx="98.8" cy="86.8" r="6"/><rect class="m2" x="129.2" y="80.8" width="12" height="12" rx="1.5"/><path class="m3" d="M171.8 79.8L178.8 92.8H164.8Z"/><rect class="m2" x="56.2" y="120.0" width="12" height="12" rx="1.5"/><path class="m3" d="M98.8 119.0L105.8 132.0H91.8Z"/><circle class="m1" cx="135.2" cy="126.0" r="6"/><rect class="m2" x="165.8" y="120.0" width="12" height="12" rx="1.5"/><circle class="m1" cx="62.2" cy="165.2" r="6"/><rect class="m2" x="92.8" y="159.2" width="12" height="12" rx="1.5"/><path class="m3" d="M135.2 158.2L142.2 171.2H128.2Z"/><circle class="m1" cx="171.8" cy="165.2" r="6"/><path class="m3" d="M62.2 197.4L69.2 210.4H55.2Z"/><circle class="m1" cx="98.8" cy="204.4" r="6"/><rect class="m2" x="129.2" y="198.4" width="12" height="12" rx="1.5"/><path class="m3" d="M171.8 197.4L178.8 210.4H164.8Z"/>
+<path d="M205 22V230" stroke="var(--muted)" stroke-width="5" stroke-dasharray="7 6" fill="none"/><path class="arr" d="M150 126H262"/><path class="arr" d="M254 118l9 8-9 8"/>
+<rect class="m2" x="294.0" y="68.0" width="12" height="12" rx="1.5"/><path class="m3" d="M326.0 179.0L333.0 192.0H319.0Z"/>
+<text class="cap" x="195" y="264" text-anchor="middle">Обратный осмос</text><text class="sub" x="195" y="283" text-anchor="middle">воду продавливают через мембрану под давлением</text>
+<rect class="box" x="400" y="16" width="330" height="220" rx="14"/><polygon class="hex" points="426.7,30.0 441.4,38.5 441.4,55.5 426.7,64.0 412.0,55.5 412.0,38.5"/><polygon class="hex" points="456.2,30.0 470.9,38.5 470.9,55.5 456.2,64.0 441.4,55.5 441.4,38.5"/><polygon class="hex" points="485.6,30.0 500.3,38.5 500.3,55.5 485.6,64.0 470.9,55.5 470.9,38.5"/><polygon class="hex" points="515.1,30.0 529.8,38.5 529.8,55.5 515.1,64.0 500.3,55.5 500.3,38.5"/><polygon class="hex" points="544.5,30.0 559.2,38.5 559.2,55.5 544.5,64.0 529.8,55.5 529.8,38.5"/><polygon class="hex" points="441.4,55.5 456.2,64.0 456.2,81.0 441.4,89.5 426.7,81.0 426.7,64.0"/><polygon class="hex" points="470.9,55.5 485.6,64.0 485.6,81.0 470.9,89.5 456.2,81.0 456.2,64.0"/><polygon class="hex" points="500.3,55.5 515.1,64.0 515.1,81.0 500.3,89.5 485.6,81.0 485.6,64.0"/><polygon class="hex" points="529.8,55.5 544.5,64.0 544.5,81.0 529.8,89.5 515.1,81.0 515.1,64.0"/><polygon class="hex" points="559.2,55.5 573.9,64.0 573.9,81.0 559.2,89.5 544.5,81.0 544.5,64.0"/><polygon class="hex" points="426.7,81.0 441.4,89.5 441.4,106.5 426.7,115.0 412.0,106.5 412.0,89.5"/><polygon class="hex" points="456.2,81.0 470.9,89.5 470.9,106.5 456.2,115.0 441.4,106.5 441.4,89.5"/><polygon class="hex" points="485.6,81.0 500.3,89.5 500.3,106.5 485.6,115.0 470.9,106.5 470.9,89.5"/><polygon class="hex" points="515.1,81.0 529.8,89.5 529.8,106.5 515.1,115.0 500.3,106.5 500.3,89.5"/><polygon class="hex" points="544.5,81.0 559.2,89.5 559.2,106.5 544.5,115.0 529.8,106.5 529.8,89.5"/><polygon class="hex" points="441.4,106.5 456.2,115.0 456.2,132.0 441.4,140.5 426.7,132.0 426.7,115.0"/><polygon class="hex" points="470.9,106.5 485.6,115.0 485.6,132.0 470.9,140.5 456.2,132.0 456.2,115.0"/><polygon class="hex" points="500.3,106.5 515.1,115.0 515.1,132.0 500.3,140.5 485.6,132.0 485.6,115.0"/><polygon class="hex" points="529.8,106.5 544.5,115.0 544.5,132.0 529.8,140.5 515.1,132.0 515.1,115.0"/><polygon class="hex" points="559.2,106.5 573.9,115.0 573.9,132.0 559.2,140.5 544.5,132.0 544.5,115.0"/><polygon class="hex" points="426.7,132.0 441.4,140.5 441.4,157.5 426.7,166.0 412.0,157.5 412.0,140.5"/><polygon class="hex" points="456.2,132.0 470.9,140.5 470.9,157.5 456.2,166.0 441.4,157.5 441.4,140.5"/><polygon class="hex" points="485.6,132.0 500.3,140.5 500.3,157.5 485.6,166.0 470.9,157.5 470.9,140.5"/><polygon class="hex" points="515.1,132.0 529.8,140.5 529.8,157.5 515.1,166.0 500.3,157.5 500.3,140.5"/><polygon class="hex" points="544.5,132.0 559.2,140.5 559.2,157.5 544.5,166.0 529.8,157.5 529.8,140.5"/><polygon class="hex" points="441.4,157.5 456.2,166.0 456.2,183.0 441.4,191.5 426.7,183.0 426.7,166.0"/><polygon class="hex" points="470.9,157.5 485.6,166.0 485.6,183.0 470.9,191.5 456.2,183.0 456.2,166.0"/><polygon class="hex" points="500.3,157.5 515.1,166.0 515.1,183.0 500.3,191.5 485.6,183.0 485.6,166.0"/><polygon class="hex" points="529.8,157.5 544.5,166.0 544.5,183.0 529.8,191.5 515.1,183.0 515.1,166.0"/><polygon class="hex" points="559.2,157.5 573.9,166.0 573.9,183.0 559.2,191.5 544.5,183.0 544.5,166.0"/><polygon class="hex" points="426.7,183.0 441.4,191.5 441.4,208.5 426.7,217.0 412.0,208.5 412.0,191.5"/><polygon class="hex" points="456.2,183.0 470.9,191.5 470.9,208.5 456.2,217.0 441.4,208.5 441.4,191.5"/><polygon class="hex" points="485.6,183.0 500.3,191.5 500.3,208.5 485.6,217.0 470.9,208.5 470.9,191.5"/><polygon class="hex" points="515.1,183.0 529.8,191.5 529.8,208.5 515.1,217.0 500.3,208.5 500.3,191.5"/><polygon class="hex" points="544.5,183.0 559.2,191.5 559.2,208.5 544.5,217.0 529.8,208.5 529.8,191.5"/><circle class="m1" cx="470.0" cy="110.0" r="5"/><rect class="m2" x="435.0" y="183.0" width="10" height="10" rx="1.5"/>
+<path class="m3" d="M612.0 40.6L619.0 53.6H605.0Z"/><circle class="m1" cx="656.0" cy="47.6" r="6"/><rect class="m2" x="694.0" y="41.6" width="12" height="12" rx="1.5"/><rect class="m2" x="606.0" y="80.8" width="12" height="12" rx="1.5"/><path class="m3" d="M656.0 79.8L663.0 92.8H649.0Z"/><circle class="m1" cx="700.0" cy="86.8" r="6"/><circle class="m1" cx="612.0" cy="126.0" r="6"/><rect class="m2" x="650.0" y="120.0" width="12" height="12" rx="1.5"/><path class="m3" d="M700.0 119.0L707.0 132.0H693.0Z"/><path class="m3" d="M612.0 158.2L619.0 171.2H605.0Z"/><circle class="m1" cx="656.0" cy="165.2" r="6"/><rect class="m2" x="694.0" y="159.2" width="12" height="12" rx="1.5"/><rect class="m2" x="606.0" y="198.4" width="12" height="12" rx="1.5"/><path class="m3" d="M656.0 197.4L663.0 210.4H649.0Z"/><circle class="m1" cx="700.0" cy="204.4" r="6"/>
+<text class="cap" x="565" y="264" text-anchor="middle">Вымораживание</text><text class="sub" x="565" y="283" text-anchor="middle">лёд растёт из чистой воды и вытесняет примеси</text>
+<circle class="m1" cx="170.0" cy="312.0" r="5"/><text class="sub" x="182" y="316">минералы: кальций, магний</text><rect class="m2" x="367.0" y="307.0" width="10" height="10" rx="1.5"/><text class="sub" x="384" y="316">прочие соли</text><path class="m3" d="M486.0 306.0L492.0 317.0H480.0Z"/><text class="sub" x="499" y="316">загрязнения</text></svg>
+    <div class="tbl-wrap"><table>
+      <tr><th></th><th>Обратный осмос</th><th>Вымораживание</th></tr>
+      <tr><td><b>Как разделяет</b></td><td>Давление продавливает воду через мембрану с очень мелкими порами</td><td>Лёд растёт из молекул воды, примеси остаются в жидкости</td></tr>
+      <tr><td><b>Что стоит на пути воды</b></td><td>Мембрана и картриджи предочистки</td><td>Ничего: разделение идёт на границе льда и воды</td></tr>
+      <tr><td><b>Что остаётся в воде</b></td><td>Почти ничего, поэтому такую воду обычно доминерализуют</td><td>Небольшая часть минералов исходной воды</td></tr>
+      <tr><td><b>Кто так делает на рынке</b></td><td>Массовые марки с «многоступенчатой очисткой»</td><td>В бутылках 0,3–1 л в России исследование таких марок не нашло</td></tr>
+      <tr><td><b>Чем подтверждается у нас</b></td><td>—</td><td>Отчёт лаборатории на 34 показателя</td></tr>
+    </table></div>
+    <p class="muted" style="font-size:13.5px">Разные ионы ведут себя при замораживании по-разному, на результат влияют скорость и температура кристаллизации. Точный состав каждой партии показывает её протокол.</p>
+  </div>
+</section>
+
+<!-- ============ QR ============ -->
+<section id="qr">
+  <div class="sec-head">
+    <div class="eyebrow">Механика</div>
+    <h2>Протокол партии по QR: как это выглядит</h2>
+    <p>Макет для стеклянной бутылки 0,75 л. Покупатель или гость ресторана наводит камеру на контрэтикетку и попадает на страницу своей партии. QR на макете настоящий: он ведёт на раздел этого отчёта с цифрами лаборатории.</p>
+  </div>
+  <div class="card stack">
+    <div class="mock">
+      <figure><svg viewBox="0 0 150 420" width="150" role="img" aria-label="Бутылка 0,75 л, вид сзади: контрэтикетка с QR и кольеретка на горлышке">
+<defs><linearGradient id="gl" x1="0" x2="1"><stop offset="0" stop-color="#cfe3ec"/><stop offset=".45" stop-color="#f1f7fa"/><stop offset="1" stop-color="#bcd5e0"/></linearGradient></defs>
+<rect x="58" y="6" width="34" height="24" rx="4" fill="#0c1b2a"/>
+<path d="M62 30V96C62 128 28 138 28 176V392Q28 410 46 410H104Q122 410 122 392V176C122 138 88 128 88 96V30Z" fill="url(#gl)" stroke="#8fb1c1" stroke-width="1.5"/>
+<path d="M40 190V380" stroke="#ffffff" stroke-width="4" stroke-linecap="round" opacity=".7"/>
+<rect x="60" y="54" width="30" height="22" rx="2" fill="#0c1b2a"/><rect x="69" y="59" width="12" height="12" fill="#ffffff"/>
+<rect x="40" y="222" width="70" height="128" rx="3" fill="#0c1b2a"/>
+<rect x="48" y="232" width="34" height="4" fill="#e9f1f6"/><rect x="48" y="244" width="54" height="2" fill="#5b7387"/><rect x="48" y="250" width="46" height="2" fill="#5b7387"/><rect x="48" y="256" width="50" height="2" fill="#5b7387"/>
+<rect x="48" y="268" width="22" height="8" fill="#e9f1f6"/><rect x="78" y="268" width="22" height="8" fill="#e9f1f6"/><rect x="48" y="282" width="22" height="8" fill="#e9f1f6"/><rect x="78" y="282" width="22" height="8" fill="#e9f1f6"/>
+<rect x="48" y="304" width="34" height="34" rx="2" fill="#ffffff"/><path d="M52 308h8v8h-8zM70 308h8v8h-8zM52 326h8v8h-8zM64 318h4v4h-4zM72 322h4v4h-4zM68 328h6v6h-6z" fill="#0c1b2a"/>
+<rect x="88" y="310" width="16" height="2" fill="#5b7387"/><rect x="88" y="316" width="14" height="2" fill="#5b7387"/><rect x="88" y="322" width="16" height="2" fill="#5b7387"/>
+</svg><figcaption>Бутылка сзади: QR на контрэтикетке и на кольеретке</figcaption></figure>
+      <figure><div class="blabel">
+        <div class="bn">PRISTINAM</div>
+        <div class="bt">Мы не фильтруем воду. Мы её замораживаем. Чистая вода превращается в лёд, примеси остаются в незамёрзшей части и уходят.</div>
+        <div class="nums"><div><b>0,6 °Ж</b><span>жёсткость</span></div><div><b>100 мг/дм³</b><span>сухой остаток</span></div><div><b>1,2 мг/л</b><span>натрий</span></div><div><b>8,6</b><span>pH</span></div></div>
+        <div class="qrrow"><svg class="qr" viewBox="-2 -2 37 37" role="img" aria-label="QR-код, ведёт на раздел с протоколом"><path d="M0 0h1v1h-1zM1 0h1v1h-1zM2 0h1v1h-1zM3 0h1v1h-1zM4 0h1v1h-1zM5 0h1v1h-1zM6 0h1v1h-1zM9 0h1v1h-1zM15 0h1v1h-1zM16 0h1v1h-1zM19 0h1v1h-1zM20 0h1v1h-1zM21 0h1v1h-1zM23 0h1v1h-1zM26 0h1v1h-1zM27 0h1v1h-1zM28 0h1v1h-1zM29 0h1v1h-1zM30 0h1v1h-1zM31 0h1v1h-1zM32 0h1v1h-1zM0 1h1v1h-1zM6 1h1v1h-1zM10 1h1v1h-1zM11 1h1v1h-1zM15 1h1v1h-1zM16 1h1v1h-1zM20 1h1v1h-1zM21 1h1v1h-1zM22 1h1v1h-1zM26 1h1v1h-1zM32 1h1v1h-1zM0 2h1v1h-1zM2 2h1v1h-1zM3 2h1v1h-1zM4 2h1v1h-1zM6 2h1v1h-1zM8 2h1v1h-1zM9 2h1v1h-1zM11 2h1v1h-1zM12 2h1v1h-1zM14 2h1v1h-1zM16 2h1v1h-1zM21 2h1v1h-1zM23 2h1v1h-1zM24 2h1v1h-1zM26 2h1v1h-1zM28 2h1v1h-1zM29 2h1v1h-1zM30 2h1v1h-1zM32 2h1v1h-1zM0 3h1v1h-1zM2 3h1v1h-1zM3 3h1v1h-1zM4 3h1v1h-1zM6 3h1v1h-1zM8 3h1v1h-1zM11 3h1v1h-1zM17 3h1v1h-1zM19 3h1v1h-1zM22 3h1v1h-1zM26 3h1v1h-1zM28 3h1v1h-1zM29 3h1v1h-1zM30 3h1v1h-1zM32 3h1v1h-1zM0 4h1v1h-1zM2 4h1v1h-1zM3 4h1v1h-1zM4 4h1v1h-1zM6 4h1v1h-1zM8 4h1v1h-1zM14 4h1v1h-1zM15 4h1v1h-1zM16 4h1v1h-1zM19 4h1v1h-1zM20 4h1v1h-1zM21 4h1v1h-1zM23 4h1v1h-1zM26 4h1v1h-1zM28 4h1v1h-1zM29 4h1v1h-1zM30 4h1v1h-1zM32 4h1v1h-1zM0 5h1v1h-1zM6 5h1v1h-1zM8 5h1v1h-1zM11 5h1v1h-1zM21 5h1v1h-1zM22 5h1v1h-1zM24 5h1v1h-1zM26 5h1v1h-1zM32 5h1v1h-1zM0 6h1v1h-1zM1 6h1v1h-1zM2 6h1v1h-1zM3 6h1v1h-1zM4 6h1v1h-1zM5 6h1v1h-1zM6 6h1v1h-1zM8 6h1v1h-1zM10 6h1v1h-1zM12 6h1v1h-1zM14 6h1v1h-1zM16 6h1v1h-1zM18 6h1v1h-1zM20 6h1v1h-1zM22 6h1v1h-1zM24 6h1v1h-1zM26 6h1v1h-1zM27 6h1v1h-1zM28 6h1v1h-1zM29 6h1v1h-1zM30 6h1v1h-1zM31 6h1v1h-1zM32 6h1v1h-1zM8 7h1v1h-1zM10 7h1v1h-1zM14 7h1v1h-1zM16 7h1v1h-1zM18 7h1v1h-1zM21 7h1v1h-1zM22 7h1v1h-1zM24 7h1v1h-1zM0 8h1v1h-1zM2 8h1v1h-1zM3 8h1v1h-1zM4 8h1v1h-1zM5 8h1v1h-1zM6 8h1v1h-1zM11 8h1v1h-1zM12 8h1v1h-1zM13 8h1v1h-1zM14 8h1v1h-1zM17 8h1v1h-1zM19 8h1v1h-1zM22 8h1v1h-1zM23 8h1v1h-1zM26 8h1v1h-1zM27 8h1v1h-1zM28 8h1v1h-1zM29 8h1v1h-1zM30 8h1v1h-1zM0 9h1v1h-1zM3 9h1v1h-1zM4 9h1v1h-1zM9 9h1v1h-1zM11 9h1v1h-1zM13 9h1v1h-1zM14 9h1v1h-1zM18 9h1v1h-1zM19 9h1v1h-1zM20 9h1v1h-1zM22 9h1v1h-1zM23 9h1v1h-1zM26 9h1v1h-1zM27 9h1v1h-1zM29 9h1v1h-1zM30 9h1v1h-1zM32 9h1v1h-1zM0 10h1v1h-1zM1 10h1v1h-1zM2 10h1v1h-1zM4 10h1v1h-1zM5 10h1v1h-1zM6 10h1v1h-1zM11 10h1v1h-1zM12 10h1v1h-1zM13 10h1v1h-1zM14 10h1v1h-1zM15 10h1v1h-1zM16 10h1v1h-1zM20 10h1v1h-1zM21 10h1v1h-1zM22 10h1v1h-1zM26 10h1v1h-1zM28 10h1v1h-1zM30 10h1v1h-1zM31 10h1v1h-1zM2 11h1v1h-1zM4 11h1v1h-1zM5 11h1v1h-1zM8 11h1v1h-1zM13 11h1v1h-1zM16 11h1v1h-1zM18 11h1v1h-1zM19 11h1v1h-1zM20 11h1v1h-1zM21 11h1v1h-1zM22 11h1v1h-1zM25 11h1v1h-1zM28 11h1v1h-1zM29 11h1v1h-1zM30 11h1v1h-1zM0 12h1v1h-1zM1 12h1v1h-1zM4 12h1v1h-1zM5 12h1v1h-1zM6 12h1v1h-1zM7 12h1v1h-1zM8 12h1v1h-1zM10 12h1v1h-1zM14 12h1v1h-1zM16 12h1v1h-1zM18 12h1v1h-1zM22 12h1v1h-1zM23 12h1v1h-1zM24 12h1v1h-1zM25 12h1v1h-1zM28 12h1v1h-1zM29 12h1v1h-1zM31 12h1v1h-1zM1 13h1v1h-1zM2 13h1v1h-1zM3 13h1v1h-1zM4 13h1v1h-1zM5 13h1v1h-1zM7 13h1v1h-1zM9 13h1v1h-1zM11 13h1v1h-1zM12 13h1v1h-1zM15 13h1v1h-1zM17 13h1v1h-1zM18 13h1v1h-1zM19 13h1v1h-1zM20 13h1v1h-1zM21 13h1v1h-1zM23 13h1v1h-1zM26 13h1v1h-1zM31 13h1v1h-1zM32 13h1v1h-1zM0 14h1v1h-1zM1 14h1v1h-1zM6 14h1v1h-1zM7 14h1v1h-1zM10 14h1v1h-1zM13 14h1v1h-1zM15 14h1v1h-1zM16 14h1v1h-1zM18 14h1v1h-1zM20 14h1v1h-1zM24 14h1v1h-1zM25 14h1v1h-1zM26 14h1v1h-1zM27 14h1v1h-1zM28 14h1v1h-1zM29 14h1v1h-1zM30 14h1v1h-1zM31 14h1v1h-1zM0 15h1v1h-1zM3 15h1v1h-1zM5 15h1v1h-1zM9 15h1v1h-1zM11 15h1v1h-1zM12 15h1v1h-1zM15 15h1v1h-1zM18 15h1v1h-1zM19 15h1v1h-1zM21 15h1v1h-1zM23 15h1v1h-1zM25 15h1v1h-1zM26 15h1v1h-1zM27 15h1v1h-1zM29 15h1v1h-1zM30 15h1v1h-1zM3 16h1v1h-1zM6 16h1v1h-1zM9 16h1v1h-1zM10 16h1v1h-1zM14 16h1v1h-1zM15 16h1v1h-1zM17 16h1v1h-1zM22 16h1v1h-1zM23 16h1v1h-1zM24 16h1v1h-1zM25 16h1v1h-1zM27 16h1v1h-1zM28 16h1v1h-1zM32 16h1v1h-1zM2 17h1v1h-1zM7 17h1v1h-1zM10 17h1v1h-1zM11 17h1v1h-1zM13 17h1v1h-1zM14 17h1v1h-1zM16 17h1v1h-1zM19 17h1v1h-1zM20 17h1v1h-1zM23 17h1v1h-1zM24 17h1v1h-1zM26 17h1v1h-1zM27 17h1v1h-1zM29 17h1v1h-1zM30 17h1v1h-1zM31 17h1v1h-1zM32 17h1v1h-1zM0 18h1v1h-1zM1 18h1v1h-1zM2 18h1v1h-1zM5 18h1v1h-1zM6 18h1v1h-1zM7 18h1v1h-1zM9 18h1v1h-1zM14 18h1v1h-1zM15 18h1v1h-1zM16 18h1v1h-1zM18 18h1v1h-1zM21 18h1v1h-1zM22 18h1v1h-1zM25 18h1v1h-1zM26 18h1v1h-1zM27 18h1v1h-1zM28 18h1v1h-1zM30 18h1v1h-1zM31 18h1v1h-1zM3 19h1v1h-1zM4 19h1v1h-1zM7 19h1v1h-1zM8 19h1v1h-1zM14 19h1v1h-1zM15 19h1v1h-1zM18 19h1v1h-1zM19 19h1v1h-1zM20 19h1v1h-1zM21 19h1v1h-1zM24 19h1v1h-1zM26 19h1v1h-1zM27 19h1v1h-1zM28 19h1v1h-1zM29 19h1v1h-1zM30 19h1v1h-1zM31 19h1v1h-1zM32 19h1v1h-1zM0 20h1v1h-1zM1 20h1v1h-1zM4 20h1v1h-1zM6 20h1v1h-1zM7 20h1v1h-1zM9 20h1v1h-1zM10 20h1v1h-1zM12 20h1v1h-1zM14 20h1v1h-1zM18 20h1v1h-1zM19 20h1v1h-1zM24 20h1v1h-1zM25 20h1v1h-1zM28 20h1v1h-1zM29 20h1v1h-1zM32 20h1v1h-1zM0 21h1v1h-1zM2 21h1v1h-1zM10 21h1v1h-1zM11 21h1v1h-1zM15 21h1v1h-1zM16 21h1v1h-1zM18 21h1v1h-1zM19 21h1v1h-1zM20 21h1v1h-1zM21 21h1v1h-1zM23 21h1v1h-1zM24 21h1v1h-1zM26 21h1v1h-1zM32 21h1v1h-1zM0 22h1v1h-1zM2 22h1v1h-1zM3 22h1v1h-1zM6 22h1v1h-1zM7 22h1v1h-1zM10 22h1v1h-1zM13 22h1v1h-1zM14 22h1v1h-1zM22 22h1v1h-1zM28 22h1v1h-1zM29 22h1v1h-1zM31 22h1v1h-1zM0 23h1v1h-1zM2 23h1v1h-1zM3 23h1v1h-1zM4 23h1v1h-1zM9 23h1v1h-1zM10 23h1v1h-1zM14 23h1v1h-1zM16 23h1v1h-1zM20 23h1v1h-1zM21 23h1v1h-1zM22 23h1v1h-1zM23 23h1v1h-1zM24 23h1v1h-1zM25 23h1v1h-1zM28 23h1v1h-1zM29 23h1v1h-1zM30 23h1v1h-1zM32 23h1v1h-1zM0 24h1v1h-1zM2 24h1v1h-1zM3 24h1v1h-1zM4 24h1v1h-1zM6 24h1v1h-1zM7 24h1v1h-1zM9 24h1v1h-1zM10 24h1v1h-1zM12 24h1v1h-1zM14 24h1v1h-1zM17 24h1v1h-1zM22 24h1v1h-1zM23 24h1v1h-1zM24 24h1v1h-1zM25 24h1v1h-1zM26 24h1v1h-1zM27 24h1v1h-1zM28 24h1v1h-1zM31 24h1v1h-1zM8 25h1v1h-1zM9 25h1v1h-1zM13 25h1v1h-1zM14 25h1v1h-1zM16 25h1v1h-1zM17 25h1v1h-1zM18 25h1v1h-1zM19 25h1v1h-1zM21 25h1v1h-1zM24 25h1v1h-1zM28 25h1v1h-1zM30 25h1v1h-1zM32 25h1v1h-1zM0 26h1v1h-1zM1 26h1v1h-1zM2 26h1v1h-1zM3 26h1v1h-1zM4 26h1v1h-1zM5 26h1v1h-1zM6 26h1v1h-1zM10 26h1v1h-1zM12 26h1v1h-1zM14 26h1v1h-1zM15 26h1v1h-1zM17 26h1v1h-1zM20 26h1v1h-1zM23 26h1v1h-1zM24 26h1v1h-1zM26 26h1v1h-1zM28 26h1v1h-1zM30 26h1v1h-1zM31 26h1v1h-1zM0 27h1v1h-1zM6 27h1v1h-1zM8 27h1v1h-1zM9 27h1v1h-1zM10 27h1v1h-1zM14 27h1v1h-1zM16 27h1v1h-1zM17 27h1v1h-1zM18 27h1v1h-1zM21 27h1v1h-1zM22 27h1v1h-1zM23 27h1v1h-1zM24 27h1v1h-1zM28 27h1v1h-1zM29 27h1v1h-1zM30 27h1v1h-1zM32 27h1v1h-1zM0 28h1v1h-1zM2 28h1v1h-1zM3 28h1v1h-1zM4 28h1v1h-1zM6 28h1v1h-1zM8 28h1v1h-1zM9 28h1v1h-1zM10 28h1v1h-1zM11 28h1v1h-1zM12 28h1v1h-1zM13 28h1v1h-1zM16 28h1v1h-1zM19 28h1v1h-1zM20 28h1v1h-1zM22 28h1v1h-1zM24 28h1v1h-1zM25 28h1v1h-1zM26 28h1v1h-1zM27 28h1v1h-1zM28 28h1v1h-1zM29 28h1v1h-1zM0 29h1v1h-1zM2 29h1v1h-1zM3 29h1v1h-1zM4 29h1v1h-1zM6 29h1v1h-1zM8 29h1v1h-1zM10 29h1v1h-1zM11 29h1v1h-1zM12 29h1v1h-1zM13 29h1v1h-1zM15 29h1v1h-1zM18 29h1v1h-1zM19 29h1v1h-1zM20 29h1v1h-1zM21 29h1v1h-1zM23 29h1v1h-1zM25 29h1v1h-1zM28 29h1v1h-1zM30 29h1v1h-1zM31 29h1v1h-1zM32 29h1v1h-1zM0 30h1v1h-1zM2 30h1v1h-1zM3 30h1v1h-1zM4 30h1v1h-1zM6 30h1v1h-1zM8 30h1v1h-1zM9 30h1v1h-1zM12 30h1v1h-1zM13 30h1v1h-1zM14 30h1v1h-1zM15 30h1v1h-1zM16 30h1v1h-1zM17 30h1v1h-1zM18 30h1v1h-1zM20 30h1v1h-1zM21 30h1v1h-1zM22 30h1v1h-1zM26 30h1v1h-1zM27 30h1v1h-1zM29 30h1v1h-1zM30 30h1v1h-1zM0 31h1v1h-1zM6 31h1v1h-1zM9 31h1v1h-1zM12 31h1v1h-1zM13 31h1v1h-1zM14 31h1v1h-1zM15 31h1v1h-1zM18 31h1v1h-1zM19 31h1v1h-1zM20 31h1v1h-1zM21 31h1v1h-1zM22 31h1v1h-1zM25 31h1v1h-1zM26 31h1v1h-1zM28 31h1v1h-1zM30 31h1v1h-1zM0 32h1v1h-1zM1 32h1v1h-1zM2 32h1v1h-1zM3 32h1v1h-1zM4 32h1v1h-1zM5 32h1v1h-1zM6 32h1v1h-1zM8 32h1v1h-1zM10 32h1v1h-1zM12 32h1v1h-1zM13 32h1v1h-1zM15 32h1v1h-1zM17 32h1v1h-1zM18 32h1v1h-1zM19 32h1v1h-1zM20 32h1v1h-1zM22 32h1v1h-1zM23 32h1v1h-1zM24 32h1v1h-1zM25 32h1v1h-1zM26 32h1v1h-1zM27 32h1v1h-1zM31 32h1v1h-1z" fill="#0c1b2a"/></svg><p>Протокол этой партии: 34 показателя независимой лаборатории.<small>партия № 0147 · образец</small></p></div>
+      </div><figcaption>Контрэтикетка, увеличено</figcaption></figure>
+      <figure><div class="phone"><div class="scr">
+        <div class="ph-h"><b>PRISTINAM</b><span>pristinam.ru/p/0147</span></div>
+        <h4>Партия № 0147</h4>
+        <span class="ok">34 показателя в норме</span>
+        <div class="tl"><div><b>0,6 °Ж</b><span>жёсткость, норма до 7</span></div><div><b>100</b><span>сухой остаток, мг/дм³</span></div><div><b>8,6</b><span>pH, норма 6–9</span></div><div><b>1,2</b><span>натрий, мг/л</span></div></div>
+        <div class="rw"><span>Сухой остаток</span><i><u style="width:10%"></u></i><em>10%</em></div>
+        <div class="rw"><span>Жёсткость</span><i><u style="width:8%"></u></i><em>8%</em></div>
+        <div class="rw"><span>Нитраты</span><i><u style="width:1%"></u></i><em>&lt;1%</em></div>
+        <div class="rw"><span>Свинец</span><i></i><em>не найден</em></div>
+        <div style="font-size:10px;color:#536373">Полоса — доля от гигиенического норматива</div>
+        <div class="cta">Открыть протокол лаборатории</div>
+        <div class="note"><b>Проверьте сами.</b> TDS-метр покажет 20–40 ppm, полоска pH — от 8 до 9.</div>
+      </div></div><figcaption>Страница партии в телефоне</figcaption></figure>
+    </div>
+    <div class="grid g3">
+      <div class="stack"><h3>Где стоит QR</h3><ul class="clean"><li>На контрэтикетке каждой бутылки.</li><li>На кольеретке у горлышка: официант показывает её гостю, не поворачивая бутылку.</li><li>На крышке коробки из шести бутылок.</li></ul></div>
+      <div class="stack"><h3>Что на странице партии</h3><ul class="clean"><li>Номер и дата партии.</li><li>Четыре главных числа и все 34 показателя.</li><li>Протокол лаборатории целиком.</li><li>Что покажут TDS-метр и полоски pH.</li><li>Ролик о том, как лёд чистит воду.</li></ul></div>
+      <div class="stack"><h3>Почему в этом стиль</h3><ul class="clean"><li>Тёмная контрэтикетка на прозрачном стекле читается как прибор, а не как реклама.</li><li>Четыре числа вместо абзаца текста.</li><li>Ни одного слова о здоровье: только состав и метод.</li></ul></div>
+    </div>
+  </div>
+</section>
 <!-- ============ ЦЕНА ============ -->
 <section id="cena">
   <div class="sec-head">
@@ -672,11 +865,11 @@ td.verdict{white-space:nowrap}
       <h3>Линейка на старте</h3>
       <div class="tbl-wrap"><table>
         <tr><th>Формат</th><th class="num">Полка</th><th class="num">Меню</th><th>Роль</th></tr>
-        <tr><td>Стекло 0,75 л, негазированная</td><td class="num">399 ₽</td><td class="num">790 ₽</td><td>Ядро: стол ресторана, коробка 6 шт. онлайн</td></tr>
-        <tr><td>Стекло 0,33 л, негазированная</td><td class="num">219 ₽</td><td class="num">470 ₽</td><td>Отели, рум-сервис, переговорные</td></tr>
+        <tr><td>Стекло 0,75 л, негазированная</td><td class="num">399 Руб.</td><td class="num">790 Руб.</td><td>Ядро: стол ресторана, коробка 6 шт. онлайн</td></tr>
+        <tr><td>Стекло 0,33 л, негазированная</td><td class="num">219 Руб.</td><td class="num">470 Руб.</td><td>Отели, рум-сервис, переговорные</td></tr>
       </table></div>
-      <p>399 ₽ стоит между Nedra онлайн (369 ₽) и Acqua Panna (460 ₽) и на 41% выше медианы российского стекла (283 ₽). В меню 790 ₽ равны медиане российских позиций, импорт стоит 1 180 ₽.</p>
-      <p>На Ozon с первого дня идёт тест трёх цен: 299, 399 и 549 ₽. Цену 549 ₽ включаем в план только по его итогам.</p>
+      <p>399 Руб. стоит между Nedra онлайн (369 Руб.) и Acqua Panna (460 Руб.) и на 41% выше медианы российского стекла (283 Руб.). В меню 790 Руб. равны медиане российских позиций, импорт стоит 1 180 Руб.</p>
+      <p>В своём магазине с первого дня идёт тест трёх цен: 299, 399 и 549 Руб. Цену 549 Руб. включаем в план только по его итогам.</p>
     </div>
     <div class="card stack">
       <h3>Упаковка</h3>
@@ -686,7 +879,7 @@ td.verdict{white-space:nowrap}
         <li>На обороте четыре числа и QR на протокол партии.</li>
         <li>Номер партии на каждой бутылке: он связывает её с протоколом и читается как знак ручной работы.</li>
         <li>Для доставки коробка на 6 бутылок с разделителями: треть отзывов о воде на маркетплейсах посвящена бою и комплектации.</li>
-        <li>pH на лице этикетки не ставим: так делают щелочные бренды в ПЭТ за 75 ₽.</li>
+        <li>pH на лице этикетки не ставим: так делают щелочные бренды в ПЭТ за 75 Руб.</li>
       </ul>
     </div>
   </div>
@@ -695,8 +888,8 @@ td.verdict{white-space:nowrap}
     <h3>Калькулятор: сколько остаётся производителю</h3>
     <p class="muted" style="font-size:14px">Цена производителя без НДС 22% за бутылку 0,75 л. Наценки сетей и дистрибьюторов, бонусы и комиссии взяты как допущения исследования, до реальных прайсов. Тонкая линия показывает разброс между осторожным и оптимистичным набором допущений.</p>
     <div class="grid g4">
-      <label class="ctl" for="inShelf">Цена на полке и онлайн<span class="val"><output id="outShelf"></output> ₽</span><input type="range" id="inShelf" min="199" max="699" step="10" value="399"></label>
-      <label class="ctl" for="inMenu">Цена в меню<span class="val"><output id="outMenu"></output> ₽</span><input type="range" id="inMenu" min="490" max="1290" step="10" value="790"></label>
+      <label class="ctl" for="inShelf">Цена на полке и онлайн<span class="val"><output id="outShelf"></output> Руб.</span><input type="range" id="inShelf" min="199" max="699" step="10" value="399"></label>
+      <label class="ctl" for="inMenu">Цена в меню<span class="val"><output id="outMenu"></output> Руб.</span><input type="range" id="inMenu" min="490" max="1290" step="10" value="790"></label>
       <div class="stack"><span class="muted" style="font-size:13px">Допущения по наценкам</span>
         <div class="seg" id="scSeg" role="group" aria-label="Набор допущений">
           <button data-sc="0" aria-pressed="false">Осторожно</button>
@@ -726,63 +919,45 @@ td.verdict{white-space:nowrap}
   <div class="grid g3" id="mechs"></div>
 
   <div class="card stack">
+    <h3>Минимальная команда</h3>
+    <p class="muted" style="font-size:14px">Два человека в штате на старте, три ко второй фазе, четыре к третьей. Всё остальное закрывают подрядчики.</p>
+    <div class="tbl-wrap"><table>
+      <tr><th>Роль</th><th>Формат</th><th>Что делает</th><th>Когда нужен</th><th>Где искать</th></tr>
+      <tr><td><b>Руководитель запуска</b></td><td>В штат</td><td>Ведёт кампанию целиком: бренд, подрядчики, сроки, цифры</td><td>С подготовки</td><td>Бренд-менеджеры премиальных напитков: вода, вино, кофе</td></tr>
+      <tr><td><b>Менеджер по ресторанам и отелям</b></td><td>В штат</td><td>Дегустации, листинги, обучение официантов, повторные заказы</td><td>С подготовки, главный в фазе 1</td><td>Переманить у дистрибьютора вина или премиальной воды: нужен человек с личной базой сомелье</td></tr>
+      <tr><td><b>Менеджер онлайн-продаж</b></td><td>В штат</td><td>Свой магазин, водные магазины, проверка цены, отзывы, отгрузки</td><td>С фазы 2</td><td>Интернет-торговля продуктами и напитками</td></tr>
+      <tr><td><b>Менеджер по сетям и компаниям</b></td><td>В штат</td><td>Азбука Вкуса, подарки, офисы</td><td>С фазы 3</td><td>Менеджеры по ключевым клиентам у поставщиков сети; до найма роль закрывает руководитель запуска</td></tr>
+      <tr><td>Дизайнер бренда и упаковки</td><td>Подрядчик</td><td>Этикетка, коробка, фирменный стиль</td><td>Подготовка</td><td>Студии упаковки</td></tr>
+      <tr><td>Фото и видео</td><td>Подрядчик</td><td>Ролик о льде, съёмка бутылки</td><td>Подготовка</td><td>Продакшн с опытом съёмки еды и напитков</td></tr>
+      <tr><td>Разработчик сайта</td><td>Подрядчик</td><td>Магазин и страница партии с протоколом</td><td>Подготовка</td><td>Небольшая веб-студия</td></tr>
+      <tr><td>PR и Telegram</td><td>Подрядчик</td><td>Публикации, посевы, колонки сомелье</td><td>Фазы 1–3</td><td>Фрилансер из гастрономических медиа</td></tr>
+      <tr><td>Сомелье-амбассадор</td><td>Гонорар</td><td>Слепая дегустация, рекомендации коллегам</td><td>Фаза 1</td><td>Действующий сомелье известного ресторана</td></tr>
+      <tr><td>Юрист по рекламе и маркировке</td><td>Почасово</td><td>Проверка этикетки и текстов</td><td>Подготовка и по запросу</td><td>Практика по закону о рекламе и пищевой маркировке</td></tr>
+    </table></div>
+  </div>
+
+  <div class="card stack">
     <h3>Каналы и их роли</h3>
     <div class="tbl-wrap"><table>
       <tr><th>Канал</th><th>Роль</th><th>Что делаем</th><th>Цель</th></tr>
       <tr><td><b>Рестораны и отели</b></td><td>Статус и первая проба</td><td>Личные дегустации, карта воды, обучение официантов за 15 минут</td><td>8–12 точек, 70% закупают повторно</td></tr>
-      <tr><td><b>Ozon и водные магазины</b></td><td>Продажи и отзывы</td><td>Свой магазин, коробка 6 шт., тест трёх цен, вкладыш «Проверь сам»</td><td>Рейтинг от 4,6 после 30 отзывов, претензий до 1,5%</td></tr>
+      <tr><td><b>Свой магазин и водные магазины</b></td><td>Продажи и отзывы</td><td>Свой магазин, коробка 6 шт., тест трёх цен, вкладыш «Проверь сам»</td><td>Рейтинг от 4,6 после 30 отзывов, претензий до 1,5%</td></tr>
+      <tr><td><b>Азбука Вкуса</b></td><td>Полка для нашего покупателя</td><td>Переговоры с цифрами пилота, дегустации в магазинах</td><td>Листинг 0,75 и 0,33 л</td></tr>
       <tr><td><b>Сайт и QR-протокол</b></td><td>Доверие</td><td>Страница партии: 34 показателя, дата, номер, видео процесса</td><td>Сканирует каждый десятый покупатель</td></tr>
       <tr><td><b>Telegram и гастро-медиа</b></td><td>Знание в узком кругу</td><td>Посевы в каналах о ресторанах и вине, колонки сомелье, ролик о льде</td><td>15 публикаций за 12 недель</td></tr>
       <tr><td><b>PR</b></td><td>Легитимность</td><td>Итоги слепой дегустации, история инженеров и патентов</td><td>5 материалов в деловых и гастрономических изданиях</td></tr>
       <tr><td><b>Подарки и офисы</b></td><td>Выручка вне ресторана</td><td>Подарочный набор 2 × 0,75 с буклетом о методе</td><td>10 корпоративных клиентов</td></tr>
     </table></div>
-    <p><b>Не делаем:</b> ТВ, наружную рекламу, массовых блогеров, доставку за 15 минут и федеральные сети. Продукт нишевый, охватные медиа для него не окупаются.</p>
-  </div>
-</section>
-
-<!-- ============ БЮДЖЕТ ============ -->
-<section id="budget">
-  <div class="sec-head">
-    <div class="eyebrow">Сколько</div>
-    <h2>Бюджет и показатели</h2>
-    <p>Бюджет кампании задаётся одной суммой на шесть месяцев. Подвиньте ползунок и увидите, как она делится по направлениям.</p>
-  </div>
-
-  <div class="card stack">
-    <div class="grid g2">
-      <label class="ctl" for="inBud">Бюджет кампании на 6 месяцев<span class="val"><output id="outBud"></output> млн ₽</span><input type="range" id="inBud" min="1" max="20" step="0.5" value="5"></label>
-    </div>
-
-    <h3>Куда идут деньги</h3>
-    <div class="stack" id="alloc" style="gap:4px"></div>
-    <p class="muted" style="font-size:13px">Доли — рекомендация. Суммы — ориентиры для планирования, не котировки подрядчиков.</p>
-  </div>
-
-  <div class="card stack">
-    <h3>Показатели по фазам</h3>
-    <div class="tbl-wrap"><table>
-      <tr><th>Фаза</th><th>Показатель</th><th class="num">Цель</th><th>Что делаем, если не дошли</th></tr>
-      <tr><td>Посев</td><td>Личные дегустации у сомелье и F&amp;B-директоров</td><td class="num">30</td><td>Расширяем список до 60 адресов, добавляем Петербург</td></tr>
-      <tr><td>Посев</td><td>Пилотные точки с водой в меню</td><td class="num">8–12</td><td>Меняем оффер: бесплатные первые два ящика на месяц</td></tr>
-      <tr><td>Посев</td><td>Точки, закупившие повторно через 4 недели</td><td class="num">от 70%</td><td>Разбираем причины с сомелье, правим цену меню или подачу</td></tr>
-      <tr><td>Посев</td><td>Ассоциация «пустая, безвкусная» в тесте формулировок</td><td class="num">до 15%</td><td>Усиливаем линию «лёгкая, как байкальская», показываем состав</td></tr>
-      <tr><td>Онлайн</td><td>Рейтинг карточки после 30 отзывов</td><td class="num">от 4,6</td><td>Читаем отзывы 1–3 звезды, чиним упаковку или текст</td></tr>
-      <tr><td>Онлайн</td><td>Заказы с претензией (бой, недовложение)</td><td class="num">до 1,5%</td><td>Меняем разделители и схему отгрузки</td></tr>
-      <tr><td>Онлайн</td><td>Выручка на посетителя при 399 ₽ к выручке при 299 ₽</td><td class="num">от 90%</td><td>Стартовая цена 349 ₽, цену 549 ₽ снимаем</td></tr>
-      <tr><td>Онлайн</td><td>Покупатели, открывшие протокол по QR</td><td class="num">от 10%</td><td>Выносим QR и призыв на крышку коробки</td></tr>
-      <tr><td>Масштаб</td><td>Корпоративные клиенты</td><td class="num">10</td><td>Переносим упор на сезон подарков</td></tr>
-    </table></div>
+    <p><b>Не делаем:</b> ТВ, наружную рекламу, массовых блогеров, доставку за 15 минут, Ozon, METRO и федеральные сети. Продукт нишевый, охватные медиа для него не окупаются.</p>
   </div>
 </section>
 
 <!-- ============ СТАРТ ============ -->
-<section id="start">
+<section id="osnova">
   <div class="sec-head">
-    <div class="eyebrow">С чего начать</div>
-    <h2>Первые 30 дней</h2>
+    <div class="eyebrow">Основа</div>
+    <h2>Допущения и источники</h2>
   </div>
-  <div class="card stack" id="todo"></div>
-
   <div class="card stack">
     <h3>Что я принял за основу</h3>
     <ul class="clean">
@@ -794,11 +969,12 @@ td.verdict{white-space:nowrap}
   </div>
 
   <footer>
-    <p><b>Источники.</b> База исследования: 1 555 наблюдений цен (862 в расчётах: обычные цены и цены меню на 25.11.2026), 244 бренда, 73 заведения, 2 040 отзывов Ozon и Wildberries, оценки позиционирования 33 брендов, выручка 2025 года по данным о юрлицах. Технический отчёт по результатам исследования проб питьевой воды, ООО «ЭКОСТАНДАРТ «Технические решения», 07.03.2025 (3 точки, нормативы СанПиН 1.2.3685-21). Страница патентов pristinam.ru/patent. Цены конкурентов, отзывы, карта позиционирования, ценовые цепочки и пороги тестов — исследование рынка упакованной воды, сессии 01–14, ноябрь 2026. Рекомендации по позиционированию, долям бюджета и целям кампании — авторские.</p>
+    <p><b>Источники.</b> <a href="https://aka-sergey.github.io/Arktika/pristinam-lab-report-2025-03-07.pdf" target="_blank" rel="noopener">Отчёт лаборатории (PDF)</a>. База исследования: 1 555 наблюдений цен (862 в расчётах: обычные цены и цены меню на 25.11.2026), 244 бренда, 73 заведения, 2 040 отзывов Ozon и Wildberries, оценки позиционирования 33 брендов, выручка 2025 года по данным о юрлицах. Технический отчёт по результатам исследования проб питьевой воды, ООО «ЭКОСТАНДАРТ «Технические решения», 07.03.2025 (3 точки, нормативы СанПиН 1.2.3685-21). Страница патентов pristinam.ru/patent. Цены конкурентов, отзывы, карта позиционирования, ценовые цепочки и пороги тестов — исследование рынка упакованной воды, сессии 01–14, ноябрь 2026. Рекомендации по позиционированию, долям бюджета и целям кампании — авторские.</p>
   </footer>
 </section>
 </main>
 </div>
+<div class="modal" id="rvModal" hidden><div class="modal-box" role="dialog" aria-modal="true" aria-labelledby="rvTitle"><div class="row" style="justify-content:space-between"><h3 id="rvTitle"></h3><button class="btn" id="rvClose" type="button">Закрыть</button></div><p class="muted" id="rvSub" style="font-size:13.5px"></p><ul id="rvList"></ul><p class="muted" style="font-size:12.5px">В базе сохранены первые 80 символов каждого отзыва, без имён авторов. Поэтому в выдержке не всегда видна сама претензия: тема присвоена отзыву целиком.</p></div></div>
 <div id="tip" role="tooltip"></div>
 
 <script>
@@ -900,7 +1076,7 @@ $('#ptSeg').addEventListener('click',e=>{const b=e.target.closest('button'); if(
 /* ---------- Аудитории ---------- */
 const AUD=[
 {t:'Сомелье и F&B-директор',tag:'Приоритет 1 · решает, что попадёт в меню',rows:[
- ['Кто','Сомелье, F&B-директора и закупщики премиальных ресторанов и отелей Москвы и Петербурга. Вода есть в меню у 56 из 73 изученных точек; медиана российских позиций 790 ₽, импортных 1 180 ₽.'],
+ ['Кто','Сомелье, F&B-директора и закупщики премиальных ресторанов и отелей Москвы и Петербурга. Вода есть в меню у 56 из 73 изученных точек; медиана российских позиций 790 Руб., импортных 1 180 Руб.'],
  ['Что ему нужно','Позиция, о которой официант расскажет гостю за десять секунд, и вода, которая не меняет вкус вина и кофе.'],
  ['Сообщение','Российская вода с историей на одну фразу и цифрами, которые можно показать гостю.'],
  ['Доказательство','Слепая дегустация рядом с текущей позицией. Протокол на 34 показателя. Жёсткость 0,6 °Ж.'],
@@ -916,12 +1092,12 @@ const AUD=[
  ['Оффер','Вода подаётся с короткой фразой официанта: «Её чистят льдом, а не фильтром».'],
  ['Цель','Бутылок на 100 гостей не меньше, чем у позиции, которую заменили.']]},
 {t:'Читатель этикетки',tag:'Приоритет 2 · покупает онлайн',rows:[
- ['Кто','Покупатель премиальной воды в стекле на Ozon и в водных магазинах: сейчас берёт VodaVoda за 339 ₽, Nedra за 369–433 ₽, Acqua Panna за 460 ₽.'],
+ ['Кто','Покупатель премиальной воды в стекле на Ozon и в водных магазинах: сейчас берёт VodaVoda за 339 Руб., Nedra за 369–433 Руб., Acqua Panna за 460 Руб.'],
  ['Что ему нужно','Убедиться, что обещание на этикетке правда. Такие покупатели меряют воду TDS-метром и полосками pH и пишут об этом в отзывах.'],
  ['Сообщение','Цифры на этикетке совпадут с вашим прибором.'],
  ['Доказательство','Протокол партии по QR. Вкладыш «Проверь сам» с ожидаемыми показаниями.'],
- ['Каналы','Свой магазин на Ozon, водные интернет-магазины, обзоры в Telegram.'],
- ['Оффер','Коробка 6 × 0,75 л за 2 394 ₽ с разделителями и вкладышем.'],
+ ['Каналы','Свой интернет-магазин, водные магазины, обзоры в Telegram.'],
+ ['Оффер','Коробка 6 × 0,75 л за 2 394 Руб. с разделителями и вкладышем.'],
  ['Цель','Рейтинг от 4,6 после 30 отзывов, претензий до 1,5% заказов.']]},
 {t:'Чай и кофе',tag:'Приоритет 3 · гипотеза, проверяем дегустацией',rows:[
  ['Кто','Чайные клубы, обжарщики и кофейни, домашние энтузиасты заваривания.'],
@@ -965,9 +1141,9 @@ PRISTINAM
 Вода, очищенная льдом. Мягкая, с чистым нейтральным вкусом.
 Жёсткость 0,6 °Ж · минерализация 100 мг/л · pH 8,6
 
-0,75 л — 790 ₽
-0,33 л — 470 ₽`},
-{t:'Карточка Ozon',note:'Первая строка списка зависит от линии: если в ней есть хотя бы один фильтр, оставьте только «Очищена вымораживанием».',x:`PRISTINAM вода питьевая негазированная, очищена льдом, стекло 0,75 л × 6 шт
+0,75 л — 790 Руб.
+0,33 л — 470 Руб.`},
+{t:'Карточка товара',note:'Первая строка списка зависит от линии: если в ней есть хотя бы один фильтр, оставьте только «Очищена вымораживанием».',x:`PRISTINAM вода питьевая негазированная, очищена льдом, стекло 0,75 л × 6 шт
 
 • Очищена вымораживанием: без мембран и сменных картриджей
 • Мягкая: жёсткость 0,6 °Ж, в 10–12 раз ниже гигиенического норматива
@@ -1033,13 +1209,13 @@ function renderPrice(){
   CH.forEach(ch=>{
     const v=ch[2](s,m,sc), lo=ch[2](s,m,0), hi=ch[2](s,m,2);
     const row=el('div','pbar');
-    row.dataset.tip=`<b>${ch[0]}</b> · ${ch[1]}<br>цена производителя: ${rub(v)} ₽ без НДС<br>разброс допущений: ${rub(lo)}–${rub(hi)} ₽`;
+    row.dataset.tip=`<b>${ch[0]}</b> · ${ch[1]}<br>цена производителя: ${rub(v)} Руб. без НДС<br>разброс допущений: ${rub(lo)}–${rub(hi)} Руб.`;
     row.append(el('div','',ch[0]));
     const tr=el('div','track');
     const f=el('div','fill'); f.style.width=Math.max(0,Math.min(100,v/max*100))+'%'; tr.append(f);
     const r=el('div','rng'); r.style.left=Math.max(0,lo/max*100)+'%'; r.style.width=Math.max(0,Math.min(100,hi/max*100)-lo/max*100)+'%'; tr.append(r);
     row.append(tr);
-    row.append(el('div','r',`<span class="mono"><b>${rub(v)} ₽</b></span><span class="muted" style="font-size:12px">${Math.round(v*1.22/(ch[1]==='от цены меню'?m:s)*100)}% от цены</span>`));
+    row.append(el('div','r',`<span class="mono"><b>${rub(v)} Руб.</b></span><span class="muted" style="font-size:12px">${Math.round(v*1.22/(ch[1]==='от цены меню'?m:s)*100)}% от цены</span>`));
     box.append(row);
   });
 }
@@ -1061,19 +1237,19 @@ const PH=[
  'Пилот: два ящика на две недели, карта воды, обучение официантов.',
  'Тест формулировок на 300 покупателях: проверяем, что «очищена льдом» не читается как «пустая вода».',
  'Первые публикации: колонки сомелье и история инженеров.']},
-{t:'2 · Запуск онлайн',w:[9,20],goal:'Карточка с рейтингом от 4,6 и понятная цена.',items:[
- 'Свой магазин на Ozon и листинг в водных интернет-магазинах.',
+{t:'2 · Запуск онлайн',w:[9,20],goal:'Свой магазин и водные магазины продают, цена проверена.',items:[
+ 'Свой интернет-магазин и листинг в водных магазинах.',
  'Коробка 6 × 0,75 л с разделителями и вкладышем «Проверь сам».',
- 'Тест трёх цен: 299, 399 и 549 ₽.',
+ 'Тест трёх цен: 299, 399 и 549 Руб.',
  'Первые 30 отзывов: вкладыш с просьбой об отзыве, без бонусов за оценку.',
  'Посевы ролика о льде в Telegram-каналах о еде, вине и ресторанах.',
  'Обзоры у авторов, которые меряют воду приборами.']},
-{t:'3 · Масштаб',w:[17,24],goal:'Второй формат, второй источник выручки, данные для разговора с сетями.',items:[
+{t:'3 · Масштаб',w:[17,24],goal:'Второй формат, второй источник выручки, договор с Азбукой Вкуса.',items:[
  'Формат 0,33 л для отелей и рум-сервиса.',
  'Подарочный набор и продажи компаниям к сезону подарков.',
  'Партнёрства с чайными клубами и обжарщиками, если дегустация подтвердила гипотезу.',
- 'Переговоры с премиальными сетями с цифрами пилота на руках.',
- 'Решение о цене 549 ₽ по итогам теста.']}
+ 'Переговоры с Азбукой Вкуса с цифрами пилота на руках.',
+ 'Решение о цене 549 Руб. по итогам теста.']}
 ];
 function renderPhase(i){
   $('#phaseBody').innerHTML=`<div class="row"><h3>Фаза ${PH[i].t}</h3><span class="pill">недели ${PH[i].w[0]}–${PH[i].w[1]}</span></div><p><b>Итог фазы:</b> ${PH[i].goal}</p><ul class="clean">${PH[i].items.map(x=>`<li>${x}</li>`).join('')}</ul>`;
@@ -1096,40 +1272,6 @@ const MECH=[
 ];
 MECH.forEach((m,i)=>{$('#mechs').append(el('div','card stack',`<span class="eyebrow">Механика ${i+1}</span><h3>${m[0]}</h3><p>${m[1]}</p>`));});
 
-/* ---------- Бюджет ---------- */
-const ALLOC=[
-['Посев в ресторанах: образцы, дегустации, обучение',25],
-['Контент: съёмка льда, фото, сайт с протоколом',20],
-['Онлайн-продажи: карточки, реклама на Ozon, упаковка',20],
-['PR и посевы в Telegram',15],
-['События: слепая дегустация',10],
-['Тесты: формулировки, вкус, цена',10]
-];
-function renderBudget(){
-  const b=+$('#inBud').value;
-  $('#outBud').textContent=nf(b,1);
-  const box=$('#alloc'); box.innerHTML='';
-  ALLOC.forEach(a=>{const row=el('div','alloc'); row.append(el('div','',a[0]));
-    const tr=el('div','track'), f=el('div','fill'); f.style.width=(a[1]/25*100)+'%'; tr.append(f); row.append(tr);
-    row.append(el('div','v',a[1]+'% · '+nf(b*a[1]/100,2)+' млн ₽')); box.append(row);});
-}
-['inBud'].forEach(id=>$('#'+id).addEventListener('input',renderBudget));
-
-/* ---------- Первые 30 дней ---------- */
-const TODO=[
-'Утвердить имя, слоган «Очищена льдом. Доказана цифрами.» и три опоры сообщения.',
-'Заказать этикетку и коробку на 6 бутылок.',
-'Сделать страницу партии с протоколом и QR.',
-'Снять процесс заморозки: ролик и фото.',
-'Собрать список из 40 ресторанов и отелей и 30 наборов для сомелье.',
-'Назначить дату слепой дегустации и пригласить 10–12 сомелье.',
-'Открыть магазин на Ozon и подготовить три цены для теста.',
-'Убрать с сайта «живую воду», «обогащённую минералами» и pH до 12,5 из текстов для покупателя.',
-'Получить письменное согласие лаборатории на упоминание в рекламе.'
-];
-TODO.forEach((t,i)=>{const l=el('label','check'); l.htmlFor='todo'+i; const c=document.createElement('input'); c.type='checkbox'; c.id='todo'+i; l.append(c,el('span','',t)); $('#todo').append(l);});
-$('#todo').prepend(el('h3','','Список дел по маркетингу'));
-
 /* ---------- Подсказки и оглавление ---------- */
 const tip=$('#tip');
 document.addEventListener('mousemove',e=>{
@@ -1147,7 +1289,7 @@ if('IntersectionObserver' in window){
   $$('main section').forEach(s=>io.observe(s));
 }
 
-renderLab(1); renderLabTable(); renderAud(0); renderCopy(0); renderPrice(); renderPhase(1); renderBudget();
+renderLab(1); renderLabTable(); renderAud(0); renderCopy(0); renderPrice(); renderPhase(1);
 })();
 </script>
 <script>const M={"glass":[{"b":"Voss","ru":false,"st":3,"r":[1144.0,1],"e":[1596.6,2],"p":[1410.9,3]},{"b":"Evian","ru":false,"st":1,"e":[972.1,2],"p":[972.1,2]},{"b":"Solan de Cabras","ru":false,"st":null,"e":[858.9,3],"p":[858.9,3]},{"b":"San Benedetto","ru":false,"st":2,"r":[721.3,4],"e":[817.0,3],"p":[817.0,7]},{"b":"Acqua Panna","ru":false,"st":4,"r":[520.0,3],"e":[727.8,5],"p":[670.3,8]},{"b":"Lauretana","ru":false,"st":2,"e":[661.6,4],"p":[661.6,4]},{"b":"Sant Aniol","ru":false,"st":null,"e":[655.2,2],"p":[655.2,2]},{"b":"Fiuggi","ru":false,"st":null,"e":[585.0,1],"p":[585.0,1]},{"b":"Surgiva","ru":false,"st":null,"e":[570.0,2],"p":[570.0,2]},{"b":"VodaVoda","ru":false,"st":3,"e":[505.8,2],"p":[505.8,2]},{"b":"Nedra","ru":true,"st":4,"r":[478.7,2],"e":[492.0,3],"p":[492.0,5]},{"b":"Legend of Baikal","ru":true,"st":2,"r":[434.0,11],"e":[415.8,10],"p":[433.8,21]},{"b":"Деловой стандарт","ru":true,"st":null,"e":[423.9,1],"p":[423.9,1]},{"b":"Tassay","ru":false,"st":null,"e":[413.7,2],"p":[413.7,2]},{"b":"Petroglyph","ru":true,"st":3,"r":[353.3,2],"e":[449.4,4],"p":[405.0,6]},{"b":"Baikal Pearl","ru":true,"st":null,"r":[381.1,5],"e":[377.6,8],"p":[381.1,13]},{"b":"Святой Источник","ru":true,"st":0,"r":[377.3,2],"e":[444.8,2],"p":[380.9,4]},{"b":"4 воды Дюр-Со","ru":true,"st":null,"e":[359.7,1],"p":[359.7,1]},{"b":"Edis","ru":true,"st":2,"r":[310.1,4],"e":[441.2,2],"p":[358.0,6]},{"b":"Dausuz","ru":true,"st":3,"e":[341.1,4],"p":[341.1,4]},{"b":"Jevea","ru":true,"st":2,"e":[339.1,2],"p":[339.1,2]},{"b":"Сенежская","ru":true,"st":null,"e":[302.7,1],"p":[302.7,1]},{"b":"BonAqua","ru":true,"st":0,"r":[299.7,2],"p":[299.7,2]},{"b":"Sever","ru":true,"st":4,"e":[286.6,1],"p":[286.6,1]},{"b":"Архыз Vita","ru":true,"st":1,"e":[234.0,1],"p":[234.0,1]},{"b":"Mever","ru":true,"st":null,"e":[225.8,1],"p":[225.8,1]},{"b":"Черноголовская","ru":true,"st":null,"r":[222.4,2],"e":[224.8,1],"p":[224.8,3]},{"b":"Ledenev","ru":true,"st":2,"e":[221.5,1],"p":[221.5,1]},{"b":"Тбау","ru":true,"st":2,"e":[215.0,1],"p":[215.0,1]},{"b":"Azure","ru":true,"st":3,"e":[160.8,1],"p":[160.8,1]}],"pet":[{"b":"Voss","ru":false,"st":3,"e":[1151.7,1],"p":[1151.7,1]},{"b":"Fiji","ru":false,"st":null,"e":[1007.8,2],"p":[1007.8,2]},{"b":"Лангвей","ru":false,"st":2,"e":[755.0,3],"p":[755.0,3]},{"b":"Prolom","ru":false,"st":0,"e":[528.3,1],"p":[528.3,1]},{"b":"Vittel","ru":false,"st":null,"e":[506.3,3],"p":[506.3,3]},{"b":"Solan de Cabras","ru":false,"st":null,"e":[495.5,1],"p":[495.5,1]},{"b":"San Benedetto","ru":false,"st":2,"r":[448.5,2],"e":[535.5,2],"p":[490.4,4]},{"b":"Evian","ru":false,"st":1,"r":[448.8,4],"e":[416.7,9],"p":[440.0,13]},{"b":"Fiuggi","ru":false,"st":null,"e":[428.3,1],"p":[428.3,1]},{"b":"Volvic","ru":false,"st":null,"e":[405.0,1],"p":[405.0,1]},{"b":"Petroglyph","ru":true,"st":3,"e":[400.0,5],"p":[400.0,5]},{"b":"Acqua Panna","ru":false,"st":4,"r":[340.0,1],"e":[443.8,1],"p":[391.9,2]},{"b":"VodaVoda","ru":false,"st":3,"r":[224.0,2],"e":[433.1,3],"p":[318.3,5]},{"b":"Virgo fons","ru":false,"st":0,"e":[310.8,1],"p":[310.8,1]},{"b":"Lauretana","ru":false,"st":2,"e":[306.7,1],"p":[306.7,1]},{"b":"AQUAdetox","ru":false,"st":1,"e":[303.3,1],"p":[303.3,1]},{"b":"Sant Aniol","ru":false,"st":null,"e":[300.0,1],"p":[300.0,1]},{"b":"Dausuz","ru":true,"st":3,"e":[278.1,2],"p":[278.1,2]},{"b":"Baikal Pearl","ru":true,"st":null,"r":[348.4,1],"e":[230.0,3],"p":[265.2,4]},{"b":"Baikal430","ru":true,"st":1,"r":[243.3,6],"e":[219.9,6],"p":[242.2,12]},{"b":"Legend of Baikal","ru":true,"st":2,"r":[214.0,7],"e":[242.1,5],"p":[235.6,12]},{"b":"Jevea","ru":true,"st":2,"r":[207.0,2],"e":[245.0,2],"p":[215.1,4]},{"b":"Aqua Minerale","ru":true,"st":0,"r":[153.8,5],"e":[185.0,1],"p":[156.9,6]},{"b":"Тбау","ru":true,"st":2,"e":[155.0,1],"p":[155.0,1]},{"b":"Fahrenheit","ru":true,"st":0,"r":[150.0,4],"e":[208.9,1],"p":[150.0,5]},{"b":"Ledenev","ru":true,"st":2,"e":[149.0,1],"p":[149.0,1]},{"b":"BonAqua","ru":true,"st":0,"r":[129.9,4],"e":[156.2,1],"p":[133.8,5]},{"b":"Pokrovska","ru":false,"st":0,"r":[116.0,1],"e":[150.8,1],"p":[133.4,2]},{"b":"Архыз Vita","ru":true,"st":1,"r":[101.8,3],"e":[136.4,5],"p":[125.1,8]},{"b":"Святой Источник","ru":true,"st":0,"r":[113.0,16],"e":[110.0,5],"p":[112.1,21]},{"b":"Калинов Родник","ru":true,"st":1,"r":[116.0,1],"e":[102.3,4],"p":[108.8,5]},{"b":"Черноголовка","ru":true,"st":1,"r":[86.8,2],"p":[86.8,2]}],"b75":{"Legend of Baikal":{"RETAIL":[240.5,4],"HORECA":[550.0,1],"ECOM":[257.9,4]},"Acqua Panna":{"RETAIL":[390.0,1],"ECOM":[459.6,3]},"Petroglyph":{"RETAIL":[265.0,2],"ECOM":[280.6,2]},"Nedra":{"RETAIL":[359.0,2],"HORECA":[790.0,5],"ECOM":[369.0,3]},"San Benedetto":{"RETAIL":[389.0,2],"HORECA":[990.0,20],"ECOM":[537.5,1]},"Святой Источник":{"RETAIL":[283.0,2],"HORECA":[770.0,6],"ECOM":[288.3,1]},"Tassay":{"HORECA":[1180.0,3]},"Surgiva":{"HORECA":[1275.0,4],"ECOM":[392.9,1]},"Baikal Pearl":{"HORECA":[675.0,4],"ECOM":[271.0,3]},"San Felice":{"HORECA":[1050.0,1]},"Сенежская":{"HORECA":[410.0,1]},"ЛАРЕЛИЯ":{"HORECA":[1050.0,1]},"Dausuz":{"HORECA":[635.0,2],"ECOM":[175.3,2]},"Evian":{"ECOM":[602.5,1]},"Jevea":{"ECOM":[227.5,1]},"Lauretana":{"ECOM":[460.0,1]},"VodaVoda":{"ECOM":[339.2,1]},"Voss":{"ECOM":[1128.8,1]},"Sant Aniol":{"ECOM":[416.0,1]},"Solan de Cabras":{"ECOM":[644.2,1]}},"pos":[{"b":"Baikal430","ru":true,"n":4,"t":2,"p":3,"fn":2,"s":1,"pr":false},{"b":"Legend of Baikal","ru":true,"n":3,"t":2,"p":2,"fn":3,"s":2,"pr":true},{"b":"Nedra","ru":true,"n":3,"t":0,"p":1,"fn":2,"s":4,"pr":true},{"b":"Petroglyph","ru":true,"n":3,"t":2,"p":2,"fn":1,"s":3,"pr":true},{"b":"Dausuz","ru":true,"n":4,"t":2,"p":2,"fn":2,"s":3,"pr":false},{"b":"Edis","ru":true,"n":3,"t":1,"p":3,"fn":2,"s":2,"pr":false},{"b":"Sever","ru":true,"n":1,"t":2,"p":2,"fn":0,"s":4,"pr":false},{"b":"Azure","ru":true,"n":1,"t":2,"p":3,"fn":0,"s":3,"pr":false},{"b":"Aurus","ru":true,"n":3,"t":2,"p":2,"fn":1,"s":4,"pr":false},{"b":"Fahrenheit","ru":true,"n":0,"t":3,"p":0,"fn":3,"s":0,"pr":false},{"b":"Ledenev","ru":true,"n":2,"t":2,"p":1,"fn":1,"s":2,"pr":false},{"b":"Pokrovska","ru":false,"n":3,"t":0,"p":1,"fn":4,"s":0,"pr":false},{"b":"AQUAdetox","ru":false,"n":2,"t":1,"p":0,"fn":4,"s":1,"pr":false},{"b":"Virgo fons","ru":false,"n":3,"t":0,"p":1,"fn":4,"s":0,"pr":false},{"b":"Prolom","ru":false,"n":3,"t":0,"p":1,"fn":4,"s":0,"pr":false},{"b":"Lauretana","ru":false,"n":3,"t":0,"p":4,"fn":3,"s":2,"pr":true},{"b":"VodaVoda","ru":false,"n":3,"t":0,"p":3,"fn":2,"s":3,"pr":true},{"b":"Acqua Panna","ru":false,"n":3,"t":0,"p":1,"fn":0,"s":4,"pr":true},{"b":"S.Pellegrino","ru":false,"n":2,"t":0,"p":0,"fn":0,"s":4,"pr":false},{"b":"Evian","ru":false,"n":3,"t":0,"p":3,"fn":2,"s":1,"pr":true},{"b":"Voss","ru":false,"n":2,"t":0,"p":3,"fn":0,"s":3,"pr":true},{"b":"Perrier","ru":false,"n":2,"t":0,"p":1,"fn":0,"s":1,"pr":false},{"b":"San Benedetto","ru":false,"n":2,"t":1,"p":2,"fn":1,"s":2,"pr":true},{"b":"Jevea","ru":true,"n":3,"t":1,"p":3,"fn":2,"s":2,"pr":false},{"b":"Тбау","ru":true,"n":3,"t":2,"p":3,"fn":2,"s":2,"pr":false},{"b":"Архыз Vita","ru":true,"n":4,"t":1,"p":4,"fn":2,"s":1,"pr":false},{"b":"Святой Источник","ru":true,"n":2,"t":1,"p":2,"fn":3,"s":0,"pr":false},{"b":"Aqua Minerale","ru":true,"n":0,"t":1,"p":1,"fn":2,"s":0,"pr":false},{"b":"BonAqua","ru":true,"n":0,"t":3,"p":3,"fn":0,"s":0,"pr":false},{"b":"Черноголовка","ru":true,"n":3,"t":1,"p":2,"fn":2,"s":1,"pr":false},{"b":"Калинов Родник","ru":true,"n":3,"t":2,"p":2,"fn":1,"s":1,"pr":false},{"b":"Карелия сияние озер","ru":true,"n":3,"t":0,"p":0,"fn":4,"s":0,"pr":false},{"b":"Лангвей","ru":false,"n":1,"t":4,"p":2,"fn":4,"s":2,"pr":false}],"tiers":[{"l":"HORECA · меню (0,75; материал не указан, негаз.)","m":970.0,"lo":410.0,"hi":1600.0,"n":45},{"l":"ECOM · B2B office e-shop","m":289.9,"lo":249.9,"hi":329.9,"n":2},{"l":"D2C/ECOM · водные e-shop","m":346.7,"lo":214.58,"hi":644.17,"n":19},{"l":"ECOM · маркетплейс","m":275.2,"lo":251.0,"hi":647.08,"n":5},{"l":"ECOM · Купер/Самокат/Лавка","m":309.0,"lo":99.99,"hi":409.0,"n":4},{"l":"RETAIL · онлайн-каталоги сетей","m":265.0,"lo":225.0,"hi":389.99,"n":5},{"l":"RETAIL · cash&carry","m":316.0,"lo":239.0,"hi":389.0,"n":8}],"pl":["METRO","Перекрёсток","ВкусВилл","Магнит","Ozon","Wildberries","Яндекс Маркет","Водные магазины","Быстрая доставка","Комус"],"pres":[{"b":"Legend of Baikal","ru":true,"c":{"METRO":12,"Перекрёсток":4,"ВкусВилл":1,"Ozon":2,"Wildberries":5,"Водные магазины":12,"Быстрая доставка":2,"Комус":6},"v":2,"k":8},{"b":"Acqua Panna","ru":false,"c":{"Перекрёсток":3,"Ozon":3,"Wildberries":1,"Яндекс Маркет":2,"Водные магазины":3,"Быстрая доставка":2},"v":2,"k":6},{"b":"S.Pellegrino","ru":false,"c":{"METRO":2,"Ozon":2,"Wildberries":1,"Водные магазины":3,"Быстрая доставка":1,"Комус":1},"v":3,"k":6},{"b":"Perrier","ru":false,"c":{"METRO":2,"Ozon":2,"Wildberries":2,"Водные магазины":2,"Быстрая доставка":2},"v":1,"k":5},{"b":"San Benedetto","ru":false,"c":{"METRO":8,"Ozon":2,"Водные магазины":4,"Комус":1},"v":28,"k":4},{"b":"Edis","ru":true,"c":{"METRO":8,"Ozon":5,"Wildberries":4,"Водные магазины":4,"Быстрая доставка":2},"v":0,"k":5},{"b":"Baikal Pearl","ru":true,"c":{"METRO":4,"Перекрёсток":1,"Водные магазины":5,"Комус":3},"v":9,"k":4},{"b":"Dausuz","ru":true,"c":{"Ozon":3,"Wildberries":3,"Водные магазины":6,"Быстрая доставка":2},"v":6,"k":4},{"b":"Nedra","ru":true,"c":{"METRO":2,"Ozon":2,"Водные магазины":4,"Быстрая доставка":1},"v":7,"k":4},{"b":"Voss","ru":false,"c":{"METRO":1,"Ozon":3,"Wildberries":3,"Водные магазины":3,"Быстрая доставка":2},"v":0,"k":5},{"b":"Petroglyph","ru":true,"c":{"Перекрёсток":2,"Ozon":1,"Wildberries":2,"Водные магазины":8},"v":0,"k":4},{"b":"Святой Источник","ru":true,"c":{"METRO":4,"Водные магазины":4},"v":7,"k":2},{"b":"Baikal Reserve","ru":true,"c":{"Водные магазины":3,"Комус":2},"v":8,"k":2},{"b":"Черноголовская","ru":true,"c":{"METRO":4,"Wildberries":1,"Водные магазины":2},"v":0,"k":3},{"b":"Evian","ru":false,"c":{"Ozon":1,"Водные магазины":2},"v":2,"k":2},{"b":"Tassay","ru":false,"c":{"Комус":2},"v":6,"k":1},{"b":"BonAqua","ru":true,"c":{"METRO":4},"v":4,"k":1},{"b":"Lauretana","ru":false,"c":{"Wildberries":2,"Водные магазины":4},"v":0,"k":2},{"b":"Surgiva","ru":false,"c":{"Водные магазины":2},"v":3,"k":1},{"b":"Тбау","ru":true,"c":{"Ozon":2,"Водные магазины":2},"v":0,"k":2},{"b":"Ledenev","ru":true,"c":{"Ozon":1,"Водные магазины":2},"v":0,"k":2},{"b":"Черноголовка","ru":true,"c":{"Wildberries":1},"v":1,"k":1},{"b":"Сенежская","ru":true,"c":{"Комус":1},"v":1,"k":1},{"b":"Borjomi","ru":false,"c":{},"v":18,"k":0},{"b":"Solan de Cabras","ru":false,"c":{"Водные магазины":4},"v":0,"k":1},{"b":"Jevea","ru":true,"c":{"Водные магазины":4},"v":0,"k":1},{"b":"Aqua Russa","ru":true,"c":{},"v":3,"k":0},{"b":"Деловой стандарт","ru":true,"c":{"Комус":3},"v":0,"k":1},{"b":"RusseQuelle","ru":true,"c":{},"v":3,"k":0},{"b":"Sant Aniol","ru":false,"c":{"Водные магазины":2},"v":0,"k":1},{"b":"Fiuggi","ru":false,"c":{"Водные магазины":2},"v":0,"k":1},{"b":"Sairme","ru":false,"c":{},"v":2,"k":0},{"b":"Pandrosa","ru":false,"c":{},"v":2,"k":0},{"b":"Sever","ru":true,"c":{"Водные магазины":2},"v":0,"k":1},{"b":"Aqua Minerale","ru":true,"c":{},"v":2,"k":0},{"b":"VodaVoda","ru":false,"c":{"Водные магазины":2},"v":0,"k":1},{"b":"Архыз Vita","ru":true,"c":{"Водные магазины":2},"v":0,"k":1},{"b":"4 воды Дюр-Со","ru":true,"c":{"Комус":2},"v":0,"k":1},{"b":"Azure","ru":true,"c":{"Водные магазины":2},"v":0,"k":1},{"b":"Нарзан","ru":true,"c":{},"v":2,"k":0},{"b":"Jermuk","ru":false,"c":{},"v":2,"k":0},{"b":"Mever","ru":true,"c":{"Комус":1},"v":0,"k":1}],"hor":[{"b":"San Benedetto","ru":false,"v":28,"mow":12,"spb":16,"seg":"fine_dining:2;luxury_hotel:8;mid:3;mid_plus:3;premium:12","m":[990.0,20]},{"b":"Borjomi","ru":false,"v":18,"mow":7,"spb":11,"seg":"business_hotel:1;luxury_hotel:4;mass_control:1;mid:4;mid_plus:4;premium:4","m":null},{"b":"Baikal Pearl","ru":true,"v":9,"mow":7,"spb":2,"seg":"business_hotel:1;luxury_hotel:2;mid_plus:4;premium:2","m":[675.0,4]},{"b":"Baikal Reserve","ru":true,"v":8,"mow":6,"spb":2,"seg":"business_hotel:1;luxury_hotel:2;mid_plus:3;premium:2","m":null},{"b":"Святой Источник","ru":true,"v":7,"mow":1,"spb":6,"seg":"mass_control:1;mid:3;mid_plus:1;premium:2","m":[770.0,6]},{"b":"Nedra","ru":true,"v":7,"mow":3,"spb":4,"seg":"luxury_hotel:3;mid_plus:2;premium:2","m":[790.0,5]},{"b":"Tassay","ru":false,"v":6,"mow":6,"spb":0,"seg":"coffee:2;luxury_hotel:1;premium:3","m":[1180.0,3]},{"b":"Dausuz","ru":true,"v":6,"mow":0,"spb":6,"seg":"luxury_hotel:4;mid:1;premium:1","m":[635.0,2]},{"b":"BonAqua","ru":true,"v":4,"mow":3,"spb":1,"seg":"mass_control:3;mid:1","m":null},{"b":"Surgiva","ru":false,"v":3,"mow":3,"spb":0,"seg":"fine_dining:1;premium:2","m":[1275.0,4]},{"b":"S.Pellegrino","ru":false,"v":3,"mow":1,"spb":2,"seg":"luxury_hotel:2;premium:1","m":null},{"b":"RusseQuelle","ru":true,"v":3,"mow":3,"spb":0,"seg":"fine_dining:1;mid_plus:2","m":null},{"b":"Aqua Russa","ru":true,"v":3,"mow":1,"spb":2,"seg":"luxury_hotel:2;mid:1","m":null},{"b":"Legend of Baikal","ru":true,"v":2,"mow":2,"spb":0,"seg":"coffee:1;premium:1","m":[550.0,1]},{"b":"Acqua Panna","ru":false,"v":2,"mow":1,"spb":1,"seg":"luxury_hotel:1;premium:1","m":null},{"b":"Evian","ru":false,"v":2,"mow":2,"spb":0,"seg":"premium:2","m":null},{"b":"Байкал / Baikal","ru":true,"v":2,"mow":2,"spb":0,"seg":"premium:2","m":null},{"b":"Нарзан","ru":true,"v":2,"mow":2,"spb":0,"seg":"mid_plus:1;premium:1","m":null},{"b":"Sairme","ru":false,"v":2,"mow":1,"spb":1,"seg":"mid:1;premium:1","m":null},{"b":"Aqua Minerale","ru":true,"v":2,"mow":2,"spb":0,"seg":"coffee:2","m":null},{"b":"Pandrosa","ru":false,"v":2,"mow":0,"spb":2,"seg":"mid_plus:1;premium:1","m":null},{"b":"Jermuk","ru":false,"v":2,"mow":2,"spb":0,"seg":"luxury_hotel:2","m":null}],"hseg":[{"s":"hotel_room_service/luxury_hotel","m":1350.0,"lo":1350.0,"hi":1500.0,"n":3},{"s":"restaurant/premium","m":1010.0,"lo":550.0,"hi":1540.0,"n":20},{"s":"hotel_restaurant/luxury_hotel","m":880.0,"lo":800.0,"hi":1600.0,"n":3},{"s":"restaurant/mid","m":850.0,"lo":410.0,"hi":990.0,"n":7},{"s":"restaurant/mid_plus","m":790.0,"lo":550.0,"hi":1050.0,"n":9}],"per":[{"b":"Evian","n":98,"tp":33.7,"tn":16.3,"pn":8.2,"trn":30.6,"kn":17.3,"soft":9.2,"clean":5.1,"light":0.0,"tap":6.1,"bland":0.0,"low":36.7},{"b":"Voss","n":56,"tp":17.9,"tn":7.1,"pn":8.9,"trn":14.3,"kn":28.6,"soft":3.6,"clean":5.4,"light":0.0,"tap":3.6,"bland":0.0,"low":39.3},{"b":"S.Pellegrino","n":83,"tp":27.7,"tn":2.4,"pn":7.2,"trn":10.8,"kn":12.0,"soft":7.2,"clean":1.2,"light":1.2,"tap":0.0,"bland":0.0,"low":31.3},{"b":"Petroglyph","n":72,"tp":43.1,"tn":4.2,"pn":9.7,"trn":8.3,"kn":5.6,"soft":12.5,"clean":2.8,"light":1.4,"tap":1.4,"bland":0.0,"low":19.4},{"b":"Fahrenheit","n":87,"tp":29.9,"tn":10.3,"pn":10.3,"trn":8.0,"kn":3.4,"soft":5.7,"clean":2.3,"light":1.1,"tap":2.3,"bland":2.3,"low":21.8},{"b":"San Benedetto","n":94,"tp":57.4,"tn":1.1,"pn":9.6,"trn":7.4,"kn":6.4,"soft":11.7,"clean":3.2,"light":2.1,"tap":2.1,"bland":0.0,"low":12.8},{"b":"Prolom","n":95,"tp":32.6,"tn":4.2,"pn":17.9,"trn":6.3,"kn":3.2,"soft":13.7,"clean":3.2,"light":0.0,"tap":3.2,"bland":1.1,"low":8.4},{"b":"Тбау","n":55,"tp":41.8,"tn":5.5,"pn":7.3,"trn":5.5,"kn":9.1,"soft":3.6,"clean":1.8,"light":1.8,"tap":0.0,"bland":0.0,"low":21.8},{"b":"Legend of Baikal","n":95,"tp":55.8,"tn":4.2,"pn":10.5,"trn":4.2,"kn":6.3,"soft":12.6,"clean":11.6,"light":1.1,"tap":0.0,"bland":1.1,"low":11.6},{"b":"Архыз Vita","n":95,"tp":27.4,"tn":5.3,"pn":3.2,"trn":3.2,"kn":5.3,"soft":5.3,"clean":5.3,"light":0.0,"tap":2.1,"bland":0.0,"low":16.8},{"b":"Pokrovska","n":97,"tp":26.8,"tn":6.2,"pn":5.2,"trn":3.1,"kn":5.2,"soft":10.3,"clean":3.1,"light":2.1,"tap":3.1,"bland":0.0,"low":16.5},{"b":"Virgo fons","n":97,"tp":42.3,"tn":1.0,"pn":4.1,"trn":3.1,"kn":4.1,"soft":10.3,"clean":3.1,"light":2.1,"tap":1.0,"bland":0.0,"low":5.2},{"b":"AQUAdetox","n":100,"tp":42.0,"tn":3.0,"pn":11.0,"trn":3.0,"kn":4.0,"soft":5.0,"clean":0.0,"light":1.0,"tap":2.0,"bland":2.0,"low":6.0},{"b":"Edis","n":83,"tp":42.2,"tn":4.8,"pn":4.8,"trn":2.4,"kn":10.8,"soft":4.8,"clean":6.0,"light":0.0,"tap":1.2,"bland":1.2,"low":21.7},{"b":"Jevea","n":100,"tp":57.0,"tn":3.0,"pn":3.0,"trn":2.0,"kn":3.0,"soft":17.0,"clean":1.0,"light":0.0,"tap":0.0,"bland":0.0,"low":3.0},{"b":"BonAqua","n":70,"tp":32.9,"tn":7.1,"pn":4.3,"trn":1.4,"kn":2.9,"soft":4.3,"clean":4.3,"light":0.0,"tap":2.9,"bland":0.0,"low":7.1},{"b":"Baikal430","n":83,"tp":59.0,"tn":3.6,"pn":7.2,"trn":1.2,"kn":1.2,"soft":10.8,"clean":9.6,"light":0.0,"tap":0.0,"bland":0.0,"low":2.4},{"b":"Aqua Minerale","n":90,"tp":35.6,"tn":3.3,"pn":2.2,"trn":1.1,"kn":3.3,"soft":2.2,"clean":3.3,"light":2.2,"tap":0.0,"bland":0.0,"low":12.2},{"b":"Черноголовка","n":93,"tp":26.9,"tn":2.2,"pn":2.2,"trn":1.1,"kn":2.2,"soft":6.5,"clean":1.1,"light":0.0,"tap":0.0,"bland":0.0,"low":9.7},{"b":"Калинов Родник","n":97,"tp":30.9,"tn":3.1,"pn":5.2,"trn":1.0,"kn":6.2,"soft":5.2,"clean":2.1,"light":0.0,"tap":1.0,"bland":1.0,"low":6.2},{"b":"VodaVoda","n":32,"tp":46.9,"tn":3.1,"pn":9.4,"trn":0.0,"kn":0.0,"soft":25.0,"clean":3.1,"light":3.1,"tap":0.0,"bland":0.0,"low":3.1},{"b":"Святой Источник","n":93,"tp":23.7,"tn":3.2,"pn":3.2,"trn":0.0,"kn":6.5,"soft":3.2,"clean":3.2,"light":0.0,"tap":2.2,"bland":0.0,"low":15.1}],"rev":[{"b":"Aurus","e":"ООО «Аурус Аква»","m":23.5},{"b":"Nedra","e":"ООО «Нео»","m":89},{"b":"Edis","e":"ООО «Натурплант»","m":141.8},{"b":"Jevea","e":"ООО «АкваАльянс»","m":159.1},{"b":"Petroglyph","e":"ООО «Петроглиф»","m":199.5},{"b":"Dausuz","e":"ООО ТД «Аква-Дью»","m":271.2},{"b":"Legend of Baikal","e":"ООО «ТК «Байкал Аква»","m":1200},{"b":"Baikal Pearl","e":"ГК «Море Байкал»","m":2000},{"b":"Sever","e":"ООО «Фонте Аква ПК», весь завод","m":3700},{"b":"Святой Источник","e":"ООО «Завод Святой Источник»","m":8100},{"b":"Черноголовка","e":"ООО «ПК «Аквалайф»","m":19700},{"b":"Fahrenheit","e":"ЗАО «МПК», вся компания","m":40100},{"b":"BonAqua","e":"ООО «Мултон Партнерс», 2023","m":77300},{"b":"Aqua Minerale","e":"ООО «ПепсиКо Холдингс»","m":279100}],"meta":{"obs":1555,"obs_ok":862,"brands":244,"venues":73,"venues_water":56,"reviews":2040}};</script>
@@ -1176,7 +1318,7 @@ const US_PPL=399/0.75;
 function renderLadder(){
   const data=M[ladMat], box=$('#ladder'); box.innerHTML='';
   const sc=logS(80,2000), ticks=[100,200,400,800,1600];
-  axis(box,sc,ticks,t=>r0(t)+' ₽/л',ladMat==='glass'?[US_PPL,'PRISTINAM 532']:null);
+  axis(box,sc,ticks,t=>r0(t)+' Руб./л',ladMat==='glass'?[US_PPL,'PRISTINAM 532']:null);
   const groups=[];
   if(ladGrp==='price') groups.push(['',data]);
   else if(ladGrp==='origin'){groups.push(['Импорт',data.filter(r=>!r.ru)]); groups.push(['Россия',data.filter(r=>r.ru)]);}
@@ -1186,14 +1328,14 @@ function renderLadder(){
     if(name) box.append(el('div','rc-grp',name));
     rows.forEach(r=>{
       const row=el('div','rc-row');
-      const parts=[]; if(r.r)parts.push('розница: '+r0(r.r[0])+' ₽/л, n='+r.r[1]); if(r.e)parts.push('онлайн: '+r0(r.e[0])+' ₽/л, n='+r.e[1]);
-      row.dataset.tip='<b>'+r.b+'</b> · '+(r.ru?'Россия':'импорт')+(r.st!==null?' · статус '+r.st+' из 4':'')+'<br>'+parts.join('<br>')+'<br>все наблюдения: '+r0(r.p[0])+' ₽/л, n='+r.p[1];
+      const parts=[]; if(r.r)parts.push('розница: '+r0(r.r[0])+' Руб./л, n='+r.r[1]); if(r.e)parts.push('онлайн: '+r0(r.e[0])+' Руб./л, n='+r.e[1]);
+      row.dataset.tip='<b>'+r.b+'</b> · '+(r.ru?'Россия':'импорт')+(r.st!==null?' · статус '+r.st+' из 4':'')+'<br>'+parts.join('<br>')+'<br>все наблюдения: '+r0(r.p[0])+' Руб./л, n='+r.p[1];
       row.append(el('div','lab',r.b+tag(r.ru)));
       const t=el('div','trk'); grid(t,sc,ticks);
       if(ladMat==='glass'){const u=el('div','us'); u.style.left=sc(US_PPL)+'%'; t.append(u);}
       [['r','d1'],['e','d2']].forEach(([k,c])=>{ if(r[k]){const d=el('div','d '+c+(r[k][1]<3?' low':'')); d.style.left=sc(r[k][0])+'%'; t.append(d);} });
       row.append(t);
-      row.append(el('div','val',r0(r.p[0])+' <small>₽/л · n='+r.p[1]+'</small>'));
+      row.append(el('div','val',r0(r.p[0])+' <small>Руб./л · n='+r.p[1]+'</small>'));
       box.append(row);
     });
   });
@@ -1217,7 +1359,7 @@ const BT=[
 ['Dausuz','Ледниковое происхождение','следить','','слово «ледниковая» занято, отели Петербурга'],
 ['Sever','«Вода с характером», очистка без цифр','следить','','ближайший по смыслу, ресурс «Калинова Родника»'],
 ['Edis','Природная, «без очистки»','следить','','называет очищенную воду «пустой»'],
-['Baikal Pearl','Глубина Байкала, лёгкая минерализация','не трогать','','дешевле нас, группа 2 млрд ₽'],
+['Baikal Pearl','Глубина Байкала, лёгкая минерализация','не трогать','','дешевле нас, группа 2 млрд Руб.'],
 ['Legend of Baikal','Глубинные слои Байкала','не трогать','','пол розницы'],
 ['Voss','Бутылка-дизайн','вне нашей цены','',''],
 ['BonAqua','Семь ступеней очистки, масса','не наш ряд','','']
@@ -1225,7 +1367,7 @@ const BT=[
 (function(){
   const g=Object.fromEntries(M.glass.map(r=>[r.b,r])), h=Object.fromEntries(M.hor.map(r=>[r.b,r])), p=Object.fromEntries(M.per.map(r=>[r.b,r])), rv=Object.fromEntries(M.rev.map(r=>[r.b,r])), ps=Object.fromEntries(M.pos.map(r=>[r.b,r]));
   const c=(v,suf)=>v?r0(v[0])+(suf||'')+' <span class="muted">('+v[1]+')</span>':'<span class="muted">—</span>';
-  let t='<tr><th>Бренд</th><th>Что обещает</th><th class="num">Статус</th><th class="num">Стекло, ₽/л<br>розница</th><th class="num">Стекло, ₽/л<br>онлайн</th><th class="num">0,75 л<br>онлайн, ₽</th><th class="num">Точек<br>HoReCa</th><th class="num">Меню<br>0,75 л, ₽</th><th class="num">Хвалят<br>вкус</th><th class="num">Не<br>доверяют</th><th class="num">Выручка<br>компании</th><th>Вердикт</th></tr>';
+  let t='<tr><th>Бренд</th><th>Что обещает</th><th class="num">Статус</th><th class="num">Стекло, Руб./л<br>розница</th><th class="num">Стекло, Руб./л<br>онлайн</th><th class="num">0,75 л<br>онлайн, Руб.</th><th class="num">Точек<br>HoReCa</th><th class="num">Меню<br>0,75 л, Руб.</th><th class="num">Хвалят<br>вкус</th><th class="num">Не<br>доверяют</th><th class="num">Выручка<br>компании</th><th>Вердикт</th></tr>';
   BT.forEach(b=>{
     const G=g[b[0]]||{}, H=h[b[0]], P=p[b[0]], R=rv[b[0]], S=ps[b[0]], B=M.b75[b[0]]||{};
     const rev=R?(R.m>=1000?r1(R.m/1000)+' млрд':r0(R.m)+' млн'):'<span class="muted">—</span>';
@@ -1268,42 +1410,19 @@ function renderGrid(){
     row.append(el('div','val',r1(r.soft)+'% <small>n='+r.n+'</small>')); box.append(row);});
 })();
 
-/* ---------- 5. Слабые места ---------- */
-(function(){
-  const cols=[['trn','Доверие'],['pn','Цена'],['tn','Вкус'],['kn','Упаковка'],['low','Оценки 1–3★'],['tap','«Как из-под крана»']];
-  const cls=v=>v>=20?'h4':v>=10?'h3':v>=5?'h2':v>=2?'h1':'h0';
-  let t='<tr><th>Бренд</th><th>Отзывов</th>'+cols.map(c=>'<th>'+c[1]+'</th>').join('')+'</tr>';
-  M.per.forEach(r=>{t+='<tr><td>'+r.b+'</td><td>'+r.n+'</td>'+cols.map(c=>'<td class="'+cls(r[c[0]])+'">'+(r[c[0]]?r1(r[c[0]]):'·')+'</td>').join('')+'</tr>';});
-  $('#weakTable').innerHTML=t;
-})();
-
-/* ---------- 6. Ступени цены по каналам ---------- */
-(function(){
-  const NM=[['HORECA','Меню HoReCa',790],['B2B','Офисные поставщики',399],['водные','Водные магазины',399],['маркетплейс','Маркетплейсы',399],['Купер','Быстрая доставка',399],['онлайн-каталоги','Сети, онлайн-каталоги',399],['cash','Cash & carry',399]];
-  const box=$('#tiers'), sc=linS(0,1700), ticks=[0,400,800,1200,1600];
-  axis(box,sc,ticks,t=>r0(t)+' ₽');
-  const rows=M.tiers.map(t=>{const m=NM.find(n=>t.l.indexOf(n[0])>=0); return Object.assign({name:m[1],us:m[2]},t);}).sort((a,b)=>b.m-a.m);
-  rows.forEach(r=>{const row=el('div','rc-row'); row.dataset.tip='<b>'+r.name+'</b><br>медиана '+r0(r.m)+' ₽, n='+r.n+'<br>разброс '+r0(r.lo)+'–'+r0(r.hi)+' ₽<br>PRISTINAM: '+r.us+' ₽ ('+(r.us>r.m?'+':'−')+Math.abs(Math.round((r.us/r.m-1)*100))+'% к медиане)';
-    row.append(el('div','lab',r.name)); const t=el('div','trk'); grid(t,sc,ticks);
-    const g=el('div','rg'); g.style.left=sc(r.lo)+'%'; g.style.width=(sc(r.hi)-sc(r.lo))+'%'; t.append(g);
-    const m=el('div','md'); m.style.left=sc(r.m)+'%'; t.append(m);
-    const u=el('div','usd'); u.style.left=sc(r.us)+'%'; t.append(u); row.append(t);
-    row.append(el('div','val',r0(r.m)+' ₽ <small>n='+r.n+(r.n<3?', мало':'')+'</small>')); box.append(row);});
-})();
-
 /* ---------- 7. HoReCa ---------- */
 (function(){
   const box=$('#horeca'), rows=M.hor.filter(r=>r.v>=3||r.m), sc=linS(0,30), ticks=[0,10,20,30];
   axis(box,sc,ticks,t=>t+(t?' точек':''));
-  rows.forEach(r=>{const row=el('div','rc-row'); row.dataset.tip='<b>'+r.b+'</b><br>точек: '+r.v+' (Москва '+r.mow+', Петербург '+r.spb+')<br>'+(r.m?'меню 0,75 л негаз.: '+r0(r.m[0])+' ₽, n='+r.m[1]:'цены негазированной 0,75 л в меню нет');
+  rows.forEach(r=>{const row=el('div','rc-row'); row.dataset.tip='<b>'+r.b+'</b><br>точек: '+r.v+' (Москва '+r.mow+', Петербург '+r.spb+')<br>'+(r.m?'меню 0,75 л негаз.: '+r0(r.m[0])+' Руб., n='+r.m[1]:'цены негазированной 0,75 л в меню нет');
     row.append(el('div','lab',r.b+tag(r.ru))); const t=el('div','trk'); grid(t,sc,ticks);
     const a=el('div','b1'); a.style.left='0'; a.style.width=sc(r.mow)+'%'; t.append(a);
     if(r.spb){const b=el('div','b2'); b.style.left='calc('+sc(r.mow)+'% + '+(r.mow?2:0)+'px)'; b.style.width=sc(r.spb)+'%'; t.append(b);} else a.style.borderRadius='0 4px 4px 0';
     row.append(t);
-    row.append(el('div','val',r.v+' <small>· '+(r.m?r0(r.m[0])+' ₽ (n='+r.m[1]+')':'—')+'</small>')); box.append(row);});
+    row.append(el('div','val',r.v+' <small>· '+(r.m?r0(r.m[0])+' Руб. (n='+r.m[1]+')':'—')+'</small>')); box.append(row);});
   const SG={'hotel_room_service/luxury_hotel':'Рум-сервис luxury-отелей','restaurant/premium':'Премиальные рестораны','hotel_restaurant/luxury_hotel':'Рестораны luxury-отелей','restaurant/mid':'Рестораны среднего сегмента','restaurant/mid_plus':'Рестораны «средний плюс»'};
-  $('#hsegTable').innerHTML='<tr><th>Тип заведения</th><th class="num">Медиана (n)</th><th class="num">Разброс</th><th class="num">790 ₽</th></tr>'+
-    M.hseg.map(s=>'<tr><td>'+(SG[s.s]||s.s)+'</td><td class="num">'+r0(s.m)+' ₽ ('+s.n+')</td><td class="num">'+r0(s.lo)+'–'+r0(s.hi)+'</td><td class="num">'+(790>s.m?'+':'−')+Math.abs(Math.round((790/s.m-1)*100))+'%</td></tr>').join('');
+  $('#hsegTable').innerHTML='<tr><th>Тип заведения</th><th class="num">Медиана (наблюдений)</th><th class="num">790 Руб. к медиане</th></tr>'+
+    M.hseg.map(s=>'<tr><td>'+(SG[s.s]||s.s)+'</td><td class="num">'+r0(s.m)+' Руб. ('+s.n+')</td><td class="num">'+(790>s.m?'+':'−')+Math.abs(Math.round((790/s.m-1)*100))+'%</td></tr>').join('');
 })();
 
 /* ---------- 8. Присутствие по площадкам ---------- */
@@ -1319,12 +1438,106 @@ function renderGrid(){
 (function(){
   const box=$('#revDots'), sc=logS(10,400000), ticks=[10,100,1000,10000,100000];
   axis(box,sc,ticks,t=>t>=1000?(t/1000)+' млрд':t+' млн');
-  M.rev.forEach(r=>{const row=el('div','rc-row'); row.dataset.tip='<b>'+r.b+'</b><br>'+r.e+'<br>выручка '+(r.m>=1000?r1(r.m/1000)+' млрд ₽':r1(r.m)+' млн ₽');
+  M.rev.forEach(r=>{const row=el('div','rc-row'); row.dataset.tip='<b>'+r.b+'</b><br>'+r.e+'<br>выручка '+(r.m>=1000?r1(r.m/1000)+' млрд Руб.':r1(r.m)+' млн Руб.');
     row.append(el('div','lab',r.b)); const t=el('div','trk'); grid(t,sc,ticks); const d=el('div','d d1'); d.style.left=sc(r.m)+'%'; d.style.background='var(--ice)'; t.append(d); row.append(t);
-    row.append(el('div','val',(r.m>=1000?r1(r.m/1000)+' млрд ₽':r0(r.m)+' млн ₽'))); box.append(row);});
+    row.append(el('div','val',(r.m>=1000?r1(r.m/1000)+' млрд Руб.':r0(r.m)+' млн Руб.'))); box.append(row);});
 })();
 
 renderLadder(); renderGrid();
+})();
+</script>
+<script>const RV={"AQUAdetox":{"trn":{"n":3,"x":[["Проверила по полоскам, которые определяют pH, так вот,","Ozon","2025-01"],["Запах просто жесть и мутная, пришлось всю упаковку","Ozon","2023-09"],["Вода горчит и она скорей всего подделка.","Ozon","2024-07"]]},"pn":{"n":11,"x":[["Использую в качестве дополнительного отщелачивающего средства для ребёнка","Ozon","2022-04"],["Мягкая, без посторонних привкусов и запахов, приятно пьется.","Ozon","2025-12"],["вода вкусная, минерализация небольшая, что хорошо, мне ее","Ozon","2022-04"],["Очень странно , но в первой партии несколько","Ozon","2023-06"],["На вкус как вода из-под крана, по крайней","Ozon","2024-10"],["Жаль только, что нет бутылок по 1.5л и","Ozon","2025-01"]]},"tn":{"n":3,"x":[["Нет привкуса минеральной воды, те никакого вкуса вообще.","Ozon","2023-11"],["В упаковке 6 бутылок, только одна бутылка на","Ozon","2023-06"],["Вода горчит и она скорей всего подделка.","Ozon","2024-07"]]},"kn":{"n":4,"x":[["В упаковке 6 бутылок, только одна бутылка на","Ozon","2023-06"],["Очень странно , но в первой партии несколько","Ozon","2023-06"],["Жаль только, что нет бутылок по 1.5л и","Ozon","2025-01"],["чудесная вода, очень полезная","Ozon","2022-04"]]},"low":{"n":12,"x":[["Сама вода имеет посторонний привкус, схожий с косметическими","Ozon","2025-06"],["Вода не соответствовала качеству по ph, также присутствовал","Ozon","2023-06"],["Не самая вкусная вода, потребителю сложно оценить точность","Ozon","2024-03"],["Что необходимо сделать, чтобы исправить ситуацию и вернуть","Ozon","2024-10"],["Нет привкуса минеральной воды, те никакого вкуса вообще.","Ozon","2023-11"],["Проверила по полоскам, которые определяют pH, так вот,","Ozon","2025-01"]]},"tap":{"n":2,"x":[["Товар хорошо упакован, но вода обычная из под","Ozon","2025-06"],["На вкус как вода из-под крана, по крайней","Ozon","2024-10"]]}},"Fahrenheit":{"trn":{"n":6,"x":[["эта вода с доставкой озон фреш чистая подделка.","Ozon","2026-11"],["Товар не соответствует заявленной PH.","Wildberries","2024-05"],["Я не поняла , за что деньги отдала","Wildberries","2025-09"],["Ужасная паль под видом оригинала","Wildberries","2024-10"],["Это честно сказать противно.","Wildberries","2024-08"],["не оригинал.","Wildberries","2026-05"]]},"pn":{"n":8,"x":[["Вода со странным привкусом Очень много остадка на","Wildberries","2026-06"],["Обычная вода,что в бутылке,что у меня из крана,","Wildberries","2026-06"],["Я не поняла , за что деньги отдала","Wildberries","2025-09"],["Ужасная паль под видом оригинала","Wildberries","2024-10"],["Зря только деньги потоатила.","Wildberries","2024-12"],["не очень оправдана цена.","Ozon","2026-11"]]},"tn":{"n":9,"x":[["Запечатаны достаточно плотно, но половина приехала помята.","Wildberries","2026-10"],["Вода со странным привкусом Очень много остадка на","Wildberries","2026-06"],["эта вода с доставкой озон фреш чистая подделка.","Ozon","2026-11"],["прислали другую воду , не тот вкус, который","Wildberries","2024-07"],["На вкус вода ооочень простая, как из под","Wildberries","2024-04"],["Безвкусная вода и ни каких эффектов нет","Wildberries","2025-11"]]},"kn":{"n":3,"x":[["Постоянно пью эту воду, прислали странную пачку, во","Ozon","2026-11"],["Вода со странным привкусом Очень много остадка на","Wildberries","2026-06"],["Обычная вода,что в бутылке,что у меня из крана,","Wildberries","2026-06"]]},"low":{"n":22,"x":[["У воды неприятный запах, совершенно не вкусная, есть","Ozon","2026-11"],["Постоянно пью эту воду, прислали странную пачку, во","Ozon","2026-11"],["Вода со странным привкусом Очень много остадка на","Wildberries","2026-06"],["эта вода с доставкой озон фреш чистая подделка.","Ozon","2026-11"],["Обычная вода,что в бутылке,что у меня из крана,","Wildberries","2026-06"],["Берите Donat у него хорошая кислотность, а у","Wildberries","2026-04"]]},"tap":{"n":2,"x":[["На вкус вода ооочень простая, как из под","Wildberries","2024-04"],["На вкус вода, как из под крана.","Wildberries","2026-02"]]}},"Pokrovska":{"trn":{"n":3,"x":[["Данную воду не рекомендую, на видео видны прям","Wildberries","2026-08"],["Вода неплохая на вкус , но теперь вызывает","Wildberries","2026-11"]]},"pn":{"n":5,"x":[["За такую цену (776 рублей за 5-тилитровую бутыль)","Wildberries","2026-10"],["Данную воду не рекомендую, на видео видны прям","Wildberries","2026-08"],["Но...уж ОЧЕНЬ считаю дорогая вода А если ещё","Ozon","2026-11"],["Вода с интересным вкусом.","Ozon","2026-11"],["Вкусная вода.","Ozon","2026-10"]]},"tn":{"n":6,"x":[["огромное количество белого осадка, пришлось около 10-15% воды","Wildberries","2026-06"],["другая (бутилированная, из фильтра) уже кажется не вкусной","Ozon","2026-11"],["Мне не понравилось то что есть осадок который","Wildberries","2026-06"],["На вкус не понравилась, как будто из крана","Wildberries","2026-07"],["Вода неплохая на вкус , но теперь вызывает","Wildberries","2026-11"],["это же просто вода из-под крана по вкусу","Ozon","2026-11"]]},"kn":{"n":5,"x":[["В некоторых бутылках ярко выраженный осадок в виде","Wildberries","2026-07"],["в бутылках 5 л почему-то образуется белый осадок,","Ozon","2026-11"],["За такую цену (776 рублей за 5-тилитровую бутыль)","Wildberries","2026-10"],["В каждой бутылке плавают какие-то хлопья.","Wildberries","2026-09"],["Бутылка с неустойчивым дном.","Wildberries","2026-07"]]},"low":{"n":22,"x":[["вода с многочисленными хлопьями, осадком, привкус неприятный очень","Ozon","2026-11"],["заказала 6шт..пришли замотанные скотчем и в пакете озон....короче","Ozon","2026-11"],["огромное количество белого осадка, пришлось около 10-15% воды","Wildberries","2026-06"],["Настолько сильный хлопьевидный осадок, что пить невозможно.","Wildberries","2026-09"],["Товар пришел просто в отвратительном виде, бутылки были","Ozon","2026-11"],["В некоторых бутылках ярко выраженный осадок в виде","Wildberries","2026-07"]]},"tap":{"n":3,"x":[["Товар пришел быстро, упакован в полиэтилен, вода вкусная,","Ozon","2026-11"],["Вода чистая, на вкус приятная, без привкуса.","Ozon","2026-11"],["это же просто вода из-под крана по вкусу","Ozon","2026-11"]]}},"Evian":{"trn":{"n":30,"x":[["Упаковка совершенно изменилась в последнее время, бутылки мятые,","Wildberries","2025-11"],["Вода ужасная, явная подделка начиная от упаковки заканчивая","Ozon","2026-03"],["Вода не настоящая эвиан, крышка обычная, на настоящем","Ozon","2026-08"],["Думали, что просто сорвались на складе этикетки, в","Ozon","2026-11"],["Явная подделка, брали до этого у другого продавца,","Wildberries","2026-04"],["Подделка по цене выше настоящей , настоящая крышка","Wildberries","2026-05"]]},"pn":{"n":8,"x":[["Упаковка совершенно изменилась в последнее время, бутылки мятые,","Wildberries","2025-11"],["Вода не настоящая эвиан, крышка обычная, на настоящем","Ozon","2026-08"],["Подделка по цене выше настоящей , настоящая крышка","Wildberries","2026-05"],["С 28 ноября висит моя заявка с простбой","Wildberries","2025-01"],["обычная вода за бешеные деньги.","Ozon","2026-08"],["Подделка по цене оригинала!!!","Ozon","2026-08"]]},"tn":{"n":16,"x":[["Вода ужасная, явная подделка начиная от упаковки заканчивая","Ozon","2026-03"],["Вода не настоящая эвиан, крышка обычная, на настоящем","Ozon","2026-08"],["Явная подделка, брали до этого у другого продавца,","Wildberries","2026-04"],["Последний раз пришла в неаккуратной упаковке и на","Ozon","2026-06"],["Болотный запах, по вкусу не похожа на оригинал","Ozon","2026-10"],["Evian — это когда хочется просто чистой воды","Ozon","2026-08"]]},"kn":{"n":17,"x":[["Каждая бутылка открывается плохо и торчит пластик, царапает","Wildberries","2025-04"],["Вода не настоящая эвиан, крышка обычная, на настоящем","Ozon","2026-08"],["Почти два года покупаю Эвиан с европейской крышкой,","Ozon","2026-08"],["Думали, что просто сорвались на складе этикетки, в","Ozon","2026-11"],["Подделка по цене выше настоящей , настоящая крышка","Wildberries","2026-05"],["купила для шефа, сказал, что подделка, в Европе","Ozon","2026-02"]]},"low":{"n":40,"x":[["Упаковка совершенно изменилась в последнее время, бутылки мятые,","Wildberries","2025-11"],["Вода ужасная, явная подделка начиная от упаковки заканчивая","Ozon","2026-03"],["Каждая бутылка открывается плохо и торчит пластик, царапает","Wildberries","2025-04"],["Очень жаль, что теперь придется вскрывать каждую упаковку","Wildberries","2026-07"],["Вода не настоящая эвиан, крышка обычная, на настоящем","Ozon","2026-08"],["Почти два года покупаю Эвиан с европейской крышкой,","Ozon","2026-08"]]},"tap":{"n":6,"x":[["Вода не настоящая эвиан, крышка обычная, на настоящем","Ozon","2026-08"],["Почти два года покупаю Эвиан с европейской крышкой,","Ozon","2026-08"],["Явная подделка, брали до этого у другого продавца,","Wildberries","2026-04"],["Подделка по цене выше настоящей , настоящая крышка","Wildberries","2026-05"],["это не настоящая вода эвиан!!!!!","Ozon","2026-02"],["Вода как из под крана и по вкусу","Wildberries","2026-05"]]}},"Prolom":{"trn":{"n":5,"x":[["Сделала два теста Ph, верхний тест – вода","Wildberries","2026-06"],["Вкус совершенно не тот, что я покупала на","Wildberries","2026-08"],["либо подделка либо из под крана.","Ozon","2026-08"],["Чистая подделка.","Wildberries","2026-08"],["100% подделка.","Ozon","2026-07"]]},"pn":{"n":17,"x":[["Обычная вода ничего сверх естественного, деньги на ветер","Wildberries","2026-11"],["По вкусу вода не отличается от обычной негазированной.","Ozon","2026-07"],["Воду заказываю постоянно, у мужа камни в почках.","Wildberries","2026-07"],["простая вода вообще не пахоже на минеральную да","Ozon","2026-11"],["Воду покупаю постоянно,но цена растёт нереально","Wildberries","2026-07"],["Вода хорошая,но цены растут как на дрожжах!","Wildberries","2026-10"]]},"tn":{"n":4,"x":[["немного в недоумении: вкус воды как из под","Ozon","2026-11"],["Вкус совершенно не тот, что я покупала на","Wildberries","2026-08"],["Чистая подделка.","Wildberries","2026-08"],["100% подделка.","Ozon","2026-07"]]},"kn":{"n":3,"x":[["Воду заказываю постоянно, но такое впервые, что все","Ozon","2026-09"],["Брал два вида воды, в одной осадок белый,","Wildberries","2026-09"],["Ну конечно ph 8.8 это не совсем так,","Ozon","2026-10"]]},"low":{"n":15,"x":[["Обычная вода ничего сверх естественного, деньги на ветер","Wildberries","2026-11"],["хорошо что работник пункта выдачи ozon как-то изолентой","Ozon","2026-09"],["По вкусу вода не отличается от обычной негазированной.","Ozon","2026-07"],["Воду заказываю постоянно, но такое впервые, что все","Ozon","2026-09"],["простая вода вообще не пахоже на минеральную да","Ozon","2026-11"],["Обычный вкус , криво наклеена этикетка , за","Ozon","2026-10"]]},"tap":{"n":3,"x":[["Смутил по началу вкус, проверила PH, все отлично","Ozon","2026-10"],["немного в недоумении: вкус воды как из под","Ozon","2026-11"],["либо подделка либо из под крана.","Ozon","2026-08"]]}},"Legend of Baikal":{"trn":{"n":4,"x":[["Честный знак распознаёт QR-код на крышке, значит не","Ozon","2026-09"],["Пришел заказ с 3 попытки, я на радостях","Ozon","2026-09"],["Увы , это подделка.","Wildberries","2025-12"]]},"pn":{"n":10,"x":[["Отменный вкус воды, бутылка из стекла, химический состав.","Отзовик","2021-10"],["Вкус пока лучший из всех, что брал до","Wildberries","2026-06"],["Лучшая по вкусу и чистоте вода","Wildberries","2026-06"],["Самая чистая и вкусная вода","Wildberries","2026-06"],["Вкусная, полезная)","Отзовик","2025-09"],["Вкусная, дорогая.","Ozon","2026-06"]]},"tn":{"n":4,"x":[["Вкус не натуральной воды.","Wildberries","2026-01"],["Вода не вкусная, обычная","Wildberries","2026-08"],["Увы , это подделка.","Wildberries","2025-12"]]},"kn":{"n":6,"x":[["Честный знак распознаёт QR-код на крышке, значит не","Ozon","2026-09"],["покупала воду у этого продавца несколько раз и","Ozon","2026-07"],["Крышки плохо закрученные, все газы выдохлись","Wildberries","2026-03"],["Пришел заказ с 3 попытки, я на радостях","Ozon","2026-09"],["Вода вкусная, полезная","Wildberries","2026-08"],["Увы , это подделка.","Wildberries","2025-12"]]},"low":{"n":17,"x":[["Жестковата вода, деньги на ветер , только бутылочка","Ozon","2026-07"],["вкус не понравился, горькая, в сравнении с Архызом","Ozon","2026-09"],["Как будто у премиальной воды упаковка должна быть","Ozon","2026-10"],["Дважды заказывал, то объем не тот, то газ/незаг","Ozon","2026-09"],["покупала воду у этого продавца несколько раз и","Ozon","2026-07"],["Два раза уже заказываю и отправляют другую в","Ozon","2026-09"]]}},"Aqua Minerale":{"trn":{"n":1,"x":[["Товар к сожалению скорее всего является подделкой, так","Wildberries","2021-12"]]},"pn":{"n":2,"x":[["По завышенной цене, с крайне низким уровнем качества!","Ozon","2026-09"],["Второй раз покупаю в этом магазине литровую Акву","Ozon","2026-08"]]},"tn":{"n":3,"x":[["Вода просто отвратительная с ярко выраженным химозным привкусом.","Wildberries","2026-06"],["Из всех видов газированной воды предпочитаю аква минерале,","Wildberries","2026-07"],["Товар не соответствует вкусом, упаковка липкая и грязная","Wildberries","2026-10"]]},"kn":{"n":3,"x":[["Противно когда вытаскивают бутылку из середины и заматывают","Wildberries","2026-05"],["Вода нравится вкусная ,сильно газированная.","Wildberries","2026-02"],["запах от бутылок стиральным порошком","Ozon","2026-08"]]},"low":{"n":20,"x":[["Слабогазированная ,можно сказать без газа,люб лю сильногазированную","Wildberries","2021-06"],["Вода просто отвратительная с ярко выраженным химозным привкусом.","Wildberries","2026-06"],["Бутылка пробита, маленькая дырочка через которую вода протекла..","Wildberries","2026-06"],["привезли газированную вместо обычной, всю потёртую и грязную,","Ozon","2026-09"],["Противно когда вытаскивают бутылку из середины и заматывают","Wildberries","2026-05"],["Из всех видов газированной воды предпочитаю аква минерале,","Wildberries","2026-07"]]},"tap":{"n":1,"x":[["Внимательно проверяйте в ПВЗ каждую бутылку.","Wildberries","2026-10"]]}},"Святой Источник":{"pn":{"n":1,"x":[["Дороговато водичка.","Wildberries","2026-11"]]},"tn":{"n":3,"x":[["Привкус аптеки/средств для мытья/ хлорки у всего заказа","Ozon","2026-11"],["Всё запечатано обычно, бутылки тоже вроде нормальные, а","Ozon","2026-11"],["Вкус воды очень странный, как будто глазированная вода","Ozon","2026-11"]]},"kn":{"n":4,"x":[["Привкус аптеки/средств для мытья/ хлорки у всего заказа","Ozon","2026-11"],["Всё запечатано обычно, бутылки тоже вроде нормальные, а","Ozon","2026-11"],["Одна бутылка оказывается с дыркой","Wildberries","2026-10"],["бутылки, конечно же, целые.","Ozon","2026-11"]]},"low":{"n":8,"x":[["отношение озон фреш отвратительное, за некачественный товар деньги","Ozon","2026-11"],["Привкус аптеки/средств для мытья/ хлорки у всего заказа","Ozon","2026-11"],["Всё запечатано обычно, бутылки тоже вроде нормальные, а","Ozon","2026-11"],["Вкус воды очень странный, как будто глазированная вода","Ozon","2026-11"],["Простая вода, чуть чуть газированная, не советую не","Wildberries","2026-11"],["Одна бутылка оказывается с дыркой","Wildberries","2026-10"]]},"tap":{"n":2,"x":[["Всё запечатано обычно, бутылки тоже вроде нормальные, а","Ozon","2026-11"],["Покупаю эту марку постоянно ,налила из под крана","Ozon","2026-11"]]}},"Petroglyph":{"trn":{"n":6,"x":[["Штрих код на крышке для красоты, или обмана?((","Ozon","2025-08"],["Бутылки пришли маленькие, объём не тот , что","Wildberries","2025-03"],["Вода невкусная, не мягкая, неприятная.","Wildberries","2025-11"],["осталось чувство что меня обманули.","Ozon","2026-07"]]},"pn":{"n":6,"x":[["Неплохая вода, вкус мягкий Цена кусается, но стекло","Ozon","2026-08"],["Заказывал 2 упаковки ПРЕМИУМ ВОДЫ!!!ПРЕМИУМ!!!","Ozon","2025-04"],["Цена высокая, как у иностранной воды.","Ozon","2022-04"],["100 рублей за бутылку!!!!","Ozon","2025-06"],["Вода не 10 рублей стоит!","Ozon","2025-10"]]},"tn":{"n":3,"x":[["По вкусу отдает хлором и противными нотками.","Ozon","2026-02"],["Обычная вода, по вкусу как с крана!","Ozon","2025-12"],["осталось чувство что меня обманули.","Ozon","2026-07"]]},"kn":{"n":4,"x":[["Заказывал 2 упаковки ПРЕМИУМ ВОДЫ!!!ПРЕМИУМ!!!","Ozon","2025-04"],["Штрих код на крышке для красоты, или обмана?((","Ozon","2025-08"],["Вода невкусная, не мягкая, неприятная.","Wildberries","2025-11"],["100 рублей за бутылку!!!!","Ozon","2025-06"]]},"low":{"n":20,"x":[["Вместо газированной в стекле приехала негазированная пластик.","Wildberries","2024-01"],["Мне вода не подошла, слишком чувствуется на вкус","Wildberries","2021-03"],["Я заказала воду газированную и уплатила, как за","Wildberries","2025-03"],["Заказывал 2 упаковки ПРЕМИУМ ВОДЫ!!!ПРЕМИУМ!!!","Ozon","2025-04"],["Штрих код на крышке для красоты, или обмана?((","Ozon","2025-08"],["По вкусу отдает хлором и противными нотками.","Ozon","2026-02"]]},"tap":{"n":1,"x":[["100 рублей за бутылку!!!!","Ozon","2025-06"]]}},"S.Pellegrino":{"trn":{"n":9,"x":[["Вроде оригинал,но видать из-за того что срока годности","Wildberries","2025-11"],["В карточке товара указана ложная информация о сроке","Wildberries","2026-10"],["Есть стойкое подозрение, что бутылки вот с такими","Wildberries","2024-08"],["Подделка либо вышел срок годности","Ozon","2024-05"],["Вода 0,5 л - бутылка ПЭТ, а не","Wildberries","2024-02"],["Это не оригинальный товар .","Ozon","2025-08"]]},"pn":{"n":6,"x":[["вода конечно вкусная,газированная,конечно цена кусается,но иногда можно себе","Wildberries","2025-08"],["Водичка очень вкусная, природная газация, не солёная и","Wildberries","2026-01"],["Купил по низкой цене, применил бонусы, но «жаба»","Ozon","2024-12"],["Самая приятная вода, естественной газации.","Wildberries","2025-12"],["Несколько заполнены наполовину.","Ozon","2024-11"],["5 бутылочек по цене шести.","Ozon","2024-12"]]},"tn":{"n":2,"x":[["Есть стойкое подозрение, что бутылки вот с такими","Wildberries","2024-08"],["Это не оригинальный товар .","Ozon","2025-08"]]},"kn":{"n":9,"x":[["Тут нет нормальной газированности, а если бутылку открыли","Ozon","2025-01"],["Есть стойкое подозрение, что бутылки вот с такими","Wildberries","2024-08"],["Газов в ней не осталось, открываешь новую бутылку","Wildberries","2025-12"],["Бутылочка разбилась и вернуть нельзя теперь!","Wildberries","2023-07"],["Срок годности месяц остался, газов уже нет в","Wildberries","2026-08"],["Самая приятная вода, естественной газации.","Wildberries","2025-12"]]},"low":{"n":27,"x":[["Тут нет нормальной газированности, а если бутылку открыли","Ozon","2025-01"],["всё разорвано одной бутылки не хватает вернули деньги","Wildberries","2026-06"],["Качество воды еще не попробовали, но очень неприятно","Wildberries","2025-10"],["В карточке товара указана ложная информация о сроке","Wildberries","2026-10"],["Есть стойкое подозрение, что бутылки вот с такими","Wildberries","2024-08"],["Газов в ней не осталось, открываешь новую бутылку","Wildberries","2025-12"]]}},"Edis":{"trn":{"n":2,"x":[["Поменялся вкус, как будто бы подделка","Ozon","2023-09"],["Надеюсь не подделка.","Ozon","2025-03"]]},"pn":{"n":4,"x":[["Для тех кому нравится вкус Evian или Vittel","Ozon","2023-07"],["Прислали без газа, хотя заказывала с газом.","Ozon","2023-12"],["вода хорошая но значительно подорожала","Ozon","2026-10"],["Прекрасная вкусная вода!","Ozon","2025-10"]]},"tn":{"n":4,"x":[["Кто-то в отзывах писал, что плавают белые хлопья.","Ozon","2024-04"],["Прислали без газа, хотя заказывала с газом.","Ozon","2023-12"],["Поменялся вкус, как будто бы подделка","Ozon","2023-09"],["Красивая бутылка","Ozon","2023-09"]]},"kn":{"n":9,"x":[["При открывании стеклянной бутылки она взорвалась прям в","Ozon","2024-06"],["Добрый день,я купила 4 ящика газированный воды эдис!","Ozon","2023-04"],["Коробка надорвана именно с той стороны, где стояли","Ozon","2024-07"],["бутылка повреждена сверху где крышка, и в бутылках","Ozon","2025-05"],["Одну бутылку не положили, вторая была с отбитой","Ozon","2024-02"],["Давно беру эту воду ребёнку, никогда ни было","Ozon","2023-08"]]},"low":{"n":38,"x":[["Очень разочарована, что вместо привычной любимой газированной воды,","Ozon","2023-10"],["не хватает одной бутылки))) печально что приваровывают...Всё таки","Ozon","2026-06"],["Заказывал с газом пришла не газированная,хотя по маркировке","Ozon","2023-11"],["Доставили вместо обычной питьевой воды Газированную воду","Ozon","2023-11"],["При открывании стеклянной бутылки она взорвалась прям в","Ozon","2024-06"],["Заказывал негазированную воду - доставили газированную.","Ozon","2025-02"]]},"tap":{"n":1,"x":[["В воде плавают какие непонятные хлопья.","Ozon","2024-06"]]}},"Baikal430":{"trn":{"n":1,"x":[["Имеет химический странный привкус.","Ozon","2026-08"]]},"pn":{"n":6,"x":[["Чистая, живая, полезные микроэлементы, вкусная","Отзовик","2026-01"],["Цена завышена по сравнению с ***","Wildberries","2026-04"],["Удобная форма бутылки.","Отзовик","2023-01"],["Вкусная живая вода","Отзовик","2026-02"],["Вкусная вода.","Отзовик","2022-04"],["Дорогая вода","Отзовик","2024-06"]]},"tn":{"n":3,"x":[["Просто на каждой бутылке наклеен код озон.","Ozon","2026-10"],["Имеет химический странный привкус.","Ozon","2026-08"],["Привкус мне не понравился","Отзовик","2024-02"]]},"kn":{"n":1,"x":[["Бутылки скользкие, как будто в масле, грязные.","Ozon","2026-11"]]},"low":{"n":4,"x":[["Бутылки скользкие, как будто в масле, грязные.","Ozon","2026-11"],["испортилась вода, больше нет вкуса льдинок","Ozon","2026-11"],["Вот честно , покупала эту воду в магазине","Ozon","2026-10"],["Имеет химический странный привкус.","Ozon","2026-08"]]}},"Jevea":{"trn":{"n":2,"x":[["Решила проверить Data Matrix на бутылке с помощью","Wildberries","2026-05"]]},"pn":{"n":3,"x":[["Любимая вода, мягкая и вкусная.","Ozon","2025-05"],["Перешла на другую щелочную.","Wildberries","2026-06"],["Дорого и не вкусно.","Ozon","2024-12"]]},"tn":{"n":3,"x":[["Самая невкусная вода, которую я пробовала.","Wildberries","2026-05"],["И форма бутылки интересная.","Wildberries","2026-07"],["Дорого и не вкусно.","Ozon","2024-12"]]},"kn":{"n":3,"x":[["Решила проверить Data Matrix на бутылке с помощью","Wildberries","2026-05"],["Вытащили бутылку воды!","Wildberries","2026-05"]]},"low":{"n":8,"x":[["Две бутылки в упаковке повреждены, протекли, воды осталось","Wildberries","2026-06"],["Пробки испачканы клеем, в бутылках не ровное количество","Ozon","2026-03"],["Решила проверить Data Matrix на бутылке с помощью","Wildberries","2026-05"],["Самая невкусная вода, которую я пробовала.","Wildberries","2026-05"],["Упаковка ужас,две бутылки на половину воды","Wildberries","2026-09"],["Вытащили бутылку воды!","Wildberries","2026-05"]]}},"BonAqua":{"trn":{"n":1,"x":[["Разочарована в воде - вкус не тот!","Wildberries","2026-04"]]},"pn":{"n":2,"x":[["Купил в надежде не бегать каждый раз за","Ozon","2024-10"],["Нормальная вода, но цена запредельная.","Wildberries","2026-08"]]},"tn":{"n":5,"x":[["Привкус мне показался не тот, но в целом","Ozon","2026-04"],["Купил в надежде не бегать каждый раз за","Ozon","2024-10"],["Не сладкая совсем мне не понравилась .","Wildberries","2025-02"],["Разочарована в воде - вкус не тот!","Wildberries","2026-04"],["Действительно сильно газированная.","Wildberries","2026-07"]]},"kn":{"n":2,"x":[["Не советую.Ощушение такое как будто где-то в гараже","Ozon","2025-03"],["Купил в надежде не бегать каждый раз за","Ozon","2024-10"]]},"low":{"n":8,"x":[["попались несколько бутылок с не герметичноой пробкой, мягкая","Ozon","2026-09"],["Во-вторых, бутылки покрыты таким слоем пыли, что невозможно","Ozon","2024-12"],["Не советую.Ощушение такое как будто где-то в гараже","Ozon","2025-03"],["Купил в надежде не бегать каждый раз за","Ozon","2024-10"],["Не сладкая совсем мне не понравилась .","Wildberries","2025-02"],["Вкус не понравился раньше была лучше","Wildberries","2026-10"]]},"tap":{"n":2,"x":[["Купил в надежде не бегать каждый раз за","Ozon","2024-10"],["Действительно сильно газированная.","Wildberries","2026-07"]]}},"VodaVoda":{"pn":{"n":3,"x":[["Очень хорошая мягкая водичка, мой фаворит среди подобных","Ozon","2026-10"],["Не впечатлила, возможно где-то и номер 1, но","Ozon","2026-08"],["Не поняла, почему так дорого!","Wildberries","2026-05"]]},"tn":{"n":1,"x":[["Мне не понравился вкус этой воды","Ozon","2026-06"]]},"low":{"n":3,"x":[["Пришлось скипятить эту воду для чая, оказалось приличная","Ozon","2026-08"],["Мне не понравился вкус этой воды","Ozon","2026-06"],["Не очень понравился вкус воды","Ozon","2026-07"]]}},"Voss":{"trn":{"n":7,"x":[["Валбирес должен заблокировать продавца , подумываю отправить ссылки","Wildberries","2025-01"],["Не соответствует описанию, просто наклейка причем без всяких","Ozon","2025-01"],["Приложите сертификаты качества и экспертизы по воде.","Wildberries","2025-12"],["Решили купить по привлекательной цене - и зря!","Wildberries","2024-03"],["Подделка вся в наклейках и перемотана скотчем","Ozon","2025-03"],["Это ЗАЛИПУХА в пластиковой бутылки.","Wildberries","2024-12"]]},"pn":{"n":5,"x":[["Бутылка вся обшарпанная, этикетка ободрана, за такие деньги,","Wildberries","2025-10"],["Решили купить по привлекательной цене - и зря!","Wildberries","2024-03"],["На фото бутылки две,цена 1000+,а за одну на","Wildberries","2025-09"],["Это ЗАЛИПУХА в пластиковой бутылки.","Wildberries","2024-12"],["Вкусная вода.","Wildberries","2020-01"]]},"tn":{"n":4,"x":[["На фото голубая с серебряными похожими на металл","Wildberries","2026-05"],["Вода горькая на вкус, в ней плавают какие","Wildberries","2026-03"],["По вкусу одинакова с самой дешёвой.","Wildberries","2021-08"],["Бутылка с крутым дизайном","Wildberries","2024-10"]]},"kn":{"n":14,"x":[["Не соответствует описанию, просто наклейка причем без всяких","Ozon","2025-01"],["Бутылка вся обшарпанная, этикетка ободрана, за такие деньги,","Wildberries","2025-10"],["как только открыла крышку,та сразу развалилась в руках","Wildberries","2026-11"],["Решили купить по привлекательной цене - и зря!","Wildberries","2024-03"],["Подделка вся в наклейках и перемотана скотчем","Ozon","2025-03"],["Просто вода из под крана в дешовом пластике","Wildberries","2024-03"]]},"low":{"n":24,"x":[["Валбирес должен заблокировать продавца , подумываю отправить ссылки","Wildberries","2025-01"],["Бутылка пластиковая, что полностью нивелирует ценность покупки.","Wildberries","2020-05"],["Не соответствует описанию, просто наклейка причем без всяких","Ozon","2025-01"],["Бутылка вся обшарпанная, этикетка ободрана, за такие деньги,","Wildberries","2025-10"],["Здравствуйте, товар пришел с отломленой крышкой, воды не","Wildberries","2024-09"],["Бутылки были настолько сильно обмотаны скотчем, что при","Ozon","2024-12"]]},"tap":{"n":2,"x":[["Просто вода из под крана в дешовом пластике","Wildberries","2024-03"]]}},"Архыз Vita":{"trn":{"n":3,"x":[["Одну газированную и одну негазированную Архыз.","Wildberries","2025-10"],["Это ПОДДЕЛКА наглая и неприкрытая!!!!","Wildberries","2025-12"],["Это не вода из скважины, я знаю её","Wildberries","2026-04"]]},"pn":{"n":1,"x":[["В аптеке дешевле.","Wildberries","2026-10"]]},"tn":{"n":5,"x":[["Из 12-ти бутылок 4-е были негазированные с неприятным","Wildberries","2026-05"],["Это не вода из скважины, я знаю её","Wildberries","2026-04"],["Один в один по вкусу, как у меня","Ozon","2026-07"],["Бутылки не повреждены.","Ozon","2026-07"],["Очень огорчена...","Wildberries","2026-02"]]},"kn":{"n":4,"x":[["Из 12-ти бутылок 4-е были негазированные с неприятным","Wildberries","2026-05"],["Состав воды в описании не соответствует составу воды","Wildberries","2025-08"],["Но что самое интересное во всех бутылках уровень","Wildberries","2025-05"],["Это не вода из скважины, я знаю её","Wildberries","2026-04"]]},"low":{"n":18,"x":[["При получении и проверке товара через официальное государственное","Wildberries","2026-07"],["Из 12-ти бутылок 4-е были негазированные с неприятным","Wildberries","2026-05"],["Состав воды в описании не соответствует составу воды","Wildberries","2025-08"],["Все бутылки перекошенные, одна из шести протекала.","Ozon","2026-08"],["Привезли воду газированную, вместо негазированной.","Wildberries","2025-01"],["Заказал 2 упаковки, курькр позвонил и сказал, что","Wildberries","2025-06"]]},"tap":{"n":2,"x":[["Но что самое интересное во всех бутылках уровень","Wildberries","2025-05"],["ужас, явно подделка, вода из под крана и","Ozon","2026-07"]]}},"Калинов Родник":{"pn":{"n":5,"x":[["Вода понравилась хорошо прям газированная цена супер если","Wildberries","2026-11"],["Хорошая вода, главное чтоб цены завышали и можно","Wildberries","2026-11"],["Деньги не возвращают за испорченные товары.","Ozon","2026-11"],["Но МоЯ Вина, не усмотрела, тк нужна была","Wildberries","2026-11"],["Цена несколько завышена.","Ozon","2026-11"]]},"tn":{"n":2,"x":[["Вода пролилась из одной бутылки,упаковка не нарушена.Вкус не","Ozon","2026-11"],["На бутылке указаны номера скважин и месторождение воды,","Wildberries","2026-11"]]},"kn":{"n":4,"x":[["Вода пролилась из одной бутылки,упаковка не нарушена.Вкус не","Ozon","2026-11"],["На бутылке указаны номера скважин и месторождение воды,","Wildberries","2026-11"],["Обычная вода после 3-4 открытия бутылки газов нет","Ozon","2026-11"],["Но МоЯ Вина, не усмотрела, тк нужна была","Wildberries","2026-11"]]},"low":{"n":8,"x":[["Воду берем постоянно,нареканий нет.Но.Доставка аховая,то переносят по несколько","Wildberries","2026-11"],["Стала просто отвратительная, в прошлой упаковке были лопнувшие","Wildberries","2026-11"],["вода пришла не газированная написано газированная ,но на","Ozon","2026-11"],["На бутылке указаны номера скважин и месторождение воды,","Wildberries","2026-11"],["Обычная вода после 3-4 открытия бутылки газов нет","Ozon","2026-11"],["Ставлю 3 звезды, т.к 2 бутылки пришли меньше","Wildberries","2026-11"]]},"tap":{"n":1,"x":[["На бутылке указаны номера скважин и месторождение воды,","Wildberries","2026-11"]]}},"San Benedetto":{"trn":{"n":7,"x":[["вопрос: почему испанская, норвежская вода на своем языке","Ozon","2024-06"],["Вода почти без газа, сильно отличается от оригинала","Wildberries","2026-06"],["Заказывала в Москве - привозили одно -оригинал!","Ozon","2022-05"],["Сравнили с бутылкой , купленной в другом месте.","Ozon","2024-06"],["Я очень сомневаюсь в оригинальности товара.","Ozon","2026-02"],["Пришла в не герметичной упаковке Подделка.","Ozon","2024-07"]]},"pn":{"n":9,"x":[["Прекрасная вода, очень вкусная и качественная, беру регулярно.,","Ozon","2022-02"],["Отличный компромисс между дорогой французской водой и дорогими","Ozon","2021-12"],["Вода без привкуса и запаха; удобная упаковка","Ozon","2021-12"],["Я очень сомневаюсь в оригинальности товара.","Ozon","2026-02"],["идеально для ребенка, всегда берет с собой","Ozon","2021-11"],["Пить не смогу такую воду 1200 руб в","Ozon","2024-01"]]},"tn":{"n":1,"x":[["Крышки плохо присоединены (сразу отваливаются, что для европейского","Ozon","2024-08"]]},"kn":{"n":6,"x":[["вопрос: почему испанская, норвежская вода на своем языке","Ozon","2024-06"],["Сравнили с бутылкой , купленной в другом месте.","Ozon","2024-06"],["Пришла в не герметичной упаковке Подделка.","Ozon","2024-07"],["Пить не смогу такую воду 1200 руб в","Ozon","2024-01"],["Одна бутылка шишкиного леса","Ozon","2023-05"],["Вода подделка.","Ozon","2026-03"]]},"low":{"n":21,"x":[["Крышки плохо присоединены (сразу отваливаются, что для европейского","Ozon","2024-08"],["Пришло все в скомканной, наполовину порванной упаковке, сложилось","Ozon","2023-12"],["В общем описании карусели указан показатель Водородности- ph.","Ozon","2022-02"],["Самое неприятное - бутылки с повреждением заклеенные скотчем","Ozon","2024-09"],["В упаковке вода разная газированная и негазированная.и это","Wildberries","2025-03"],["вопрос: почему испанская, норвежская вода на своем языке","Ozon","2024-06"]]},"tap":{"n":2,"x":[["Крышки плохо присоединены (сразу отваливаются, что для европейского","Ozon","2024-08"],["Вот другая вода, тоже Сан-Бенедетто, но Био была","Ozon","2022-02"]]}},"Virgo fons":{"trn":{"n":3,"x":[["Без малейшей минерализации,о какой щелочности вообще может идти","Wildberries","2026-02"],["Надеюсь что это не подделка, т к на","Wildberries","2025-12"],["В системе честный знак.","Ozon","2025-11"]]},"pn":{"n":3,"x":[["Затевтила на ph на 7)) далеко не на","Wildberries","2026-05"],["покупать дорого, прошу скидочку!!!","Ozon","2026-08"]]},"tn":{"n":1,"x":[["В этот раз я не сразу обратилась внимание,","Ozon","2025-12"]]},"kn":{"n":4,"x":[["Очень странная вода и налита под самое горлышко,","Wildberries","2026-08"],["В этот раз я не сразу обратилась внимание,","Ozon","2025-12"],["Надеюсь что это не подделка, т к на","Wildberries","2025-12"],["Одна бутылка худая.","Wildberries","2024-12"]]},"low":{"n":9,"x":[["Без малейшей минерализации,о какой щелочности вообще может идти","Wildberries","2026-02"],["Очень странная вода и налита под самое горлышко,","Wildberries","2026-08"],["Не хотелось бы думать, где эта вода хранилась","Ozon","2025-12"],["В этот раз я не сразу обратилась внимание,","Ozon","2025-12"],["Заказывали воду 0,5 а пришла вода 0,33 по","Wildberries","2026-01"],["Несответствет заявленному на этикетке.","Wildberries","2025-07"]]},"tap":{"n":1,"x":[["В этот раз я не сразу обратилась внимание,","Ozon","2025-12"]]}},"Черноголовка":{"trn":{"n":1,"x":[["Паль, бутылка отличается от оригинала.","Wildberries","2026-11"]]},"tn":{"n":2,"x":[["на вкус не понравилась, немного пресно-саленоватая","Ozon","2026-11"],["На вкус не очень .","Ozon","2026-11"]]},"kn":{"n":2,"x":[["Не очень газированная.Были бутылки у которых газа не","Wildberries","2026-11"],["Паль, бутылка отличается от оригинала.","Wildberries","2026-11"]]},"low":{"n":8,"x":[["После вскрытия бутылки с небольшим количеством газа через","Ozon","2026-11"],["Три бутылки в скотче(липкие после его удаления) остальные","Ozon","2026-11"],["Не очень газированная.Были бутылки у которых газа не","Wildberries","2026-11"],["на вкус не понравилась, немного пресно-саленоватая","Ozon","2026-11"],["две бутылки были из двух бутылок текла вода","Wildberries","2026-11"],["случайно взял - только потом увидел газ","Ozon","2026-11"]]}},"Тбау":{"trn":{"n":3,"x":[["Подделка,оригинальная вода ТБАУ совершенно другая на вкус,не советую","Wildberries","2025-11"],["Регулярно заказывал воду тбау у другого поставщика, знаю","Wildberries","2026-03"],["Вода очень долго шла и не соответствует оригиналу,","Wildberries","2024-06"]]},"pn":{"n":4,"x":[["очень завышена цена Оказалось в магазине намного дешевле","Wildberries","2025-02"],["Вынули одну, в коробке от дна бутылки только","Wildberries","2023-08"],["Обман, очень неприятно!","Wildberries","2024-02"]]},"tn":{"n":3,"x":[["Подделка,оригинальная вода ТБАУ совершенно другая на вкус,не советую","Wildberries","2025-11"],["Регулярно заказывал воду тбау у другого поставщика, знаю","Wildberries","2026-03"],["вкус не очень","Wildberries","2025-07"]]},"kn":{"n":5,"x":[["Про доставке ящик с бутылками переворачивали и 3","Wildberries","2023-10"],["У Остальныых бутылок от влаги и битого стекла","Wildberries","2024-06"],["Вынули одну, в коробке от дна бутылки только","Wildberries","2023-08"],["Не полные бутылки, ободранные этикетки.","Wildberries","2022-10"],["Тоже стекло .","Wildberries","2025-05"]]},"low":{"n":22,"x":[["Пришла вода хорошо упакована, заказывала негазированная, пришла газированная.","Wildberries","2023-07"],["Подделка,оригинальная вода ТБАУ совершенно другая на вкус,не советую","Wildberries","2025-11"],["Пришли побитые бутылки, продавец не хочет возвращать деньги","Wildberries","2024-11"],["Регулярно заказывал воду тбау у другого поставщика, знаю","Wildberries","2026-03"],["Заказывали газированную воду поивезли не газировпнную.","Ozon","2023-07"],["Заказывали не газированную воду а пришла газированная","Wildberries","2023-10"]]}}};</script>
+<script>
+(function(){
+'use strict';
+const $=s=>document.querySelector(s), $$=s=>Array.from(document.querySelectorAll(s));
+const r0=x=>Math.round(x).toLocaleString('ru-RU');
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+
+/* ---------- Карта 2×2: цена × источник ценности (реальные значения) ---------- */
+let qMat='glass';
+function renderQuad(){
+  const price=Object.fromEntries(M[qMat].map(r=>[r.b,r.p]));
+  const pts=M.pos.filter(b=>price[b.b]).map(b=>({b:b.b,ru:b.ru,x:price[b.b][0],n:price[b.b][1],y:b.t-b.n,t:b.t,nat:b.n}));
+  const xs=pts.map(p=>p.x).sort((a,b)=>a-b), med=xs.length%2?xs[(xs.length-1)/2]:(xs[xs.length/2-1]+xs[xs.length/2])/2;
+  const dom=qMat==='glass'?[130,1800]:[35,1000], ticks=qMat==='glass'?[200,400,800,1600]:[50,100,200,400,800];
+  const X0=78,X1=900,Y0=34,Y1=478;
+  const sx=v=>X0+(Math.log(v)-Math.log(dom[0]))/(Math.log(dom[1])-Math.log(dom[0]))*(X1-X0);
+  const sy=v=>Y0+(4-v)/8*(Y1-Y0);
+  const mx=sx(med), my=sy(0);
+  let s='';
+  s+=`<rect class="q-bg" x="${X0}" y="${Y0}" width="${X1-X0}" height="${Y1-Y0}" rx="6"/>`;
+  s+=`<rect class="q-free" x="${mx}" y="${Y0}" width="${X1-mx}" height="${my-Y0}"/>`;
+  [-4,-3,-2,-1,1,2,3,4].forEach(v=>{s+=`<line class="ln" x1="${X0}" x2="${X1}" y1="${sy(v)}" y2="${sy(v)}"/>`;});
+  [-4,-2,0,2,4].forEach(v=>{s+=`<text class="ax" x="${X0-8}" y="${sy(v)+4}" text-anchor="end">${v>0?'+'+v:v===0?'0':'−'+Math.abs(v)}</text>`;});
+  ticks.forEach(t=>{s+=`<line class="ln" x1="${sx(t)}" x2="${sx(t)}" y1="${Y0}" y2="${Y1}"/><text class="ax" x="${sx(t)}" y="${Y1+16}" text-anchor="middle">${r0(t)} Руб./л</text>`;});
+  s+=`<line class="mid" x1="${X0}" x2="${X1}" y1="${my}" y2="${my}"/><line class="mid" x1="${mx}" x2="${mx}" y1="${Y0}" y2="${Y1}"/>`;
+  s+=`<text class="ax" x="${mx}" y="${Y0-8}" text-anchor="middle">медиана ${r0(med)} Руб./л</text>`;
+  s+=`<text class="qcap" x="${X0+10}" y="${Y0+18}">Технология, дёшево</text><text class="qcap" x="${X1-10}" y="${Y0+18}" text-anchor="end">Технология, дорого</text>`;
+  s+=`<text class="qcap" x="${X0+10}" y="${Y1-10}">Природа, дёшево</text><text class="qcap" x="${X1-10}" y="${Y1-10}" text-anchor="end">Природа, дорого</text>`;
+  s+=`<text class="ax" transform="translate(16 ${(Y0+Y1)/2}) rotate(-90)" text-anchor="middle">← природа · источник ценности · технология →</text>`;
+  s+=`<text class="ax" x="${(X0+X1)/2}" y="${Y1+34}" text-anchor="middle">цена за литр, шкала логарифмическая</text>`;
+  // точки и подписи без наложений
+  const boxes=[], all=pts.map(p=>({px:sx(p.x),py:sy(p.y),p}));
+  const us=qMat==='glass'?{px:sx(399/0.75),py:sy(1)}:null;
+  if(us) boxes.push([us.px-10,us.py-10,us.px+92,us.py+10]);
+  all.forEach(a=>boxes.push([a.px-7,a.py-7,a.px+7,a.py+7]));
+  const hit=(b)=>boxes.some(o=>!(b[2]<o[0]||b[0]>o[2]||b[3]<o[1]||b[1]>o[3]));
+  all.sort((a,b)=>a.px-b.px).forEach(a=>{
+    const w=a.p.b.length*6.3+4, cand=[[a.px+9,a.py+4,'start'],[a.px-9,a.py+4,'end'],[a.px,a.py-10,'middle'],[a.px,a.py+18,'middle'],[a.px+9,a.py-8,'start'],[a.px+9,a.py+15,'start'],[a.px-9,a.py-8,'end'],[a.px-9,a.py+15,'end']];
+    let pick=cand[0], pb=null;
+    for(const c of cand){const x0=c[2]==='start'?c[0]:c[2]==='end'?c[0]-w:c[0]-w/2; const b=[x0,c[1]-10,x0+w,c[1]+3];
+      const self=boxes.findIndex(o=>o[0]===a.px-7&&o[1]===a.py-7); const others=boxes.filter((o,i)=>i!==self);
+      if(b[0]>X0&&b[2]<X1+16&&!others.some(o=>!(b[2]<o[0]||b[0]>o[2]||b[3]<o[1]||b[1]>o[3]))){pick=c; pb=b; break;}}
+    if(pb) boxes.push(pb);
+    s+=`<g data-tip="<b>${esc(a.p.b)}</b> · ${a.p.ru?'Россия':'импорт'}<br>${r0(a.p.x)} Руб./л, наблюдений: ${a.p.n}<br>технология ${a.p.t} из 4, природа ${a.p.nat} из 4"><circle class="${a.p.ru?'ru':'im'}" cx="${a.px}" cy="${a.py}" r="${a.p.ru?5.5:4.5}"/><text class="lb" x="${pick[0]}" y="${pick[1]}" text-anchor="${pick[2]}">${esc(a.p.b)}</text></g>`;
+  });
+  if(us) s+=`<g data-tip="<b>PRISTINAM</b><br>532 Руб./л при цене 399 Руб. за 0,75 л<br>цель: технология 3 из 4, природа 2 из 4"><rect class="usp" x="${us.px-7}" y="${us.py-7}" width="14" height="14" transform="rotate(45 ${us.px} ${us.py})"/><text class="us-lb" x="${us.px+13}" y="${us.py+5}">PRISTINAM</text></g>`;
+  $('#quad').innerHTML=s;
+  const tr=pts.filter(p=>p.y>0&&p.x>med), tl=pts.filter(p=>p.y>0&&p.x<=med), br=pts.filter(p=>p.y<0&&p.x>med);
+  const names=a=>a.map(p=>p.b).join(', ');
+  $('#quadNote').innerHTML=(qMat==='glass'
+    ?`<b>Вывод.</b> Из ${pts.length} брендов с ценой в стекле в правом верхнем поле «технология, дорого» ${tr.length?('стоят: '+names(tr)):'нет ни одного'}. Дорогая половина рынка почти целиком внизу, у «природных» марок: ${names(br)}. Бренды, которые продают технологию, стоят в дешёвой половине: ${names(tl)||'—'}. PRISTINAM при 399 Руб. за 0,75 л оказывается в голубом поле один.`
+    :`<b>Вывод.</b> В ПЭТ из ${pts.length} брендов в поле «технология, дорого» ${tr.length?('стоят: '+names(tr)):'нет ни одного'}. Технологичные марки в дешёвой половине: ${names(tl)||'—'}. PRISTINAM в ПЭТ не выходит, поэтому на этой карте его нет.`);
+  $$('#quadMat button').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.v===qMat)));
+}
+$('#quadMat').addEventListener('click',e=>{const b=e.target.closest('button'); if(!b)return; qMat=b.dataset.v; renderQuad();});
+renderQuad();
+
+/* ---------- Слабые места: таблица с окнами отзывов ---------- */
+(function(){
+  const cols=[['trn','Доверие'],['pn','Цена'],['tn','Вкус'],['kn','Упаковка'],['low','Оценки 1–3★'],['tap','«Как из-под крана»']];
+  const NM={trn:'негатив о доверии и подлинности',pn:'негатив о цене',tn:'негатив о вкусе',kn:'негатив об упаковке',low:'оценки от 1 до 3 звёзд',tap:'«как из-под крана»'};
+  const r1=x=>x.toLocaleString('ru-RU',{maximumFractionDigits:1});
+  const cls=v=>v>=20?'h4':v>=10?'h3':v>=5?'h2':v>=2?'h1':'h0';
+  let t='<tr><th>Бренд</th><th>Отзывов</th>'+cols.map(c=>'<th>'+c[1]+'</th>').join('')+'</tr>';
+  M.per.forEach(r=>{t+='<tr><td>'+esc(r.b)+'</td><td>'+r.n+'</td>'+cols.map(c=>{const has=RV[r.b]&&RV[r.b][c[0]]; return '<td class="'+cls(r[c[0]])+(has?' clk" tabindex="0" role="button" data-b="'+esc(r.b)+'" data-c="'+c[0]+'" aria-label="'+esc(r.b)+': '+NM[c[0]]+', показать отзывы':'')+'">'+(r[c[0]]?r1(r[c[0]]):'·')+'</td>';}).join('')+'</tr>';});
+  const tb=$('#weakTable'); tb.innerHTML=t;
+  const modal=$('#rvModal'); let last=null;
+  function open(td){
+    const b=td.dataset.b, c=td.dataset.c, d=RV[b][c]; last=td;
+    $('#rvTitle').textContent=b+': '+NM[c];
+    $('#rvSub').textContent='Найдено отзывов: '+d.n+'. Показано: '+d.x.length+'.';
+    $('#rvList').innerHTML=d.x.map(x=>'<li>«'+esc(x[0].replace(/[\s,.…]+$/,''))+'…»<small>'+esc(x[1])+' · '+esc(x[2])+'</small></li>').join('');
+    modal.hidden=false; $('#rvClose').focus();
+  }
+  function close(){modal.hidden=true; if(last) last.focus();}
+  tb.addEventListener('click',e=>{const td=e.target.closest('td.clk'); if(td) open(td);});
+  tb.addEventListener('keydown',e=>{if((e.key==='Enter'||e.key===' ')&&e.target.matches('td.clk')){e.preventDefault(); open(e.target);}});
+  $('#rvClose').addEventListener('click',close);
+  modal.addEventListener('click',e=>{if(e.target===modal) close();});
+  document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!modal.hidden) close();});
+})();
+
+/* ---------- Цена 0,75 л по каналам: таблица ---------- */
+(function(){
+  const NM=[['HORECA','Меню ресторанов и отелей',790],['водные','Водные интернет-магазины',399],['cash','Cash & carry',399],['Купер','Быстрая доставка',399],['B2B','Офисные поставщики',399],['маркетплейс','Маркетплейсы',399],['онлайн-каталоги','Сети, онлайн-каталоги',399]];
+  const rows=M.tiers.map(t=>{const m=NM.find(n=>t.l.indexOf(n[0])>=0); return Object.assign({name:m[1],us:m[2]},t);}).sort((a,b)=>b.m-a.m);
+  let h='<tr><th>Канал</th><th>Медиана рынка</th><th class="num">Разброс цен</th><th class="num">Наблюдений</th><th class="num">PRISTINAM</th><th>К рынку</th></tr>';
+  rows.forEach(r=>{const d=Math.round((r.us/r.m-1)*100);
+    h+='<tr><td><b>'+r.name+'</b></td><td><div class="mbar"><i style="width:'+Math.round(r.m/1000*140)+'px"></i><span>'+r0(r.m)+' Руб.</span></div></td><td class="num">'+r0(r.lo)+'–'+r0(r.hi)+'</td><td class="num">'+r.n+(r.n<3?' (мало)':'')+'</td><td class="num">'+r.us+' Руб.</td><td><span class="pill '+(d>0?'warn':'good')+'">'+(d>0?'дороже на '+d+'%':'дешевле на '+Math.abs(d)+'%')+'</span></td></tr>';});
+  $('#tiersTable').innerHTML=h;
+})();
 })();
 </script>
 </body>
