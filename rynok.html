@@ -240,6 +240,15 @@ td.verdict{white-space:nowrap}
 .quad .ru{fill:var(--ice)}
 .quad .im{fill:var(--surface);stroke:var(--muted);stroke-width:2}
 .quad .usp{fill:var(--ink)}
+.quad .usp-h{fill:var(--surface);stroke:var(--ink);stroke-width:2}
+.quad .us-rng{stroke:var(--ink);stroke-width:1.5}
+.quad .us-pr{font-size:12.5px;font-weight:600;fill:var(--ink)}
+#petCmp{margin-top:20px;padding-top:28px;border-top:1px solid var(--line)}
+#petCmp[hidden]{display:none}
+#petTable td .pill{white-space:nowrap}
+#petTable th{white-space:normal;vertical-align:bottom}
+#petTable td:nth-child(3){min-width:230px}
+#petTable td.num{white-space:nowrap}
 .scale-legend{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px;font-size:13.5px}
 .scale-legend div{background:var(--sunk);border-radius:8px;padding:10px 12px}
 .scale-legend b{display:block;margin-bottom:2px}
@@ -900,9 +909,17 @@ details summary{font-size:15px}
       <div class="seg" id="quadMat" role="group" aria-label="Материал"><button data-v="glass" aria-pressed="true">Стекло</button><button data-v="pet" aria-pressed="false">ПЭТ</button></div>
     </div>
     <p class="muted note">По горизонтали — измеренная цена за литр (обычная цена, негазированная, розница и онлайн). По вертикали — на чём бренд строит ценность: вверху технология, внизу природное происхождение. Положение каждой точки взято из исследования, это не схема.</p>
-    <div class="legend"><span><svg width="12" height="12"><circle cx="6" cy="6" r="5" fill="var(--ice)"/></svg> российский бренд</span><span><svg width="12" height="12"><circle cx="6" cy="6" r="4" fill="var(--surface)" stroke="var(--muted)" stroke-width="2"/></svg> импорт</span><span><svg width="12" height="12"><rect x="2" y="2" width="8" height="8" transform="rotate(45 6 6)" fill="var(--ink)"/></svg> PRISTINAM, 329 Руб. за 0,75 л</span></div>
+    <div class="legend"><span><svg width="12" height="12"><circle cx="6" cy="6" r="5" fill="var(--ice)"/></svg> российский бренд</span><span><svg width="12" height="12"><circle cx="6" cy="6" r="4" fill="var(--surface)" stroke="var(--muted)" stroke-width="2"/></svg> импорт</span><span id="quadUsLg"><svg width="12" height="12"><rect x="2" y="2" width="8" height="8" transform="rotate(45 6 6)" fill="var(--ink)"/></svg> PRISTINAM, 329 Руб. за 0,75 л</span></div>
     <div class="quad-wrap"><svg class="quad" id="quad" viewBox="0 0 920 540" role="img" aria-label="Карта: цена и источник ценности брендов"></svg></div>
     <p id="quadNote"></p>
+    <div class="stack" id="petCmp" hidden>
+      <div class="kind calc">Расчёт · наценки каналов — допущения исследования, себестоимость — из модели завода</div>
+      <h3>Если выходить в ПЭТ: три цены за бутылку 0,5 л</h3>
+      <p class="muted note" id="petRatio"></p>
+      <div class="tbl-wrap"><table id="petTable" style="min-width:820px"></table></div>
+      <p class="muted note" id="petSrc"></p>
+      <div class="vyvod" id="petVyvod"></div>
+    </div>
     <div class="vyvod"><b>Вывод.</b> Пустое поле бывает двух видов: свободное место или место, где никто не выжил. В пользу первого говорит то, почему технологичные марки стоят дёшево: они продают технологию в ПЭТ, без статуса и без доказательств. Причина в подаче, а не в самой технологии. Проверяется это быстро и недорого: слепой дегустацией и продажами в 8–12 ресторанах.</div>
     <div class="scale-legend">
       <div><b>Как посчитана вертикаль</b>Оценка «технология» минус оценка «природа». Обе стоят от 0 до 4. Плюс означает, что бренд продаёт способ обработки, минус — что продаёт источник.</div>
@@ -2153,6 +2170,7 @@ const retail=(s,i,c)=>s/(1+g('vat',i))/(1+g(c,i))/(1+g('dist',i))*(1-g('retro',i
 const horeca=(m,i)=>m/g('menu_ratio',i)/(1+g('vat',i))/(1+g('horeca_dist',i))*(1-g('horeca_bonus',i));
 const ozon=(p,i)=>(p*(1-g('mp_comm',i)-.01)-(72+3*(6*.75)+25)/6*g('mp_log',i))/(1+g('vat',i));
 const water=(p,i)=>p/(1+g('vat',i))/(1+g('water',i));
+window.PCHAIN={retail,water};
 const CH=[
  ['Рестораны и отели','от цены меню',(s,m,i,c)=>horeca(m,i),'m'],
  ['Ozon','от цены карточки',(s,m,i,c)=>ozon(s,i),'s'],
@@ -2269,6 +2287,10 @@ const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',
 const GAME='https://aka-sergey.github.io/Arktika/';
 let S=window.Sim, file=SCN_SNAPSHOT, live=false, cur='', per='y1';
 const PER={y1:'первый год продаж',y5:'пятый год',all:'все пять лет'};
+function half(name,glass){ // бутылка 0,5 л в том же сценарии и периоде при заданной таре
+  const s=normScn(S,file.scenarios[name]); s.p.glass=glass?1:0;
+  const r=S.sim(s), P=S.unitPeriods(r)[per], u=S.unit(s,r,P[0],P[1]); return u.fm.find(x=>x.key==='05');
+}
 function calc(name){
   const s=normScn(S,file.scenarios[name]), r=S.sim(s), P=S.unitPeriods(r)[per], u=S.unit(s,r,P[0],P[1]);
   const lab=i=>(S.MONTHS[i-1]||{}).label||'';
@@ -2278,9 +2300,11 @@ function render(){
   const names=Object.keys(file.scenarios), sel=$('#scnSel');
   if(!names.includes(cur)) cur=names.find(n=>/0\.3-0\.5-0\.75/.test(n))||names[names.length-1];
   sel.innerHTML=names.map(n=>'<option'+(n===cur?' selected':'')+'>'+esc(n)+'</option>').join('');
-  let c; try{ c=calc(cur); }catch(e){ $('#scnNote').textContent='Сценарий не удалось посчитать: '+e.message; window.PCOST=null; if(window.renderPrice) window.renderPrice(); return; }
+  let c; try{ c=calc(cur); }catch(e){ $('#scnNote').textContent='Сценарий не удалось посчитать: '+e.message; window.PCOST=null; window.PCOST_PET=null; if(window.renderPrice) window.renderPrice(); if(window.renderPetCmp) window.renderPetCmp(); return; }
   const f=c.u.fm.find(x=>x.key==='07');
   window.PCOST={cogs:f.cogs,cost:f.cost,name:cur,per:PER[per],sold:f.share>0};
+  try{ const hp=half(cur,0), hg=half(cur,1); window.PCOST_PET={cogs:hp.cogs,cost:hp.cost,gcost:hg.cost,name:cur,per:PER[per]}; }catch(e){ window.PCOST_PET=null; }
+  if(window.renderPetCmp) window.renderPetCmp();
   const upd=file.updated?new Date(file.updated).toLocaleDateString('ru-RU'):'';
   $('#scnNote').innerHTML='Данные из сценария <b>«'+esc(cur)+'»</b> модели завода <a href="'+GAME+'" target="_blank" rel="noopener">«Арктика»</a>, период: '+PER[per]+' ('+c.span+'), тара: '+(c.glass?'стекло':'ПЭТ')+'. '
     +(live?'Сценарии загружены с сайта модели при открытии страницы':'Показан сохранённый снимок сценариев')+(upd?', файл обновлён '+upd:'')+'. '
@@ -2467,6 +2491,41 @@ const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',
 
 /* ---------- Карта 2×2: цена × источник ценности (реальные значения) ---------- */
 let qMat='glass';
+const PET_PRICES=[119,149,199];            // цена на полке за 0,5 л в ПЭТ: три точки для сравнения
+const LG_GLASS=$('#quadUsLg').innerHTML;
+const r1c=x=>x.toLocaleString('ru-RU',{minimumFractionDigits:1,maximumFractionDigits:1});
+const r2c=x=>x.toLocaleString('ru-RU',{minimumFractionDigits:2,maximumFractionDigits:2});
+const quant=(a,q)=>{const v=a.slice().sort((x,y)=>x-y), h=(v.length+1)*q-1, i=Math.max(0,Math.min(v.length-1,Math.floor(h))), j=Math.min(v.length-1,i+1); return v[i]+(v[j]-v[i])*Math.max(0,Math.min(1,h-i));};
+let petCtx=null;
+function renderPetCmp(ctx){
+  if(ctx) petCtx=ctx; if(!petCtx||qMat!=='pet') return;
+  const {med,tl,tr}=petCtx, K=window.PCHAIN, C=window.PCOST_PET||null;
+  // отношение цены литра в ПЭТ к цене литра в стекле у марок, которые продаются в обоих материалах
+  const gl=Object.fromEntries(M.glass.map(r=>[r.b,r.p[0]])), rat=M.pet.filter(r=>gl[r.b]).map(r=>r.p[0]/gl[r.b]);
+  const rm=quant(rat,.5), usG=329/0.75;
+  $('#petRatio').innerHTML=`Наблюдение: у ${rat.length} марок, которые продаются и в стекле, и в ПЭТ, литр в ПЭТ стоит ${r2c(rm)} цены литра в стекле (у половины марок от ${r2c(quant(rat,.25))} до ${r2c(quant(rat,.75))}). Для PRISTINAM при 329 Руб. за 0,75 л в стекле это ${r0(usG*rm)} Руб./л, или около ${Math.round(usG*rm/2/10)*10} Руб. за 0,5 л. Медиана рынка в ПЭТ — ${r0(med)} Руб./л.`;
+  const near=p=>M.pet.filter(r=>r.p[1]>=2&&Math.abs(r.p[0]/(p*2)-1)<=.15).sort((a,b)=>Math.abs(a.p[0]-p*2)-Math.abs(b.p[0]-p*2)).slice(0,4).map(r=>esc(r.b)+' '+r0(r.p[0])).join(', ')||'—';
+  const rest=(lo,hi)=>{ if(hi===undefined){ return Math.abs(lo)<1?'около нуля':lo>0?'остаётся '+r0(lo)+' Руб.':'<span class="pill crit">убыток '+r0(-lo)+' Руб.</span>'; }
+    if(hi<=0) return '<span class="pill crit">убыток '+r0(-hi)+'–'+r0(-lo)+' Руб.</span>'; if(lo>=0) return 'остаётся '+r0(lo)+'–'+r0(hi)+' Руб.'; return 'от −'+r0(-lo)+' до +'+r0(hi)+' Руб.'; };
+  let h='<tr><th class="num">Цена на полке, 0,5 л</th><th class="num">Руб./л</th><th>Рядом по цене за литр</th><th class="num">Производителю из сети</th><th class="num">Производителю из водного интернет-магазина</th>'+(C?'<th class="num">После себестоимости: сеть</th><th class="num">После себестоимости: водный магазин</th>':'')+'</tr>';
+  PET_PRICES.forEach(p=>{
+    const a=K.retail(p,1,'chain_prem'), b=K.retail(p,1,'chain_cc'), w=K.water(p,1);
+    h+=`<tr><td class="num"><b>${p} Руб.</b></td><td class="num">${r0(p*2)}</td><td>${near(p)}</td><td class="num">${r0(a)}–${r0(b)} Руб.</td><td class="num">${r0(w)} Руб.</td>`+(C?`<td class="num">${rest(a-C.cost,b-C.cost)}</td><td class="num">${rest(w-C.cost)}</td>`:'')+'</tr>';
+  });
+  $('#petTable').innerHTML=h;
+  $('#petSrc').innerHTML='Рядом по цене: марки с двумя и более наблюдениями, цена за литр в пределах 15% от нашей; число после названия — Руб./л. Из сети: от премиальной сети до cash &amp; carry, базовые допущения калькулятора, без НДС. '
+    +(C?`Себестоимость 0,5 л в ПЭТ: производство ${r1c(C.cogs)} Руб., полная ${r1c(C.cost)} Руб. Это сценарий «${esc(C.name)}», ${C.per}, тара переключена на ПЭТ. Сценарий и период меняются в калькуляторе главы <a href="#cena">«Цена»</a>.`:'Себестоимость из модели завода сейчас недоступна, поэтому показана только цена производителя.');
+  const tlp=tl.map(p=>p.x), names=a=>a.map(p=>p.b).join(', ');
+  let v='<b>Вывод.</b> ';
+  if(C){
+    const bp=C.cost/K.retail(1,1,'chain_prem'), bc=C.cost/K.retail(1,1,'chain_cc'), bw=C.cost/K.water(1,1), okW=K.water(149,1)>=C.cost;
+    v+=`ПЭТ почти не удешевляет бутылку: 0,5 л в ПЭТ обходится в ${r1c(C.cost)} Руб., в стекле — в ${r1c(C.gcost)} Руб. Поэтому встать рядом с ${names(tl)} (${r0(Math.min(...tlp)/2)}–${r0(Math.max(...tlp)/2)} Руб. за 0,5 л) нельзя. Сеть покрывает полную себестоимость при цене от ${r0(bc)}–${r0(bp)} Руб. за 0,5 л на полке, водный интернет-магазин — от ${r0(bw)} Руб. `+(bc*2>med?`Значит, и в ПЭТ PRISTINAM стоит справа от медианы. Там технологию продаёт ${tr.length?names(tr):'ни одна марка'}, остальные продают происхождение, а в ПЭТ у нас не будет ни ресторана, ни тяжёлой бутылки, которые объясняют цену в стекле. `:`Это уровень медианы рынка (${r0(med/2)} Руб. за 0,5 л), но всё ещё заметно дороже технологичных марок. Рядом по цене стоят марки, которые продают происхождение, а в ПЭТ у нас не будет ни ресторана, ни тяжёлой бутылки, которые объясняют цену в стекле. `)
+      +(okW?'Поэтому ПЭТ — второй шаг, а не старт: 0,5 л за 149 Руб. в водных интернет-магазинах после того, как имя сделано в стекле. В массовую сеть по 119 Руб. не идём: '+(K.retail(119,1,'chain_cc')<C.cost?'там каждая бутылка продаётся в убыток.':'сеть оставляет там от −'+r0(C.cost-K.retail(119,1,'chain_prem'))+' до +'+r0(K.retail(119,1,'chain_cc')-C.cost)+' Руб. с бутылки, запаса нет.')
+           :`В этом сценарии ПЭТ не окупается и при 149 Руб.: водный интернет-магазин покрывает себестоимость только при цене от ${r0(bw)} Руб. за 0,5 л. ПЭТ откладываем до снижения себестоимости.`);
+  } else v+=`В ПЭТ PRISTINAM при 149–199 Руб. за 0,5 л стоит справа от медианы, где технологию продаёт ${tr.length?names(tr):'ни одна марка'}. Без себестоимости из модели завода вывод о прибыли сделать нельзя.`;
+  $('#petVyvod').innerHTML=v;
+}
+window.renderPetCmp=()=>renderPetCmp();
 function renderQuad(){
   const price=Object.fromEntries(M[qMat].map(r=>[r.b,r.p]));
   const pts=M.pos.filter(b=>price[b.b]).map(b=>({b:b.b,ru:b.ru,x:price[b.b][0],n:price[b.b][1],y:b.t-b.n,t:b.t,nat:b.n}));
@@ -2492,6 +2551,8 @@ function renderQuad(){
   const boxes=[], all=pts.map(p=>({px:sx(p.x),py:sy(p.y),p}));
   const us=qMat==='glass'?{px:sx(329/0.75),py:sy(1)}:null;
   if(us) boxes.push([us.px-10,us.py-10,us.px+92,us.py+10]);
+  const usPet=qMat==='pet'?PET_PRICES.map(p=>({p,px:sx(p*2),py:sy(1)})):[];
+  if(usPet.length) boxes.push([usPet[0].px-30,usPet[0].py-30,usPet[usPet.length-1].px+138,usPet[0].py+12]);
   all.forEach(a=>boxes.push([a.px-7,a.py-7,a.px+7,a.py+7]));
   const hit=(b)=>boxes.some(o=>!(b[2]<o[0]||b[0]>o[2]||b[3]<o[1]||b[1]>o[3]));
   all.sort((a,b)=>a.px-b.px).forEach(a=>{
@@ -2504,12 +2565,25 @@ function renderQuad(){
     s+=`<g data-tip="<b>${esc(a.p.b)}</b> · ${a.p.ru?'Россия':'импорт'}<br>${r0(a.p.x)} Руб./л, наблюдений: ${a.p.n}<br>технология ${a.p.t} из 4, природа ${a.p.nat} из 4"><circle class="${a.p.ru?'ru':'im'}" cx="${a.px}" cy="${a.py}" r="${a.p.ru?5.5:4.5}"/><text class="lb" x="${pick[0]}" y="${pick[1]}" text-anchor="${pick[2]}">${esc(a.p.b)}</text></g>`;
   });
   if(us) s+=`<g data-tip="<b>PRISTINAM</b><br>439 Руб./л при цене 329 Руб. за 0,75 л<br>цель: технология 3 из 4, природа 2 из 4"><rect class="usp" x="${us.px-7}" y="${us.py-7}" width="14" height="14" transform="rotate(45 ${us.px} ${us.py})"/><text class="us-lb" x="${us.px+13}" y="${us.py+5}">PRISTINAM</text></g>`;
+  if(usPet.length){
+    const K=window.PCHAIN, y=usPet[0].py;
+    s+=`<line class="us-rng" x1="${usPet[0].px}" x2="${usPet[usPet.length-1].px}" y1="${y}" y2="${y}"/>`;
+    usPet.forEach(u=>{
+      const ch=K?[K.retail(u.p,1,'chain_prem'),K.retail(u.p,1,'chain_cc')]:null;
+      s+=`<g data-tip="<b>PRISTINAM в ПЭТ</b> · расчёт<br>${u.p} Руб. за 0,5 л = ${r0(u.p*2)} Руб./л<br>цель: технология 3 из 4, природа 2 из 4`+(ch?`<br>производителю из сети: ${r0(ch[0])}–${r0(ch[1])} Руб.<br>из водного интернет-магазина: ${r0(K.water(u.p,1))} Руб.`:'')+`"><rect class="usp-h" x="${u.px-6.5}" y="${u.py-6.5}" width="13" height="13" transform="rotate(45 ${u.px} ${u.py})"/><text class="us-pr" x="${u.px}" y="${u.py-15}" text-anchor="middle">${u.p}${u===usPet[usPet.length-1]?' Руб.':''}</text></g>`;
+    });
+    const L=usPet[usPet.length-1];
+    s+=`<text class="us-lb" x="${L.px+15}" y="${L.py+5}">PRISTINAM в ПЭТ</text>`;
+  }
   $('#quad').innerHTML=s;
   const tr=pts.filter(p=>p.y>0&&p.x>med), tl=pts.filter(p=>p.y>0&&p.x<=med), br=pts.filter(p=>p.y<0&&p.x>med);
   const names=a=>a.map(p=>p.b).join(', ');
   $('#quadNote').innerHTML=(qMat==='glass'
     ?`<b>Вывод.</b> Из ${pts.length} брендов с ценой в стекле в правом верхнем поле «технология, дорого» ${tr.length?('стоят: '+names(tr)):'нет ни одного'}. Дорогая половина рынка почти целиком внизу, у «природных» марок: ${names(br)}. Бренды, которые продают технологию, стоят в дешёвой половине: ${names(tl)||'—'}. PRISTINAM при 329 Руб. за 0,75 л оказывается в голубом поле один.`
-    :`<b>Вывод.</b> В ПЭТ из ${pts.length} брендов в поле «технология, дорого» ${tr.length?('стоят: '+names(tr)):'нет ни одного'}. Технологичные марки в дешёвой половине: ${names(tl)||'—'}. PRISTINAM в ПЭТ не выходит, поэтому на этой карте его нет.`);
+    :`<b>Вывод.</b> В ПЭТ из ${pts.length} брендов в поле «технология, дорого» ${tr.length?('стоят: '+names(tr)):'нет ни одного'}. Технологичные марки в дешёвой половине: ${names(tl)||'—'}. PRISTINAM в ПЭТ сейчас не выходит. Ромбы показывают, где он окажется при трёх ценах за бутылку 0,5 л; сравнение — под картой.`);
+  $('#quadUsLg').innerHTML=qMat==='glass'?LG_GLASS:'<svg width="12" height="12"><rect x="2.5" y="2.5" width="7" height="7" transform="rotate(45 6 6)" fill="var(--surface)" stroke="var(--ink)" stroke-width="1.6"/></svg> PRISTINAM, если выходить в ПЭТ: три цены за 0,5 л';
+  $('#petCmp').hidden=qMat!=='pet';
+  if(qMat==='pet') renderPetCmp({pts,med,tl,tr});
   $$('#quadMat button').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.v===qMat)));
 }
 $('#quadMat').addEventListener('click',e=>{const b=e.target.closest('button'); if(!b)return; qMat=b.dataset.v; renderQuad();});
