@@ -191,6 +191,7 @@ footer p{max-width:90ch}
 .trk::before{content:"";position:absolute;left:0;right:0;top:11px;height:1px;background:var(--line)}
 .trk .gl{position:absolute;top:0;bottom:0;width:1px;background:var(--line);opacity:.6}
 .trk .us{position:absolute;top:0;bottom:0;width:2px;margin-left:-1px;background:var(--ink)}
+.trk .us2{position:absolute;top:0;bottom:0;width:0;margin-left:-1px;border-left:2px dashed var(--ink);opacity:.6}
 .trk .d{position:absolute;top:6px;width:11px;height:11px;margin-left:-5.5px;box-shadow:0 0 0 2px var(--surface)}
 .trk .d1{background:var(--s1);border-radius:50%}
 .trk .d2{background:var(--s2);transform:rotate(45deg);width:10px;height:10px;margin-left:-5px;top:6.5px}
@@ -748,7 +749,7 @@ details summary{font-size:15px}
       <div class="kind obs">Наблюдение · на чём основано</div>
       <div class="bignum">28 из 56</div>
       <p>San Benedetto представлен в 28 из 56 изученных меню с водой. Его медианная цена — 990 Руб. за 0,75 л. Российские негазированные позиции стоят 675–790 Руб.: место второй, более доступной строки свободно.</p>
-      <p class="also">В меню наши 790 Руб. ниже медианы рынка (970 Руб.). На полке 399 Руб. выше медианы каждого канала и выше Nedra, San Benedetto и Acqua Panna в рознице (359–390 Руб.). Поэтому 399 Руб. держим в своём магазине, а для сети предлагаем 329 Руб.</p>
+      <p class="also">В меню наши 790 Руб. ниже медианы рынка (970 Руб.). На полке сети 399 Руб. были бы выше медианы каждого канала и выше Nedra, San Benedetto и Acqua Panna в рознице (359–390 Руб.). Поэтому 399 Руб. держим в своём магазине, а для сети предлагаем 329 Руб.</p>
     </div>
   </div>
   <div class="pilot">
@@ -787,7 +788,7 @@ details summary{font-size:15px}
   </div>
 
   <div class="grid g3">
-    <div class="card stack find"><div class="kind obs">Наблюдение · цена</div><b class="n">492 → 532 → 670 Руб./л</b><h3>Зазор между Россией и импортом</h3><p>Самый дорогой российский бренд в стекле — Nedra, 492 Руб./л. Европейский импорт начинается с 506–570 Руб./л и доходит до 670–820 Руб./л у Acqua Panna и San Benedetto. Наши 399 Руб. за 0,75 л дают 532 Руб./л: выше всех российских марок и ниже основного импорта. Сравнение по литру смешивает бутылки 0,33 и 0,75 л; по бутылке 0,75 л в рознице зазора нет, см. главу 2.</p></div>
+    <div class="card stack find"><div class="kind obs">Наблюдение · цена</div><b class="n">492 → 532 → 670 Руб./л</b><h3>Зазор между Россией и импортом</h3><p>Самый дорогой российский бренд в стекле — Nedra, 492 Руб./л. Европейский импорт начинается с 506–570 Руб./л и доходит до 670–820 Руб./л у Acqua Panna и San Benedetto. В своём магазине наши 399 Руб. за 0,75 л дают 532 Руб./л: выше всех российских марок и ниже основного импорта. На полке сети 329 Руб. дают 439 Руб./л. Сравнение по литру смешивает бутылки 0,33 и 0,75 л; по бутылке 0,75 л в рознице зазора нет, см. главу 2.</p></div>
     <div class="card stack find"><div class="kind obs">Наблюдение · рестораны</div><b class="n">28 из 56</b><h3>Одна марка держит половину меню</h3><p>San Benedetto стоит в 28 из 56 заведений, где в меню есть вода, с медианой 990 Руб. за 0,75 л. Российские негазированные позиции стоят 675–790 Руб. Место второй, более дешёвой строки с историей свободно.</p></div>
     <div class="card stack find"><div class="kind obs">Наблюдение · доверие</div><b class="n">31% против 0–4%</b><h3>Импорту перестали верить</h3><p>У Evian 31% отзывов содержат негатив о подлинности, у Voss 14%, у S.Pellegrino 11%, у San Benedetto 7%. У большинства российских брендов 0–4%. Открытый протокол партии бьёт именно сюда.</p></div>
   </div>
@@ -800,7 +801,7 @@ details summary{font-size:15px}
       <tr><td><b>San Benedetto</b></td><td>Рестораны и отели Москвы и Петербурга</td><td>28 точек, меню 990 Руб. (n=20), в METRO 389 Руб.</td><td>Импорт; самая высокая цена среди массовых позиций меню; 7% отзывов с сомнением в подлинности</td><td>Вторая негазированная строка на 20% дешевле, поставка из Москвы, история для гостя</td><td class="verdict"><span class="pill ice">1</span></td></tr>
       <tr><td><b>Святой Источник в меню</b></td><td>Рестораны, 6 из 7 точек в Петербурге</td><td>7 точек, меню 770 Руб. (n=6)</td><td>Массовое имя: в рознице 113 Руб./л в ПЭТ, статус 0 из 4</td><td>Та же цена в меню, но бутылка и история премиального уровня</td><td class="verdict"><span class="pill ice">1</span></td></tr>
       <tr><td><b>Nedra</b></td><td>Luxury-отели, рестораны, онлайн</td><td>7 точек, меню 790 Руб. (n=5), онлайн 369 Руб. (n=3)</td><td>Выручка компании 89 млн Руб., розлив по контракту, отзывов нет, метод не раскрыт</td><td>Та же цена в меню плюс цифры и протокол, которых у Nedra нет</td><td class="verdict"><span class="pill">2</span></td></tr>
-      <tr><td><b>Acqua Panna и импорт онлайн</b></td><td>Водные магазины, свой магазин</td><td>460 Руб. за 0,75 л онлайн (n=3), 670 Руб./л по всем форматам</td><td>Цена; общая для импорта проблема подлинности</td><td>399 Руб. и протокол партии по QR</td><td class="verdict"><span class="pill">2</span></td></tr>
+      <tr><td><b>Acqua Panna и импорт онлайн</b></td><td>Водные магазины, свой магазин</td><td>460 Руб. за 0,75 л онлайн (n=3), 670 Руб./л по всем форматам</td><td>Цена; общая для импорта проблема подлинности</td><td>399 Руб. в своём магазине и протокол партии по QR</td><td class="verdict"><span class="pill">2</span></td></tr>
       <tr><td><b>Evian</b></td><td>Онлайн</td><td>Стекло 972 Руб./л (n=2), ПЭТ 417–449 Руб./л</td><td>31% отзывов с негативом о доверии, 16% с негативом о вкусе</td><td>Забираем разочарованных: «цифры совпадут с вашим прибором»</td><td class="verdict"><span class="pill">2</span></td></tr>
       <tr><td><b>Tassay, Surgiva</b></td><td>Премиальные рестораны Москвы</td><td>Меню 1 180 и 1 275 Руб. (n=3 и 4), 6 и 3 точки</td><td>Самая дорогая негазированная строка</td><td>Позиция на треть дешевле</td><td class="verdict"><span class="pill">3</span></td></tr>
     </table></div>
@@ -825,7 +826,7 @@ details summary{font-size:15px}
   <div class="card stack">
     <div class="kind obs">Наблюдение · цены на 25.11.2026</div>
     <h3>Все бренды: полная лестница цен</h3>
-    <p class="muted note">Негазированная вода, обычная цена без акций, рубли за литр. Розница и онлайн показаны отдельными точками. Тёмная линия — PRISTINAM при цене своего магазина, 399 Руб. за 0,75 л. Переключайте материал и группировку.</p>
+    <p class="muted note">Негазированная вода, обычная цена без акций, рубли за литр. Розница и онлайн показаны отдельными точками. Тёмные линии — PRISTINAM: сплошная при цене своего магазина, 399 Руб. за 0,75 л, пунктирная при цене полки сети, 329 Руб. Переключайте материал и группировку.</p>
     <div class="row" style="justify-content:space-between">
       <div class="row">
         <div class="seg" id="ladMat" role="group" aria-label="Материал"><button data-v="glass" aria-pressed="true">Стекло 0,25–1 л</button><button data-v="pet" aria-pressed="false">ПЭТ 0,33–0,6 л</button></div>
@@ -899,7 +900,7 @@ details summary{font-size:15px}
       <div class="seg" id="quadMat" role="group" aria-label="Материал"><button data-v="glass" aria-pressed="true">Стекло</button><button data-v="pet" aria-pressed="false">ПЭТ</button></div>
     </div>
     <p class="muted note">По горизонтали — измеренная цена за литр (обычная цена, негазированная, розница и онлайн). По вертикали — на чём бренд строит ценность: вверху технология, внизу природное происхождение. Положение каждой точки взято из исследования, это не схема.</p>
-    <div class="legend"><span><svg width="12" height="12"><circle cx="6" cy="6" r="5" fill="var(--ice)"/></svg> российский бренд</span><span><svg width="12" height="12"><circle cx="6" cy="6" r="4" fill="var(--surface)" stroke="var(--muted)" stroke-width="2"/></svg> импорт</span><span><svg width="12" height="12"><rect x="2" y="2" width="8" height="8" transform="rotate(45 6 6)" fill="var(--ink)"/></svg> PRISTINAM, 399 Руб. за 0,75 л</span></div>
+    <div class="legend"><span><svg width="12" height="12"><circle cx="6" cy="6" r="5" fill="var(--ice)"/></svg> российский бренд</span><span><svg width="12" height="12"><circle cx="6" cy="6" r="4" fill="var(--surface)" stroke="var(--muted)" stroke-width="2"/></svg> импорт</span><span><svg width="12" height="12"><rect x="2" y="2" width="8" height="8" transform="rotate(45 6 6)" fill="var(--ink)"/></svg> PRISTINAM, 399 Руб. в своём магазине</span><span><svg width="12" height="12"><rect x="2.5" y="2.5" width="7" height="7" transform="rotate(45 6 6)" fill="var(--surface)" stroke="var(--ink)" stroke-width="1.5"/></svg> PRISTINAM, 329 Руб. в сети</span></div>
     <div class="quad-wrap"><svg class="quad" id="quad" viewBox="0 0 920 540" role="img" aria-label="Карта: цена и источник ценности брендов"></svg></div>
     <p id="quadNote"></p>
     <div class="vyvod"><b>Вывод.</b> Пустое поле бывает двух видов: свободное место или место, где никто не выжил. В пользу первого говорит то, почему технологичные марки стоят дёшево: они продают технологию в ПЭТ, без статуса и без доказательств. Причина в подаче, а не в самой технологии. Проверяется это быстро и недорого: слепой дегустацией и продажами в 8–12 ресторанах.</div>
@@ -2324,11 +2325,11 @@ function grid(trk,sc,ticks){ticks.forEach(t=>{const g=el('div','gl'); g.style.le
 
 /* ---------- 1. Ценовая лестница ---------- */
 let ladMat='glass', ladGrp='price';
-const US_PPL=399/0.75;
+const US_PPL=399/0.75, US2_PPL=329/0.75;
 function renderLadder(){
   const data=M[ladMat], box=$('#ladder'); box.innerHTML='';
   const sc=logS(80,2000), ticks=[100,200,400,800,1600];
-  axis(box,sc,ticks,t=>r0(t),ladMat==='glass'?[US_PPL,'PRISTINAM 532']:null,'Руб./л');
+  axis(box,sc,ticks,t=>r0(t),ladMat==='glass'?[Math.sqrt(US_PPL*US2_PPL),'PRISTINAM: сеть 439 · свой магазин 532']:null,'Руб./л');
   const groups=[];
   if(ladGrp==='price') groups.push(['',data]);
   else if(ladGrp==='origin'){groups.push(['Импорт',data.filter(r=>!r.ru)]); groups.push(['Россия',data.filter(r=>r.ru)]);}
@@ -2342,7 +2343,7 @@ function renderLadder(){
       row.dataset.tip='<b>'+r.b+'</b> · '+(r.ru?'Россия':'импорт')+(r.st!==null?' · статус '+r.st+' из 4':'')+'<br>'+parts.join('<br>')+'<br>все наблюдения: '+r0(r.p[0])+' Руб./л, n='+r.p[1];
       row.append(el('div','lab',r.b+tag(r.ru)));
       const t=el('div','trk'); grid(t,sc,ticks);
-      if(ladMat==='glass'){const u=el('div','us'); u.style.left=sc(US_PPL)+'%'; t.append(u);}
+      if(ladMat==='glass'){const u=el('div','us'); u.style.left=sc(US_PPL)+'%'; t.append(u); const u2=el('div','us2'); u2.style.left=sc(US2_PPL)+'%'; t.append(u2);}
       [['r','d1'],['e','d2']].forEach(([k,c])=>{ if(r[k]){const d=el('div','d '+c+(r[k][1]<3?' low':'')); d.style.left=sc(r[k][0])+'%'; t.append(d);} });
       row.append(t);
       row.append(el('div','val','<b>'+r0(r.p[0])+'</b> <small>Руб./л · n='+r.p[1]+'</small>'));
@@ -2502,12 +2503,13 @@ function renderQuad(){
     if(pb) boxes.push(pb);
     s+=`<g data-tip="<b>${esc(a.p.b)}</b> · ${a.p.ru?'Россия':'импорт'}<br>${r0(a.p.x)} Руб./л, наблюдений: ${a.p.n}<br>технология ${a.p.t} из 4, природа ${a.p.nat} из 4"><circle class="${a.p.ru?'ru':'im'}" cx="${a.px}" cy="${a.py}" r="${a.p.ru?5.5:4.5}"/><text class="lb" x="${pick[0]}" y="${pick[1]}" text-anchor="${pick[2]}">${esc(a.p.b)}</text></g>`;
   });
-  if(us) s+=`<g data-tip="<b>PRISTINAM</b><br>532 Руб./л при цене 399 Руб. за 0,75 л<br>цель: технология 3 из 4, природа 2 из 4"><rect class="usp" x="${us.px-7}" y="${us.py-7}" width="14" height="14" transform="rotate(45 ${us.px} ${us.py})"/><text class="us-lb" x="${us.px+13}" y="${us.py+5}">PRISTINAM</text></g>`;
+  if(us){const x2=sx(329/0.75); s+=`<g data-tip="<b>PRISTINAM на полке сети</b><br>439 Руб./л при цене 329 Руб. за 0,75 л"><rect x="${x2-6}" y="${us.py-6}" width="12" height="12" transform="rotate(45 ${x2} ${us.py})" fill="var(--surface)" stroke="var(--ink)" stroke-width="2"/></g>`;}
+  if(us) s+=`<g data-tip="<b>PRISTINAM в своём магазине</b><br>532 Руб./л при цене 399 Руб. за 0,75 л<br>цель: технология 3 из 4, природа 2 из 4"><rect class="usp" x="${us.px-7}" y="${us.py-7}" width="14" height="14" transform="rotate(45 ${us.px} ${us.py})"/><text class="us-lb" x="${us.px+13}" y="${us.py+5}">PRISTINAM</text></g>`;
   $('#quad').innerHTML=s;
   const tr=pts.filter(p=>p.y>0&&p.x>med), tl=pts.filter(p=>p.y>0&&p.x<=med), br=pts.filter(p=>p.y<0&&p.x>med);
   const names=a=>a.map(p=>p.b).join(', ');
   $('#quadNote').innerHTML=(qMat==='glass'
-    ?`<b>Вывод.</b> Из ${pts.length} брендов с ценой в стекле в правом верхнем поле «технология, дорого» ${tr.length?('стоят: '+names(tr)):'нет ни одного'}. Дорогая половина рынка почти целиком внизу, у «природных» марок: ${names(br)}. Бренды, которые продают технологию, стоят в дешёвой половине: ${names(tl)||'—'}. PRISTINAM при 399 Руб. за 0,75 л оказывается в голубом поле один.`
+    ?`<b>Вывод.</b> Из ${pts.length} брендов с ценой в стекле в правом верхнем поле «технология, дорого» ${tr.length?('стоят: '+names(tr)):'нет ни одного'}. Дорогая половина рынка почти целиком внизу, у «природных» марок: ${names(br)}. Бренды, которые продают технологию, стоят в дешёвой половине: ${names(tl)||'—'}. PRISTINAM оказывается в голубом поле один и при 399 Руб. в своём магазине, и при 329 Руб. на полке сети.`
     :`<b>Вывод.</b> В ПЭТ из ${pts.length} брендов в поле «технология, дорого» ${tr.length?('стоят: '+names(tr)):'нет ни одного'}. Технологичные марки в дешёвой половине: ${names(tl)||'—'}. PRISTINAM в ПЭТ не выходит, поэтому на этой карте его нет.`);
   $$('#quadMat button').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.v===qMat)));
 }
