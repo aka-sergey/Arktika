@@ -149,7 +149,6 @@ pre.copy{margin:0;white-space:pre-wrap;font-family:var(--f-body);font-size:15px;
 .pbar .track{height:14px;background:var(--sunk);position:relative;border-left:1px solid var(--muted);border-radius:0 4px 4px 0}
 .pbar .fill{position:absolute;left:0;top:0;bottom:0;background:var(--ice);border-radius:0 4px 4px 0}
 .pbar .rng{position:absolute;top:6px;height:2px;background:var(--ink);opacity:.55}
-.pbar .cogs{position:absolute;top:-4px;bottom:-4px;width:2px;background:var(--warn)}
 .pbar .r{display:flex;gap:8px;justify-content:flex-end;align-items:center;white-space:nowrap}
 @media (max-width:640px){.pbar{grid-template-columns:96px minmax(40px,1fr) 128px;gap:8px}}
 /* gantt */
@@ -685,7 +684,7 @@ td.verdict{white-space:nowrap}
         <li>Стекло, сдержанная типографика, много воздуха. Образ льда и кристалла без колб и молекул.</li>
         <li>На лице три слова: PRISTINAM, «очищена льдом», номер партии.</li>
         <li>На обороте четыре числа и QR на протокол партии.</li>
-        <li>Номер партии на каждой бутылке. Одна установка даёт 40–320 бутылок в сутки, и малый объём становится знаком статуса.</li>
+        <li>Номер партии на каждой бутылке: он связывает её с протоколом и читается как знак ручной работы.</li>
         <li>Для доставки коробка на 6 бутылок с разделителями: треть отзывов о воде на маркетплейсах посвящена бою и комплектации.</li>
         <li>pH на лице этикетки не ставим: так делают щелочные бренды в ПЭТ за 75 ₽.</li>
       </ul>
@@ -698,7 +697,6 @@ td.verdict{white-space:nowrap}
     <div class="grid g4">
       <label class="ctl" for="inShelf">Цена на полке и онлайн<span class="val"><output id="outShelf"></output> ₽</span><input type="range" id="inShelf" min="199" max="699" step="10" value="399"></label>
       <label class="ctl" for="inMenu">Цена в меню<span class="val"><output id="outMenu"></output> ₽</span><input type="range" id="inMenu" min="490" max="1290" step="10" value="790"></label>
-      <label class="ctl" for="inCogs">Себестоимость бутылки, ₽ <span class="pill warn">пример, подставьте свою</span><input type="number" id="inCogs" min="0" max="500" step="1" value="100"></label>
       <div class="stack"><span class="muted" style="font-size:13px">Допущения по наценкам</span>
         <div class="seg" id="scSeg" role="group" aria-label="Набор допущений">
           <button data-sc="0" aria-pressed="false">Осторожно</button>
@@ -708,7 +706,6 @@ td.verdict{white-space:nowrap}
       </div>
     </div>
     <div class="stack" id="priceBars" style="gap:6px"></div>
-    <p class="muted" style="font-size:13px">Оранжевая отметка показывает себестоимость. Маржа считается от цены производителя: от 40% — зелёная, 30–40% — жёлтая, ниже 30% — красная.</p>
   </div>
 </section>
 
@@ -739,7 +736,7 @@ td.verdict{white-space:nowrap}
       <tr><td><b>PR</b></td><td>Легитимность</td><td>Итоги слепой дегустации, история инженеров и патентов</td><td>5 материалов в деловых и гастрономических изданиях</td></tr>
       <tr><td><b>Подарки и офисы</b></td><td>Выручка вне ресторана</td><td>Подарочный набор 2 × 0,75 с буклетом о методе</td><td>10 корпоративных клиентов</td></tr>
     </table></div>
-    <p><b>Не делаем:</b> ТВ, наружную рекламу, массовых блогеров, доставку за 15 минут и федеральные сети. Одна установка даёт до 320 бутылок в сутки, охватные медиа на таком объёме не окупаются.</p>
+    <p><b>Не делаем:</b> ТВ, наружную рекламу, массовых блогеров, доставку за 15 минут и федеральные сети. Продукт нишевый, охватные медиа для него не окупаются.</p>
   </div>
 </section>
 
@@ -748,23 +745,13 @@ td.verdict{white-space:nowrap}
   <div class="sec-head">
     <div class="eyebrow">Сколько</div>
     <h2>Бюджет и показатели</h2>
-    <p>Бюджет кампании привязан к объёму, который вы можете произвести. Поставьте свои установки и загрузку, калькулятор покажет выручку и то, какой бюджет она выдержит.</p>
+    <p>Бюджет кампании задаётся одной суммой на шесть месяцев. Подвиньте ползунок и увидите, как она делится по направлениям.</p>
   </div>
 
   <div class="card stack">
-    <div class="grid g4">
-      <label class="ctl" for="inUnits">Установок<span class="val"><output id="outUnits"></output></span><input type="range" id="inUnits" min="1" max="20" step="1" value="2"></label>
-      <label class="ctl" for="inLpd">Литров в сутки на установку<span class="val"><output id="outLpd"></output> л</span><input type="range" id="inLpd" min="30" max="240" step="10" value="240"></label>
-      <label class="ctl" for="inUtil">Загрузка<span class="val"><output id="outUtil"></output>%</span><input type="range" id="inUtil" min="20" max="100" step="5" value="70"></label>
+    <div class="grid g2">
       <label class="ctl" for="inBud">Бюджет кампании на 6 месяцев<span class="val"><output id="outBud"></output> млн ₽</span><input type="range" id="inBud" min="1" max="20" step="0.5" value="5"></label>
     </div>
-    <div class="grid g4">
-      <div class="fact"><span>Бутылок 0,75 л в месяц</span><b id="kBottles"></b></div>
-      <div class="fact"><span>Выручка производителя в месяц</span><b id="kRev"></b></div>
-      <div class="fact"><span>Бюджет к годовой выручке</span><b id="kShare"></b></div>
-      <div class="fact"><span>Оценка</span><div><span class="pill" id="kVerdict"></span></div><span id="kVerdictText"></span></div>
-    </div>
-    <p class="muted" style="font-size:13px">Выручка посчитана при полной продаже по средней цене производителя 235 ₽ без НДС: половина объёма идёт в рестораны, 35% на Ozon, 15% через свой магазин и подарки. Пороги оценки (до 15%, 15–35%, выше 35%) — мой ориентир для запуска премиального бренда, не норматив.</p>
 
     <h3>Куда идут деньги</h3>
     <div class="stack" id="alloc" style="gap:4px"></div>
@@ -803,7 +790,6 @@ td.verdict{white-space:nowrap}
       <li>Рабочее имя воды — PRISTINAM, как в товарном знаке на странице патентов. Если у воды другое имя, идея и тексты переносятся без изменений.</li>
       <li>Слоган «Лёд вместо фильтра» для ролика годится, только если в линии нет ни одного фильтра. Если есть хотя бы предфильтр, оставляем «Очищена льдом».</li>
       <li>Название лаборатории в рекламе ставим с её письменного согласия. До него пишем «независимая лаборатория».</li>
-      <li>Себестоимость бутылки мне неизвестна: в калькуляторе стоит пример, маржа считается от вашей цифры.</li>
     </ul>
   </div>
 
@@ -1041,25 +1027,23 @@ const CH=[
 ];
 let sc=1;
 function renderPrice(){
-  const s=+$('#inShelf').value, m=+$('#inMenu').value, c=Math.max(0,+$('#inCogs').value||0);
+  const s=+$('#inShelf').value, m=+$('#inMenu').value;
   $('#outShelf').textContent=s; $('#outMenu').textContent=rub(m);
   const max=420, box=$('#priceBars'); box.innerHTML='';
   CH.forEach(ch=>{
-    const v=ch[2](s,m,sc), lo=ch[2](s,m,0), hi=ch[2](s,m,2), mg=v>0?(v-c)/v:-1;
+    const v=ch[2](s,m,sc), lo=ch[2](s,m,0), hi=ch[2](s,m,2);
     const row=el('div','pbar');
-    row.dataset.tip=`<b>${ch[0]}</b> · ${ch[1]}<br>цена производителя: ${rub(v)} ₽ без НДС<br>разброс допущений: ${rub(lo)}–${rub(hi)} ₽<br>маржа при себестоимости ${rub(c)} ₽: ${Math.round(mg*100)}%`;
+    row.dataset.tip=`<b>${ch[0]}</b> · ${ch[1]}<br>цена производителя: ${rub(v)} ₽ без НДС<br>разброс допущений: ${rub(lo)}–${rub(hi)} ₽`;
     row.append(el('div','',ch[0]));
     const tr=el('div','track');
     const f=el('div','fill'); f.style.width=Math.max(0,Math.min(100,v/max*100))+'%'; tr.append(f);
     const r=el('div','rng'); r.style.left=Math.max(0,lo/max*100)+'%'; r.style.width=Math.max(0,Math.min(100,hi/max*100)-lo/max*100)+'%'; tr.append(r);
-    if(c>0&&c<max){const k=el('div','cogs'); k.style.left=(c/max*100)+'%'; tr.append(k);}
     row.append(tr);
-    const cls=mg>=.4?'good':mg>=.3?'warn':'crit';
-    row.append(el('div','r',`<span class="mono"><b>${rub(v)} ₽</b></span><span class="pill ${cls}">маржа ${Math.round(mg*100)}%</span>`));
+    row.append(el('div','r',`<span class="mono"><b>${rub(v)} ₽</b></span><span class="muted" style="font-size:12px">${Math.round(v*1.22/(ch[1]==='от цены меню'?m:s)*100)}% от цены</span>`));
     box.append(row);
   });
 }
-['inShelf','inMenu','inCogs'].forEach(id=>$('#'+id).addEventListener('input',renderPrice));
+['inShelf','inMenu'].forEach(id=>$('#'+id).addEventListener('input',renderPrice));
 $('#scSeg').addEventListener('click',e=>{const b=e.target.closest('button'); if(!b)return; sc=+b.dataset.sc; $$('#scSeg button').forEach(x=>x.setAttribute('aria-pressed',String(x===b))); renderPrice();});
 
 /* ---------- Фазы ---------- */
@@ -1107,7 +1091,7 @@ const MECH=[
 ['Вслепую','Слепая дегустация для сомелье: PRISTINAM рядом с четырьмя премиальными водами. Итоги публикуем целиком, какими бы они ни были.'],
 ['Лёд вместо фильтра','Ролик 30–40 секунд: вода замерзает, лёд забирают, остаток сливают. Без дикторского текста, с тремя титрами.'],
 ['Карта воды','Готовая строка для меню с тремя числами: жёсткость, минерализация, pH. Вода читается как винная позиция.'],
-['Номерные партии','Номер партии на этикетке. Малый объём производства превращается из ограничения в признак ручной работы.'],
+['Номерные партии','Номер партии на этикетке связывает бутылку с её протоколом и читается как знак ручной работы.'],
 ['Проверь сам','Вкладыш в коробке: что покажут TDS-метр и полоски pH. Покупатели и так проверяют воду, мы делаем из проверки аргумент.']
 ];
 MECH.forEach((m,i)=>{$('#mechs').append(el('div','card stack',`<span class="eyebrow">Механика ${i+1}</span><h3>${m[0]}</h3><p>${m[1]}</p>`));});
@@ -1121,24 +1105,15 @@ const ALLOC=[
 ['События: слепая дегустация',10],
 ['Тесты: формулировки, вкус, цена',10]
 ];
-const BLEND=.5*horeca(790,1)+.35*ozon(399,1)+.15*d2c(399,1);
 function renderBudget(){
-  const n=+$('#inUnits').value, l=+$('#inLpd').value, u=+$('#inUtil').value, b=+$('#inBud').value;
-  $('#outUnits').textContent=n; $('#outLpd').textContent=l; $('#outUtil').textContent=u; $('#outBud').textContent=nf(b,1);
-  const bottles=n*l*(u/100)*30/.75, rev=bottles*BLEND, share=b*1e6/(rev*12);
-  $('#kBottles').textContent=rub(bottles);
-  $('#kRev').textContent=nf(rev/1e6,1)+' млн ₽';
-  $('#kShare').textContent=Math.round(share*100)+'%';
-  const v=$('#kVerdict'), t=$('#kVerdictText');
-  if(share<=.15){v.className='pill good'; v.textContent='С запасом'; t.textContent='Объём выдержит бюджет больше.';}
-  else if(share<=.35){v.className='pill warn'; v.textContent='Рабочий диапазон'; t.textContent='Нормально для года запуска.';}
-  else{v.className='pill crit'; v.textContent='Перегрев'; t.textContent='Объём не окупит бюджет: добавьте установки или сократите PR и события.';}
+  const b=+$('#inBud').value;
+  $('#outBud').textContent=nf(b,1);
   const box=$('#alloc'); box.innerHTML='';
   ALLOC.forEach(a=>{const row=el('div','alloc'); row.append(el('div','',a[0]));
     const tr=el('div','track'), f=el('div','fill'); f.style.width=(a[1]/25*100)+'%'; tr.append(f); row.append(tr);
     row.append(el('div','v',a[1]+'% · '+nf(b*a[1]/100,2)+' млн ₽')); box.append(row);});
 }
-['inUnits','inLpd','inUtil','inBud'].forEach(id=>$('#'+id).addEventListener('input',renderBudget));
+['inBud'].forEach(id=>$('#'+id).addEventListener('input',renderBudget));
 
 /* ---------- Первые 30 дней ---------- */
 const TODO=[
