@@ -1,6 +1,6 @@
-# Netlify: публикуем только страницу игры и файл общих сценариев; функция /api/scenarios хранит сценарии посетителей
+# Netlify: публикуем страницу игры, страницу анализа рынка (rynok.html) и файл общих сценариев; функция /api/scenarios хранит сценарии посетителей
 [build]
-  command = "mkdir -p dist && cp index.html scenarios.json dist/"
+  command = "mkdir -p dist && cp index.html rynok.html scenarios.json dist/"
   publish = "dist"
 
 [functions]
